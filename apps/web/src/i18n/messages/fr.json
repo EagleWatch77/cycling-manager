@@ -145,5 +145,7 @@
   "page.about": "À propos",
   "page.publicPlaceholder": "Cette page arrive bientôt.",
   "path.title": "Parcours du nouveau joueur",
-  "path.startHere": "Tu débutes ici"
+  "path.startHere": "Tu débutes ici",
+  "auth.notConnected": "Les comptes ne sont pas encore actifs. La connexion arrive à l’étape suivante.",
+  "auth.passwordMismatch": "Les mots de passe ne correspondent pas."
 }

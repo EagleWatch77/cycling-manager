@@ -145,5 +145,7 @@
   "page.about": "O hre",
   "page.publicPlaceholder": "Túto stránku pripravujeme.",
   "path.title": "Cesta nového hráča",
-  "path.startHere": "Začínaš tu"
+  "path.startHere": "Začínaš tu",
+  "auth.notConnected": "Účty ešte nefungujú. Prihlasovanie pripájame v ďalšom kroku.",
+  "auth.passwordMismatch": "Heslá sa nezhodujú."
 }

@@ -145,5 +145,7 @@
   "page.about": "Über das Spiel",
   "page.publicPlaceholder": "Diese Seite ist in Arbeit.",
   "path.title": "Weg des neuen Spielers",
-  "path.startHere": "Hier startest du"
+  "path.startHere": "Hier startest du",
+  "auth.notConnected": "Konten sind noch nicht aktiv. Die Anmeldung folgt im nächsten Schritt.",
+  "auth.passwordMismatch": "Die Passwörter stimmen nicht überein."
 }
