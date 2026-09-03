@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { DEFAULT_LOCALE } from '@/i18n/config';
+import { getLocale } from '@/i18n/server';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -8,9 +8,10 @@ export const metadata: Metadata = {
   description: 'Cycling management game dashboard',
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang={DEFAULT_LOCALE}>
+    <html lang={locale}>
       <body className="min-h-screen bg-surface antialiased">{children}</body>
     </html>
   );

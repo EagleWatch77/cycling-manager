@@ -3,6 +3,7 @@ import type { Player } from '@/mock/dashboard';
 import { money } from '@/lib/format';
 import { Icon } from './ui/Icon';
 import { ProgressBar } from './ui/ProgressBar';
+import { LanguageSelector } from './public/LanguageSelector';
 
 /**
  * Horizontal status bar. Shows only values the game already tracks; it does not
@@ -29,6 +30,7 @@ export function TopStatusBar({ t, locale, player }: { t: T; locale: Locale; play
       <Meter icon="heart" label={t('top.form')} value={player.form} />
 
       <div className="ml-auto flex items-center gap-1.5 pl-3">
+        <LanguageSelector locale={locale} label={t('lang.label')} variant="compact" />
         <button
           type="button"
           aria-label={t('top.notifications')}

@@ -22,7 +22,7 @@ const TEAM_LEAGUES = ['amateur', 'continental', 'pro', 'elite'] as const;
  * Rookie has no team system, so team-era sections are simply not available yet.
  */
 export const PRIMARY_NAV: readonly NavItem[] = [
-  { id: 'home', href: '', labelKey: 'nav.home', icon: 'home' },
+  { id: 'home', href: '/dashboard', labelKey: 'nav.home', icon: 'home' },
   { id: 'rider', href: '/rider', labelKey: 'nav.rider', icon: 'rider' },
   { id: 'races', href: '/races', labelKey: 'nav.races', icon: 'flag' },
   { id: 'calendar', href: '/calendar', labelKey: 'nav.calendar', icon: 'calendar' },

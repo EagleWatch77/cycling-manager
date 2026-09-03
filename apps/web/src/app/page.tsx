@@ -1,45 +1,72 @@
-import { getDictionary, DEFAULT_LOCALE } from '@/i18n/config';
-import {
-  PLAYER, RIDER_ATTRIBUTES, LIVE_RACE, SEASON_CALENDAR, DANUBE_TOUR,
-  STANDINGS, LAST_STAGE_ANALYSIS, EQUIPMENT, NEXT_TRAINING,
-} from '@/mock/dashboard';
-import { AppShell } from '@/components/AppShell';
-import { RaceStatusCard } from '@/components/RaceStatusCard';
-import { SeasonCalendarCard } from '@/components/SeasonCalendarCard';
-import { TourPreviewCard } from '@/components/TourPreviewCard';
-import { RiderSummaryCard } from '@/components/RiderSummaryCard';
-import { StandingsCard } from '@/components/StandingsCard';
-import { RaceAnalysisCard } from '@/components/RaceAnalysisCard';
-import { EquipmentCard } from '@/components/EquipmentCard';
-import { NextTrainingCard, SeasonPositionCard } from '@/components/SmallCards';
+import { getServerDictionary } from '@/i18n/server';
+import { PublicHeader } from '@/components/public/PublicHeader';
+import { HeroSection } from '@/components/public/HeroSection';
+import { Icon } from '@/components/ui/Icon';
 
-/**
- * Home dashboard. All data arrives from the mock module as props so that
- * swapping in real loaders later touches this file only.
- */
-export default function HomePage() {
-  const locale = DEFAULT_LOCALE;
-  const t = getDictionary(locale);
+const STEPS = [
+  { titleKey: 'how.step1.title', textKey: 'how.step1.text' },
+  { titleKey: 'how.step2.title', textKey: 'how.step2.text' },
+  { titleKey: 'how.step3.title', textKey: 'how.step3.text' },
+];
+
+const FEATURES = [
+  { titleKey: 'feature.develop', textKey: 'feature.developText', icon: 'chart' },
+  { titleKey: 'feature.plan', textKey: 'feature.planText', icon: 'calendar' },
+  { titleKey: 'feature.compete', textKey: 'feature.competeText', icon: 'flag' },
+  { titleKey: 'feature.tactics', textKey: 'feature.tacticsText', icon: 'bolt' },
+];
+
+/** Public landing page. A visitor sees this, never the dashboard. */
+export default async function LandingPage() {
+  const { t, locale } = await getServerDictionary();
 
   return (
-    <AppShell activeId="home" locale={locale}>
-      <div className="grid grid-cols-12 gap-3">
-        <RaceStatusCard t={t} locale={locale} race={LIVE_RACE} />
+    <div className="flex min-h-screen flex-col bg-surface">
+      <PublicHeader t={t} locale={locale} />
+      <main className="flex-1">
+        <HeroSection t={t} />
 
-        <SeasonCalendarCard t={t} events={SEASON_CALENDAR} />
-        <TourPreviewCard t={t} locale={locale} league={PLAYER.league} tour={DANUBE_TOUR} />
+        <section className="border-t border-line bg-card">
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+            <h2 className="text-lg font-bold text-navy">{t('how.title')}</h2>
+            <ol className="mt-5 grid gap-4 sm:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <li key={s.titleKey} className="rounded-card border border-line p-4">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-light text-sm font-bold text-teal-dark">
+                    {i + 1}
+                  </span>
+                  <h3 className="mt-3 text-sm font-bold text-navy">{t(s.titleKey)}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-navy-soft">{t(s.textKey)}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-        <RiderSummaryCard t={t} player={PLAYER} attributes={RIDER_ATTRIBUTES} />
-        <StandingsCard t={t} rows={STANDINGS} />
-        <RaceAnalysisCard t={t} analysis={LAST_STAGE_ANALYSIS} />
+        <section className="border-t border-line">
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+            <h2 className="text-lg font-bold text-navy">{t('feature.title')}</h2>
+            <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {FEATURES.map((f) => (
+                <li key={f.titleKey} className="rounded-card border border-line bg-card p-4">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-rail text-teal">
+                    <Icon name={f.icon} className="h-4.5 w-4.5" />
+                  </span>
+                  <h3 className="mt-3 text-sm font-bold text-navy">{t(f.titleKey)}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-navy-soft">{t(f.textKey)}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </main>
 
-        <EquipmentCard t={t} items={EQUIPMENT} />
-        <NextTrainingCard
-          t={t}
-          training={{ name: NEXT_TRAINING.name, scheduled: NEXT_TRAINING.scheduled, load: NEXT_TRAINING.load }}
-        />
-        <SeasonPositionCard t={t} player={PLAYER} />
-      </div>
-    </AppShell>
+      <footer className="border-t border-line bg-card">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-4 text-2xs text-navy-muted sm:px-6">
+          <span className="font-semibold text-navy-soft">{t('app.name')}</span>
+          <span>{t('app.tagline')}</span>
+        </div>
+      </footer>
+    </div>
   );
 }
