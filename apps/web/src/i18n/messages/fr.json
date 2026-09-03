@@ -106,7 +106,6 @@
   "public.login": "Se connecter",
   "public.register": "S’inscrire",
   "public.menu": "Menu",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Bâtis ta légende cycliste",
   "hero.subline": "Développe ton coureur, choisis les bonnes courses, gère l’énergie et la tactique, et grimpe les divisions.",
   "hero.ctaPrimary": "Commencer gratuitement",
@@ -122,15 +121,6 @@
   "how.step2.text": "Chaque étape a son profil. Prépare-toi pour celle qui te convient.",
   "how.step3.title": "Grimpe les divisions",
   "how.step3.text": "Les résultats décident de la montée. Chaque division apporte de nouvelles étapes.",
-  "feature.title": "Ce qui t’attend",
-  "feature.develop": "Développe ton coureur",
-  "feature.developText": "L’entraînement déplace tes attributs là où tu en as besoin.",
-  "feature.plan": "Planifie ta saison",
-  "feature.planText": "Les courses se chevauchent. Impossible d’arriver frais partout.",
-  "feature.compete": "Cours sur les Tours",
-  "feature.competeText": "Des courses à étapes où les secondes se gagnent et se perdent.",
-  "feature.tactics": "Décide pendant la course",
-  "feature.tacticsText": "Attaquer, chasser ou économiser. Chaque choix coûte de l’énergie.",
   "auth.email": "E-mail",
   "auth.password": "Mot de passe",
   "auth.confirmPassword": "Confirme le mot de passe",
@@ -153,5 +143,7 @@
   "lang.label": "Langue",
   "page.howToPlay": "Comment jouer",
   "page.about": "À propos",
-  "page.publicPlaceholder": "Cette page arrive bientôt."
+  "page.publicPlaceholder": "Cette page arrive bientôt.",
+  "path.title": "Parcours du nouveau joueur",
+  "path.startHere": "Tu débutes ici"
 }

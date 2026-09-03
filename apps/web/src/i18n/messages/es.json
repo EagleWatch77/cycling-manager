@@ -106,7 +106,6 @@
   "public.login": "Iniciar sesión",
   "public.register": "Registrarse",
   "public.menu": "Menú",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Construye tu legado ciclista",
   "hero.subline": "Desarrolla a tu corredor, elige las carreras adecuadas, gestiona energía y táctica y asciende de liga.",
   "hero.ctaPrimary": "Empezar gratis",
@@ -122,15 +121,6 @@
   "how.step2.text": "Cada etapa tiene su perfil. Prepárate para el que mejor te vaya.",
   "how.step3.title": "Asciende de liga",
   "how.step3.text": "Los resultados deciden el ascenso. Cada liga trae etapas nuevas.",
-  "feature.title": "Qué te espera",
-  "feature.develop": "Desarrolla a tu corredor",
-  "feature.developText": "El entrenamiento lleva tus atributos donde los necesitas.",
-  "feature.plan": "Planifica tu temporada",
-  "feature.planText": "Las carreras se solapan. No puedes llegar fresco a todas.",
-  "feature.compete": "Compite en las Tours",
-  "feature.competeText": "Carreras por etapas donde los segundos se ganan y se pierden.",
-  "feature.tactics": "Decide durante la carrera",
-  "feature.tacticsText": "Atacar, perseguir o reservar. Cada decisión cuesta energía.",
   "auth.email": "Correo electrónico",
   "auth.password": "Contraseña",
   "auth.confirmPassword": "Confirma la contraseña",
@@ -153,5 +143,7 @@
   "lang.label": "Idioma",
   "page.howToPlay": "Cómo se juega",
   "page.about": "Acerca de",
-  "page.publicPlaceholder": "Estamos preparando esta página."
+  "page.publicPlaceholder": "Estamos preparando esta página.",
+  "path.title": "Camino del nuevo jugador",
+  "path.startHere": "Empiezas aquí"
 }

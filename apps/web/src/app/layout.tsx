@@ -6,6 +6,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Cycling Manager',
   description: 'Cycling management game dashboard',
+  icons: { icon: '/icon.png' },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {

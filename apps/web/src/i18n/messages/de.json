@@ -106,7 +106,6 @@
   "public.login": "Anmelden",
   "public.register": "Registrieren",
   "public.menu": "Menü",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Baue dein Radsport-Vermächtnis",
   "hero.subline": "Entwickle deinen Fahrer, wähle die richtigen Rennen, teile Energie und Taktik ein und steige durch die Ligen auf.",
   "hero.ctaPrimary": "Kostenlos starten",
@@ -122,15 +121,6 @@
   "how.step2.text": "Jede Etappe hat ihr Profil. Bereite dich auf die passende vor.",
   "how.step3.title": "Steige durch die Ligen",
   "how.step3.text": "Ergebnisse entscheiden über den Aufstieg. Jede Liga bringt neue Etappen.",
-  "feature.title": "Was dich erwartet",
-  "feature.develop": "Entwickle deinen Fahrer",
-  "feature.developText": "Training verschiebt deine Attribute dorthin, wo du sie brauchst.",
-  "feature.plan": "Plane deine Saison",
-  "feature.planText": "Rennen überschneiden sich. Frisch bist du nicht überall.",
-  "feature.compete": "Fahre die Tour-Rennen",
-  "feature.competeText": "Etappenrennen, in denen Sekunden gewonnen und verloren werden.",
-  "feature.tactics": "Entscheide im Rennen",
-  "feature.tacticsText": "Angreifen, jagen oder sparen. Jede Wahl kostet Energie.",
   "auth.email": "E-Mail",
   "auth.password": "Passwort",
   "auth.confirmPassword": "Passwort bestätigen",
@@ -153,5 +143,7 @@
   "lang.label": "Sprache",
   "page.howToPlay": "So wird gespielt",
   "page.about": "Über das Spiel",
-  "page.publicPlaceholder": "Diese Seite ist in Arbeit."
+  "page.publicPlaceholder": "Diese Seite ist in Arbeit.",
+  "path.title": "Weg des neuen Spielers",
+  "path.startHere": "Hier startest du"
 }

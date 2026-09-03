@@ -106,7 +106,6 @@
   "public.login": "Přihlásit se",
   "public.register": "Registrovat",
   "public.menu": "Menu",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Vybuduj si cyklistickou kariéru",
   "hero.subline": "Rozvíjej svého závodníka, vybírej správné závody, hospodař s energií a taktikou a probojuj se vyššími ligami.",
   "hero.ctaPrimary": "Začít zdarma",
@@ -122,15 +121,6 @@
   "how.step2.text": "Každá etapa má svůj profil. Připrav se na ten, který ti sedne.",
   "how.step3.title": "Probojuj se ligami",
   "how.step3.text": "Výsledky rozhodují o postupu. S každou ligou přibudou nové etapy.",
-  "feature.title": "Co tě čeká",
-  "feature.develop": "Rozvíjej svého závodníka",
-  "feature.developText": "Trénink posouvá atributy tam, kde je potřebuješ.",
-  "feature.plan": "Naplánuj si sezónu",
-  "feature.planText": "Závody se překrývají. Na všechny se čerstvý nedostaneš.",
-  "feature.compete": "Závoď na Tour",
-  "feature.competeText": "Vícedenní závody, kde se čas ztrácí i získává po sekundách.",
-  "feature.tactics": "Rozhoduj v závodě",
-  "feature.tacticsText": "Jet do úniku, stíhat, nebo šetřit. Každá volba stojí energii.",
   "auth.email": "E-mail",
   "auth.password": "Heslo",
   "auth.confirmPassword": "Potvrď heslo",
@@ -153,5 +143,7 @@
   "lang.label": "Jazyk",
   "page.howToPlay": "Jak se hraje",
   "page.about": "O hře",
-  "page.publicPlaceholder": "Tuto stránku připravujeme."
+  "page.publicPlaceholder": "Tuto stránku připravujeme.",
+  "path.title": "Cesta nového hráče",
+  "path.startHere": "Začínáš tady"
 }

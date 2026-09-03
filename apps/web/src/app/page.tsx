@@ -1,7 +1,6 @@
 import { getServerDictionary } from '@/i18n/server';
-import { PublicHeader } from '@/components/public/PublicHeader';
 import { HeroSection } from '@/components/public/HeroSection';
-import { Icon } from '@/components/ui/Icon';
+import { LeaguePathCard } from '@/components/public/LeaguePathCard';
 
 const STEPS = [
   { titleKey: 'how.step1.title', textKey: 'how.step1.text' },
@@ -9,62 +8,56 @@ const STEPS = [
   { titleKey: 'how.step3.title', textKey: 'how.step3.text' },
 ];
 
-const FEATURES = [
-  { titleKey: 'feature.develop', textKey: 'feature.developText', icon: 'chart' },
-  { titleKey: 'feature.plan', textKey: 'feature.planText', icon: 'calendar' },
-  { titleKey: 'feature.compete', textKey: 'feature.competeText', icon: 'flag' },
-  { titleKey: 'feature.tactics', textKey: 'feature.tacticsText', icon: 'bolt' },
-];
-
-/** Public landing page. A visitor sees this, never the dashboard. */
+/**
+ * Public landing page. Sized to fit one screen on desktop so a visitor sees the
+ * whole offer without scrolling; below `lg` it falls back to normal flow.
+ */
 export default async function LandingPage() {
   const { t, locale } = await getServerDictionary();
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface">
-      <PublicHeader t={t} locale={locale} />
-      <main className="flex-1">
-        <HeroSection t={t} />
+    <div className="flex min-h-screen flex-col bg-card lg:h-screen lg:overflow-hidden">
+      <HeroSection t={t} locale={locale} />
 
-        <section className="border-t border-line bg-card">
-          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-            <h2 className="text-lg font-bold text-navy">{t('how.title')}</h2>
-            <ol className="mt-5 grid gap-4 sm:grid-cols-3">
+      <div className="border-t border-line">
+        <div className="mx-auto grid max-w-7xl gap-3 px-4 py-3 sm:px-6 lg:grid-cols-5">
+          <section className="rounded-card border border-line bg-card p-3 lg:col-span-3">
+            <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">
+              {t('how.title')}
+            </h2>
+            <ol className="mt-2.5 grid gap-3 sm:grid-cols-3">
               {STEPS.map((s, i) => (
-                <li key={s.titleKey} className="rounded-card border border-line p-4">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-light text-sm font-bold text-teal-dark">
+                <li key={s.titleKey} className="flex gap-2">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-teal-light text-2xs font-bold text-teal-dark">
                     {i + 1}
                   </span>
-                  <h3 className="mt-3 text-sm font-bold text-navy">{t(s.titleKey)}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-navy-soft">{t(s.textKey)}</p>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-navy">{t(s.titleKey)}</span>
+                    <span className="mt-0.5 block text-2xs leading-snug text-navy-soft">
+                      {t(s.textKey)}
+                    </span>
+                  </span>
                 </li>
               ))}
             </ol>
-          </div>
-        </section>
+          </section>
 
-        <section className="border-t border-line">
-          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-            <h2 className="text-lg font-bold text-navy">{t('feature.title')}</h2>
-            <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {FEATURES.map((f) => (
-                <li key={f.titleKey} className="rounded-card border border-line bg-card p-4">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-rail text-teal">
-                    <Icon name={f.icon} className="h-4.5 w-4.5" />
-                  </span>
-                  <h3 className="mt-3 text-sm font-bold text-navy">{t(f.titleKey)}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-navy-soft">{t(f.textKey)}</p>
-                </li>
-              ))}
-            </ul>
+          <div className="lg:col-span-2">
+            <LeaguePathCard t={t} />
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
 
-      <footer className="border-t border-line bg-card">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-4 text-2xs text-navy-muted sm:px-6">
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 text-2xs text-navy-muted sm:px-6">
           <span className="font-semibold text-navy-soft">{t('app.name')}</span>
-          <span>{t('app.tagline')}</span>
+          <span className="hidden sm:inline">{t('app.tagline')}</span>
+          <a href="/how-to-play" className="ml-auto rounded hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+            {t('public.howToPlay')}
+          </a>
+          <a href="/about" className="rounded hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+            {t('public.about')}
+          </a>
         </div>
       </footer>
     </div>

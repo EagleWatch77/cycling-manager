@@ -106,7 +106,6 @@
   "public.login": "Log In",
   "public.register": "Register",
   "public.menu": "Menu",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Build Your Cycling Legacy",
   "hero.subline": "Develop your rider, choose the right races, manage energy and tactics, and rise through the cycling leagues.",
   "hero.ctaPrimary": "Start Free",
@@ -122,15 +121,6 @@
   "how.step2.text": "Every stage has its own profile. Prepare for the one that suits you.",
   "how.step3.title": "Climb the leagues",
   "how.step3.text": "Results decide promotion. Each league brings new stages with it.",
-  "feature.title": "What you will be doing",
-  "feature.develop": "Develop your rider",
-  "feature.developText": "Training moves your attributes where you need them.",
-  "feature.plan": "Plan your season",
-  "feature.planText": "Races overlap. You cannot arrive fresh at all of them.",
-  "feature.compete": "Compete in Tour races",
-  "feature.competeText": "Multi-stage races where seconds are won and lost.",
-  "feature.tactics": "Make tactical race decisions",
-  "feature.tacticsText": "Attack, chase, or save. Every choice costs energy.",
   "auth.email": "Email",
   "auth.password": "Password",
   "auth.confirmPassword": "Confirm password",
@@ -153,5 +143,7 @@
   "lang.label": "Language",
   "page.howToPlay": "How to Play",
   "page.about": "About",
-  "page.publicPlaceholder": "This page is on the way."
+  "page.publicPlaceholder": "This page is on the way.",
+  "path.title": "New player path",
+  "path.startHere": "You start here"
 }

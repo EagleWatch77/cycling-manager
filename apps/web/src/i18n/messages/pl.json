@@ -106,7 +106,6 @@
   "public.login": "Zaloguj się",
   "public.register": "Zarejestruj się",
   "public.menu": "Menu",
-  "hero.eyebrow": "Cycling Manager",
   "hero.headline": "Zbuduj swoją kolarską legendę",
   "hero.subline": "Rozwijaj zawodnika, wybieraj właściwe wyścigi, zarządzaj energią i taktyką i awansuj do wyższych lig.",
   "hero.ctaPrimary": "Zacznij za darmo",
@@ -122,15 +121,6 @@
   "how.step2.text": "Każdy etap ma swój profil. Przygotuj się na ten, który ci pasuje.",
   "how.step3.title": "Awansuj przez ligi",
   "how.step3.text": "Wyniki decydują o awansie. Każda liga przynosi nowe etapy.",
-  "feature.title": "Co cię czeka",
-  "feature.develop": "Rozwijaj zawodnika",
-  "feature.developText": "Trening przesuwa atrybuty tam, gdzie ich potrzebujesz.",
-  "feature.plan": "Zaplanuj sezon",
-  "feature.planText": "Wyścigi się nakładają. Na wszystkie nie przyjedziesz świeży.",
-  "feature.compete": "Ścigaj się na Tour",
-  "feature.competeText": "Wieloetapowe wyścigi, gdzie sekundy się zyskuje i traci.",
-  "feature.tactics": "Podejmuj decyzje w wyścigu",
-  "feature.tacticsText": "Ucieczka, pościg albo oszczędzanie. Każdy wybór kosztuje energię.",
   "auth.email": "E-mail",
   "auth.password": "Hasło",
   "auth.confirmPassword": "Potwierdź hasło",
@@ -153,5 +143,7 @@
   "lang.label": "Język",
   "page.howToPlay": "Jak grać",
   "page.about": "O grze",
-  "page.publicPlaceholder": "Ta strona jest w przygotowaniu."
+  "page.publicPlaceholder": "Ta strona jest w przygotowaniu.",
+  "path.title": "Ścieżka nowego gracza",
+  "path.startHere": "Tu zaczynasz"
 }
