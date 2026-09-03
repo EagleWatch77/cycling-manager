@@ -1,0 +1,11 @@
+{
+  "name": "cycling-manager",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "engine:test": "npm -w @cycling/race-engine run test",
+    "web:dev": "npm -w @cycling/web run dev",
+    "web:build": "npm -w @cycling/web run build",
+    "typecheck": "npm -w @cycling/race-engine run build -- --noEmit && npm -w @cycling/web run typecheck"
+  }
+}
