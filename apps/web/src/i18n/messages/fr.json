@@ -147,5 +147,10 @@
   "path.title": "Parcours du nouveau joueur",
   "path.startHere": "Tu débutes ici",
   "auth.notConnected": "Les comptes ne sont pas encore actifs. La connexion arrive à l’étape suivante.",
-  "auth.passwordMismatch": "Les mots de passe ne correspondent pas."
+  "auth.passwordMismatch": "Les mots de passe ne correspondent pas.",
+  "auth.logout": "Se déconnecter",
+  "auth.errorGeneric": "Une erreur est survenue. Réessaie.",
+  "auth.invalidCredentials": "E-mail ou mot de passe incorrect.",
+  "auth.emailInUse": "Cet e-mail est déjà enregistré.",
+  "auth.weakPassword": "Le mot de passe doit comporter au moins 6 caractères."
 }

@@ -147,5 +147,10 @@
   "path.title": "New player path",
   "path.startHere": "You start here",
   "auth.notConnected": "Accounts are not live yet. Sign-in is being connected next.",
-  "auth.passwordMismatch": "Passwords do not match."
+  "auth.passwordMismatch": "Passwords do not match.",
+  "auth.logout": "Log out",
+  "auth.errorGeneric": "Something went wrong. Please try again.",
+  "auth.invalidCredentials": "Wrong email or password.",
+  "auth.emailInUse": "This email is already registered.",
+  "auth.weakPassword": "Password must be at least 6 characters."
 }

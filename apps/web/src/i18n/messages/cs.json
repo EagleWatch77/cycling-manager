@@ -147,5 +147,10 @@
   "path.title": "Cesta nového hráče",
   "path.startHere": "Začínáš tady",
   "auth.notConnected": "Účty zatím nefungují. Přihlašování připojujeme v dalším kroku.",
-  "auth.passwordMismatch": "Hesla se neshodují."
+  "auth.passwordMismatch": "Hesla se neshodují.",
+  "auth.logout": "Odhlásit se",
+  "auth.errorGeneric": "Něco se pokazilo. Zkus to znovu.",
+  "auth.invalidCredentials": "Nesprávný e-mail nebo heslo.",
+  "auth.emailInUse": "Tento e-mail už je zaregistrovaný.",
+  "auth.weakPassword": "Heslo musí mít alespoň 6 znaků."
 }

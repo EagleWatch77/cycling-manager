@@ -1,5 +1,6 @@
 import { getServerDictionary } from '@/i18n/server';
 import { AuthCard } from '@/components/public/AuthCard';
+import { signIn } from '@/app/auth/actions';
 import { AuthField } from '@/components/public/AuthField';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
@@ -12,6 +13,7 @@ export default async function LoginPage() {
       t={t}
       locale={locale}
       title={t('auth.loginTitle')}
+      action={signIn}
       footer={
         <>
           <a href="/forgot-password" className="block font-medium text-teal hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">

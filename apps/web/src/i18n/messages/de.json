@@ -147,5 +147,10 @@
   "path.title": "Weg des neuen Spielers",
   "path.startHere": "Hier startest du",
   "auth.notConnected": "Konten sind noch nicht aktiv. Die Anmeldung folgt im nächsten Schritt.",
-  "auth.passwordMismatch": "Die Passwörter stimmen nicht überein."
+  "auth.passwordMismatch": "Die Passwörter stimmen nicht überein.",
+  "auth.logout": "Abmelden",
+  "auth.errorGeneric": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+  "auth.invalidCredentials": "Falsche E-Mail oder falsches Passwort.",
+  "auth.emailInUse": "Diese E-Mail ist bereits registriert.",
+  "auth.weakPassword": "Das Passwort muss mindestens 6 Zeichen haben."
 }

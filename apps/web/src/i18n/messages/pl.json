@@ -147,5 +147,10 @@
   "path.title": "Ścieżka nowego gracza",
   "path.startHere": "Tu zaczynasz",
   "auth.notConnected": "Konta jeszcze nie działają. Logowanie podłączamy w następnym kroku.",
-  "auth.passwordMismatch": "Hasła nie są zgodne."
+  "auth.passwordMismatch": "Hasła nie są zgodne.",
+  "auth.logout": "Wyloguj się",
+  "auth.errorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
+  "auth.invalidCredentials": "Błędny e-mail lub hasło.",
+  "auth.emailInUse": "Ten e-mail jest już zarejestrowany.",
+  "auth.weakPassword": "Hasło musi mieć co najmniej 6 znaków."
 }

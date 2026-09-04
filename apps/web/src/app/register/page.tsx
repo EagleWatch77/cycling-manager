@@ -1,6 +1,7 @@
 import { getServerDictionary } from '@/i18n/server';
 import { LOCALES, LOCALE_NAMES } from '@/i18n/config';
 import { AuthCard } from '@/components/public/AuthCard';
+import { signUp } from '@/app/auth/actions';
 import { AuthField } from '@/components/public/AuthField';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
@@ -19,6 +20,7 @@ export default async function RegisterPage() {
       locale={locale}
       title={t('auth.registerTitle')}
       helper={t('auth.registerHelper')}
+      action={signUp}
       footer={
         <p className="text-navy-soft">
           {t('auth.haveAccount')}{' '}

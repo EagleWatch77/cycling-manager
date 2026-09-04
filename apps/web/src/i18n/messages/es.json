@@ -147,5 +147,10 @@
   "path.title": "Camino del nuevo jugador",
   "path.startHere": "Empiezas aquí",
   "auth.notConnected": "Las cuentas aún no funcionan. El acceso se conectará en el siguiente paso.",
-  "auth.passwordMismatch": "Las contraseñas no coinciden."
+  "auth.passwordMismatch": "Las contraseñas no coinciden.",
+  "auth.logout": "Cerrar sesión",
+  "auth.errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
+  "auth.invalidCredentials": "Correo o contraseña incorrectos.",
+  "auth.emailInUse": "Este correo ya está registrado.",
+  "auth.weakPassword": "La contraseña debe tener al menos 6 caracteres."
 }

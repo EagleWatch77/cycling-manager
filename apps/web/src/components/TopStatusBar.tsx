@@ -4,6 +4,7 @@ import { money } from '@/lib/format';
 import { Icon } from './ui/Icon';
 import { ProgressBar } from './ui/ProgressBar';
 import { LanguageSelector } from './public/LanguageSelector';
+import { LogoutButton } from './LogoutButton';
 
 /**
  * Horizontal status bar. Shows only values the game already tracks; it does not
@@ -46,6 +47,7 @@ export function TopStatusBar({ t, locale, player }: { t: T; locale: Locale; play
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-white">
           <Icon name="rider" className="h-4 w-4" />
         </span>
+        <LogoutButton label={t('auth.logout')} />
       </div>
     </header>
   );

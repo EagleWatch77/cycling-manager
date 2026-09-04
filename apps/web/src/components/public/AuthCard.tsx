@@ -16,13 +16,16 @@ import { AuthForm } from './AuthForm';
  * The page itself does not scroll on desktop; if a viewport is too short for
  * the form, only the form column scrolls.
  */
+import type { AuthResult } from '@/app/auth/actions';
+
 export function AuthCard({
-  t, locale, title, helper, children, footer,
+  t, locale, title, helper, action, children, footer,
 }: {
   t: T;
   locale: Locale;
   title: string;
   helper?: string;
+  action: (formData: FormData) => Promise<AuthResult>;
   children: ReactNode;
   footer: ReactNode;
 }) {
@@ -44,10 +47,7 @@ export function AuthCard({
             {helper && <p className="mt-1 text-sm text-navy-soft">{helper}</p>}
 
             <div className="mt-5">
-              <AuthForm
-                notConnectedText={t('auth.notConnected')}
-                mismatchText={t('auth.passwordMismatch')}
-              >
+              <AuthForm action={action} t={t}>
                 {children}
               </AuthForm>
             </div>
