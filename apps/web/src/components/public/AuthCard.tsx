@@ -5,6 +5,19 @@ import { LanguageSelector } from './LanguageSelector';
 import { Logo } from './Logo';
 import { AuthForm } from './AuthForm';
 
+const ERROR_KEYS = [
+  'auth.errorGeneric',
+  'auth.invalidCredentials',
+  'auth.emailInUse',
+  'auth.weakPassword',
+  'auth.passwordMismatch',
+] as const;
+
+/** Resolve the error strings on the server so the client gets plain text. */
+function authMessages(t: T): Record<string, string> {
+  return Object.fromEntries(ERROR_KEYS.map((k) => [k, t(k)]));
+}
+
 /**
  * Split layout shared by register and login, mirroring the landing page: no
  * separate top bar, the wordmark sits above the heading in the same column as
@@ -47,7 +60,7 @@ export function AuthCard({
             {helper && <p className="mt-1 text-sm text-navy-soft">{helper}</p>}
 
             <div className="mt-5">
-              <AuthForm action={action} t={t}>
+              <AuthForm action={action} messages={authMessages(t)}>
                 {children}
               </AuthForm>
             </div>

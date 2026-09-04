@@ -11,16 +11,19 @@ type Action = (formData: FormData) => Promise<AuthResult>;
  * The action runs on the server, talks to Supabase, and on success redirects
  * to /dashboard (the redirect surfaces here as a thrown control-flow signal,
  * which we deliberately let propagate). On failure it returns a translation
- * key that we render in the active locale.
+ * key.
  *
- * `t` is passed in from the server component so there is still no hardcoded
- * string here.
+ * Error strings are passed as a plain key->text map, NOT as the `t` function:
+ * a function cannot cross the server/client boundary alongside a server
+ * action, which is what previously broke /register and /login in production.
+ * The map is a serialisable object, so it crosses cleanly and there is still
+ * no hardcoded string here.
  */
 export function AuthForm({
-  action, t, children,
+  action, messages, children,
 }: {
   action: Action;
-  t: (key: string) => string;
+  messages: Record<string, string>;
   children: ReactNode;
 }) {
   const [errorKey, setErrorKey] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export function AuthForm({
       {errorKey && (
         <p role="alert" aria-live="polite"
           className="rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-xs text-danger">
-          {t(errorKey)}
+          {messages[errorKey] ?? messages['auth.errorGeneric']}
         </p>
       )}
     </form>
