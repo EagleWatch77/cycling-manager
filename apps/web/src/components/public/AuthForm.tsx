@@ -35,7 +35,7 @@ export function AuthForm({
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate={false} className="space-y-4">
+    <form onSubmit={onSubmit} noValidate={false} className="space-y-3">
       {children}
       {message && (
         <p

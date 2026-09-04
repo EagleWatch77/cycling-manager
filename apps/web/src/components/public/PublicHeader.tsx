@@ -19,12 +19,6 @@ export function PublicHeader({ t, locale }: { t: T; locale: Locale }) {
 
         <div className="ml-auto flex items-center gap-2">
           <LanguageSelector locale={locale} label={t('lang.label')} />
-          <a
-            href="/login"
-            className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold text-navy transition-colors hover:border-teal hover:text-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal"
-          >
-            {t('public.login')}
-          </a>
         </div>
       </div>
     </header>

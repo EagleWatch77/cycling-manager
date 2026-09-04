@@ -1,15 +1,20 @@
 import type { ReactNode } from 'react';
 import type { T, Locale } from '@/i18n/config';
-import { PublicHeader } from './PublicHeader';
 import { CyclingHero } from './CyclingHero';
+import { LanguageSelector } from './LanguageSelector';
+import { Logo } from './Logo';
 import { AuthForm } from './AuthForm';
 
 /**
- * Split layout shared by register and login: form on the left, photograph on
- * the right. The two are real grid columns rather than an absolutely
- * positioned image, which previously painted over the form and cut it in half.
+ * Split layout shared by register and login, mirroring the landing page: no
+ * separate top bar, the wordmark sits above the heading in the same column as
+ * the form, and the language switcher floats top right over the photograph.
  *
- * On mobile the form comes first and the photo shrinks to a band below it.
+ * The two halves are real grid columns rather than an absolutely positioned
+ * image, which previously painted over the form and cut it in half.
+ *
+ * The page itself does not scroll on desktop; if a viewport is too short for
+ * the form, only the form column scrolls.
  */
 export function AuthCard({
   t, locale, title, helper, children, footer,
@@ -22,16 +27,23 @@ export function AuthCard({
   footer: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-card">
-      <PublicHeader t={t} locale={locale} />
+    <div className="relative flex min-h-screen flex-col bg-card lg:h-screen lg:overflow-hidden">
+      {/* Over the photo on desktop, over white at the top on mobile. */}
+      <div className="absolute right-4 top-4 z-10 sm:right-6">
+        <LanguageSelector locale={locale} label={t('lang.label')} />
+      </div>
 
-      <div className="grid flex-1 lg:grid-cols-[minmax(0,48%)_minmax(0,52%)]">
-        <main className="flex items-center px-4 py-10 sm:px-6 lg:px-12">
+      <div className="grid flex-1 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)]">
+        <main className="flex items-center px-4 py-8 sm:px-6 lg:overflow-y-auto lg:px-10">
           <div className="mx-auto w-full max-w-sm">
-            <h1 className="text-2xl font-bold tracking-tight text-navy">{title}</h1>
-            {helper && <p className="mt-1.5 text-sm text-navy-soft">{helper}</p>}
+            <a href="/" aria-label={t('app.name')} className="inline-block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+              <Logo className="h-auto w-44" width={176} />
+            </a>
 
-            <div className="mt-6">
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-navy">{title}</h1>
+            {helper && <p className="mt-1 text-sm text-navy-soft">{helper}</p>}
+
+            <div className="mt-5">
               <AuthForm
                 notConnectedText={t('auth.notConnected')}
                 mismatchText={t('auth.passwordMismatch')}
@@ -40,10 +52,16 @@ export function AuthCard({
               </AuthForm>
             </div>
 
-            <div className="mt-5 space-y-3 text-sm">{footer}</div>
-            <p className="mt-6 rounded-lg border border-line bg-surface px-3 py-2 text-2xs text-navy-muted">
-              {t('auth.demoNotice')}
-            </p>
+            <div className="mt-4 space-y-2 text-sm">{footer}</div>
+
+            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-2xs text-navy-muted">
+              <a href="/how-to-play" className="rounded hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+                {t('public.howToPlay')}
+              </a>
+              <a href="/about" className="rounded hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+                {t('public.about')}
+              </a>
+            </div>
           </div>
         </main>
 

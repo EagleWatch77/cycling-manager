@@ -54,7 +54,7 @@ export function LanguageSelector({
             title={LOCALE_NAMES[l]}
             disabled={pending}
             onClick={() => change(l)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold tracking-wide transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-teal ${
+            className={`rounded-lg px-2 py-1.5 text-xs font-semibold tracking-wide transition-colors sm:px-3 sm:text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-teal ${
               active
                 ? 'bg-teal text-white shadow-sm'
                 : 'text-navy-soft hover:bg-teal-rail hover:text-navy'
