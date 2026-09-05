@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Něco se pokazilo. Zkus to znovu.",
   "auth.invalidCredentials": "Nesprávný e-mail nebo heslo.",
   "auth.emailInUse": "Tento e-mail už je zaregistrovaný.",
-  "auth.weakPassword": "Heslo musí mít alespoň 6 znaků."
+  "auth.weakPassword": "Heslo musí mít alespoň 6 znaků.",
+  "auth.checkEmail": "Skoro hotovo. Poslali jsme ti potvrzovací e-mail — klikni na odkaz v něm a pak se přihlas.",
+  "auth.emailNotConfirmed": "Nejdřív potvrď svůj e-mail. Podívej se do schránky, poslali jsme ti odkaz.",
+  "rider.createTitle": "Vytvoř si závodníka",
+  "rider.createText": "Ještě nemáš závodníka. Vytvoř si ho a začni kariéru v lize Rookie.",
+  "rider.createCta": "Vytvořit závodníka",
+  "empty.noRace": "Zatím nejsou naplánované žádné závody.",
+  "empty.noStandings": "Pořadí se objeví po prvních závodech.",
+  "empty.noAnalysis": "Analýza se zobrazí po dokončení první etapy.",
+  "empty.noTraining": "Zatím nemáš naplánovaný trénink.",
+  "empty.noSeason": "Sezóna ještě nezačala.",
+  "empty.noEquipment": "Základní vybavení dostaneš se svým prvním závodníkem.",
+  "style.rouleur": "Rouleur",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Sprinter",
+  "style.timetrial": "Časovkář",
+  "style.classics": "Klasikář"
 }

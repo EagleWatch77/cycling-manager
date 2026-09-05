@@ -1,0 +1,88 @@
+import 'server-only';
+import { createClient } from '@/lib/supabase/server';
+import { generateStarterRider, type GeneratedRider } from './generate';
+
+/**
+ * Server-side rider persistence. Everything here runs with the logged-in
+ * player's session, so RLS guarantees a player only ever touches their own row.
+ */
+
+export interface StoredRider extends GeneratedRider {
+  id: string;
+}
+
+function fromRow(row: Record<string, unknown>): StoredRider {
+  return {
+    id: row.id as string,
+    firstName: row.first_name as string,
+    surname: row.surname as string,
+    countryName: row.country_name as string,
+    countryIso2: row.country_iso2 as string,
+    age: row.age as number,
+    attributes: row.attributes as StoredRider['attributes'],
+    condition: row.condition as StoredRider['condition'],
+    inferredArchetype: row.inferred_archetype as string,
+    potential: row.potential as number,
+    trainability: row.trainability as number,
+    generatorVersion: row.generator_version as string,
+  };
+}
+
+/** The current player's rider, or null if they have none yet. */
+export async function getMyRider(): Promise<StoredRider | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('riders')
+    .select('*')
+    .eq('player_id', user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return fromRow(data);
+}
+
+/**
+ * Ensure the current player has exactly one starter rider.
+ *
+ * Idempotent by design: if a rider already exists it is returned untouched and
+ * NOTHING is regenerated. Only a brand-new player triggers generation. The
+ * UNIQUE(player_id) constraint is the final backstop against a race between two
+ * simultaneous requests — the loser's insert fails and we re-read the winner's
+ * row.
+ */
+export async function ensureStarterRider(): Promise<StoredRider | null> {
+  const existing = await getMyRider();
+  if (existing) return existing;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const rider = generateStarterRider(Math.random);
+
+  const { data, error } = await supabase
+    .from('riders')
+    .insert({
+      player_id: user.id,
+      first_name: rider.firstName,
+      surname: rider.surname,
+      country_name: rider.countryName,
+      country_iso2: rider.countryIso2,
+      age: rider.age,
+      attributes: rider.attributes,
+      condition: rider.condition,
+      inferred_archetype: rider.inferredArchetype,
+      potential: rider.potential,
+      trainability: rider.trainability,
+      generator_version: rider.generatorVersion,
+    })
+    .select('*')
+    .single();
+
+  // A concurrent request won the race and inserted first: re-read that row.
+  if (error) return getMyRider();
+  return fromRow(data);
+}

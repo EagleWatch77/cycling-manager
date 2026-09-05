@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
   "auth.invalidCredentials": "Falsche E-Mail oder falsches Passwort.",
   "auth.emailInUse": "Diese E-Mail ist bereits registriert.",
-  "auth.weakPassword": "Das Passwort muss mindestens 6 Zeichen haben."
+  "auth.weakPassword": "Das Passwort muss mindestens 6 Zeichen haben.",
+  "auth.checkEmail": "Fast geschafft. Wir haben dir eine Bestätigungs-E-Mail geschickt — klicke auf den Link und melde dich dann an.",
+  "auth.emailNotConfirmed": "Bestätige zuerst deine E-Mail. Sieh in deinem Postfach nach dem Link.",
+  "rider.createTitle": "Erstelle deinen Fahrer",
+  "rider.createText": "Du hast noch keinen Fahrer. Erstelle einen und starte deine Rookie-Karriere.",
+  "rider.createCta": "Fahrer erstellen",
+  "empty.noRace": "Noch keine Rennen geplant.",
+  "empty.noStandings": "Die Wertung erscheint nach deinem ersten Rennen.",
+  "empty.noAnalysis": "Die Analyse erscheint nach deiner ersten Etappe.",
+  "empty.noTraining": "Noch kein Training geplant.",
+  "empty.noSeason": "Die Saison hat noch nicht begonnen.",
+  "empty.noEquipment": "Grundausrüstung bekommst du mit deinem ersten Fahrer.",
+  "style.rouleur": "Rouleur",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Sprinter",
+  "style.timetrial": "Zeitfahrer",
+  "style.classics": "Klassikerfahrer"
 }

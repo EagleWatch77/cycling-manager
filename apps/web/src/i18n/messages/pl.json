@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
   "auth.invalidCredentials": "Błędny e-mail lub hasło.",
   "auth.emailInUse": "Ten e-mail jest już zarejestrowany.",
-  "auth.weakPassword": "Hasło musi mieć co najmniej 6 znaków."
+  "auth.weakPassword": "Hasło musi mieć co najmniej 6 znaków.",
+  "auth.checkEmail": "Prawie gotowe. Wysłaliśmy e-mail potwierdzający — kliknij link w nim, a potem zaloguj się.",
+  "auth.emailNotConfirmed": "Najpierw potwierdź swój e-mail. Sprawdź skrzynkę, wysłaliśmy link.",
+  "rider.createTitle": "Stwórz zawodnika",
+  "rider.createText": "Nie masz jeszcze zawodnika. Stwórz go i zacznij karierę w lidze Rookie.",
+  "rider.createCta": "Utwórz zawodnika",
+  "empty.noRace": "Brak zaplanowanych wyścigów.",
+  "empty.noStandings": "Klasyfikacja pojawi się po pierwszym wyścigu.",
+  "empty.noAnalysis": "Analiza pojawi się po pierwszym etapie.",
+  "empty.noTraining": "Brak zaplanowanego treningu.",
+  "empty.noSeason": "Sezon jeszcze się nie zaczął.",
+  "empty.noEquipment": "Podstawowy sprzęt otrzymasz z pierwszym zawodnikiem.",
+  "style.rouleur": "Rouleur",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Sprinter",
+  "style.timetrial": "Czasowiec",
+  "style.classics": "Klasyk"
 }

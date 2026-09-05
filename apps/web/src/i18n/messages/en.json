@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Something went wrong. Please try again.",
   "auth.invalidCredentials": "Wrong email or password.",
   "auth.emailInUse": "This email is already registered.",
-  "auth.weakPassword": "Password must be at least 6 characters."
+  "auth.weakPassword": "Password must be at least 6 characters.",
+  "auth.checkEmail": "Almost there. We sent you a confirmation email — click the link in it, then log in.",
+  "auth.emailNotConfirmed": "Please confirm your email first. Check your inbox for the link we sent.",
+  "rider.createTitle": "Create your rider",
+  "rider.createText": "You don’t have a rider yet. Create one to start your Rookie career.",
+  "rider.createCta": "Create rider",
+  "empty.noRace": "No races scheduled yet.",
+  "empty.noStandings": "Standings appear after your first race.",
+  "empty.noAnalysis": "Analysis shows up after your first stage.",
+  "empty.noTraining": "No training scheduled yet.",
+  "empty.noSeason": "The season hasn’t started yet.",
+  "empty.noEquipment": "You get starter equipment with your first rider.",
+  "style.rouleur": "Rouleur",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Sprinter",
+  "style.timetrial": "Time-trial rider",
+  "style.classics": "Classics rider"
 }

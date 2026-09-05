@@ -5,17 +5,19 @@ import { LanguageSelector } from './LanguageSelector';
 import { Logo } from './Logo';
 import { AuthForm } from './AuthForm';
 
-const ERROR_KEYS = [
+const MESSAGE_KEYS = [
   'auth.errorGeneric',
   'auth.invalidCredentials',
   'auth.emailInUse',
   'auth.weakPassword',
   'auth.passwordMismatch',
+  'auth.emailNotConfirmed',
+  'auth.checkEmail',
 ] as const;
 
 /** Resolve the error strings on the server so the client gets plain text. */
 function authMessages(t: T): Record<string, string> {
-  return Object.fromEntries(ERROR_KEYS.map((k) => [k, t(k)]));
+  return Object.fromEntries(MESSAGE_KEYS.map((k) => [k, t(k)]));
 }
 
 /**

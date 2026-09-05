@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
   "auth.invalidCredentials": "Correo o contraseña incorrectos.",
   "auth.emailInUse": "Este correo ya está registrado.",
-  "auth.weakPassword": "La contraseña debe tener al menos 6 caracteres."
+  "auth.weakPassword": "La contraseña debe tener al menos 6 caracteres.",
+  "auth.checkEmail": "Casi listo. Te enviamos un correo de confirmación — haz clic en el enlace y luego inicia sesión.",
+  "auth.emailNotConfirmed": "Confirma primero tu correo. Revisa tu bandeja de entrada, te enviamos un enlace.",
+  "rider.createTitle": "Crea tu corredor",
+  "rider.createText": "Aún no tienes corredor. Crea uno para empezar tu carrera Rookie.",
+  "rider.createCta": "Crear corredor",
+  "empty.noRace": "Aún no hay carreras programadas.",
+  "empty.noStandings": "La clasificación aparecerá tras tu primera carrera.",
+  "empty.noAnalysis": "El análisis aparecerá tras tu primera etapa.",
+  "empty.noTraining": "Aún no tienes entrenamiento programado.",
+  "empty.noSeason": "La temporada aún no ha empezado.",
+  "empty.noEquipment": "Recibirás equipamiento básico con tu primer corredor.",
+  "style.rouleur": "Rodador",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Velocista",
+  "style.timetrial": "Contrarrelojista",
+  "style.classics": "Clasicómano"
 }

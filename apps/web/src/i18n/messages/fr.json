@@ -152,5 +152,21 @@
   "auth.errorGeneric": "Une erreur est survenue. Réessaie.",
   "auth.invalidCredentials": "E-mail ou mot de passe incorrect.",
   "auth.emailInUse": "Cet e-mail est déjà enregistré.",
-  "auth.weakPassword": "Le mot de passe doit comporter au moins 6 caractères."
+  "auth.weakPassword": "Le mot de passe doit comporter au moins 6 caractères.",
+  "auth.checkEmail": "Presque terminé. Nous t’avons envoyé un e-mail de confirmation — clique sur le lien, puis connecte-toi.",
+  "auth.emailNotConfirmed": "Confirme d’abord ton e-mail. Regarde dans ta boîte, nous t’avons envoyé un lien.",
+  "rider.createTitle": "Crée ton coureur",
+  "rider.createText": "Tu n’as pas encore de coureur. Crée-en un pour lancer ta carrière Rookie.",
+  "rider.createCta": "Créer un coureur",
+  "empty.noRace": "Aucune course prévue pour l’instant.",
+  "empty.noStandings": "Le classement apparaîtra après ta première course.",
+  "empty.noAnalysis": "L’analyse s’affichera après ta première étape.",
+  "empty.noTraining": "Aucun entraînement prévu.",
+  "empty.noSeason": "La saison n’a pas encore commencé.",
+  "empty.noEquipment": "Tu recevras l’équipement de base avec ton premier coureur.",
+  "style.rouleur": "Rouleur",
+  "style.puncheur": "Puncheur",
+  "style.sprinter": "Sprinteur",
+  "style.timetrial": "Rouleur (CLM)",
+  "style.classics": "Coureur de classiques"
 }

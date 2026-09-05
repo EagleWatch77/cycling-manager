@@ -49,3 +49,49 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ============================================================================
+-- Starter Rider Generator V1 — one rider per player.
+-- Re-runnable: guarded like the rest of this file.
+-- ============================================================================
+
+create table if not exists public.riders (
+  id                 uuid primary key default gen_random_uuid(),
+  player_id          uuid not null unique references auth.users (id) on delete cascade,
+  first_name         text not null,
+  surname            text not null,
+  country_name       text not null,
+  country_iso2       text not null,
+  age                int  not null,
+  -- The 15 engine skill attributes and the condition block, stored as JSON so
+  -- the shape can evolve without a migration.
+  attributes         jsonb not null,
+  condition          jsonb not null,
+  inferred_archetype text not null,
+  -- Hidden, persisted, no race effect yet (starter-v1).
+  potential          int  not null,
+  trainability       int  not null,
+  generator_version  text not null default 'starter-v1',
+  created_at         timestamptz not null default now()
+);
+
+-- The UNIQUE on player_id is what enforces "one rider per player": a second
+-- insert for the same player fails, and the app falls back to reading the
+-- existing row, so generation is idempotent.
+
+alter table public.riders enable row level security;
+
+drop policy if exists "riders_select_own" on public.riders;
+create policy "riders_select_own"
+  on public.riders for select
+  using (auth.uid() = player_id);
+
+drop policy if exists "riders_insert_own" on public.riders;
+create policy "riders_insert_own"
+  on public.riders for insert
+  with check (auth.uid() = player_id);
+
+drop policy if exists "riders_update_own" on public.riders;
+create policy "riders_update_own"
+  on public.riders for update
+  using (auth.uid() = player_id);
