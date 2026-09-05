@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 export function Card({
   title, action, children, className = '', dense = false,
 }: {
-  title?: string;
+  title?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;

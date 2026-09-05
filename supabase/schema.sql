@@ -95,3 +95,18 @@ drop policy if exists "riders_update_own" on public.riders;
 create policy "riders_update_own"
   on public.riders for update
   using (auth.uid() = player_id);
+
+
+-- ============================================================================
+-- Table-level grants.
+--
+-- RLS decides WHICH rows a role may touch, but a role must first be granted
+-- access to the table at all. Without these, API inserts/selects fail with
+-- "permission denied for table" (SQLSTATE 42501) before RLS is even evaluated.
+-- Trigger-created rows (profiles) do not need this because the trigger runs as
+-- the table owner; app-created rows (riders) do.
+-- ============================================================================
+
+grant usage on schema public to authenticated;
+grant select, update on public.profiles to authenticated;
+grant select, insert, update on public.riders to authenticated;
