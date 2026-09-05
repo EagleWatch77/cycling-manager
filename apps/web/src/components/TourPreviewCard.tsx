@@ -20,7 +20,7 @@ export function TourPreviewCard({
   t: T;
   locale: Locale;
   league: LeagueId;
-  tour: { name: string; startsInDays: number; focusKey: string; weather: string; masterStages: TourStage[] };
+  tour: { name: string; heroImage?: string; startsInDays: number; focusKey: string; weather: string; masterStages: TourStage[] };
 }) {
   const stages = visibleStages(tour.masterStages, league);
   const combined = stages.flatMap((s) => s.profile);
@@ -34,15 +34,30 @@ export function TourPreviewCard({
 
   return (
     <Card className="col-span-12 lg:col-span-8" dense>
-      <div className="flex items-start gap-3 p-3.5 pb-2">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-light text-teal">
-          <Icon name="mountain" className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('tour.next')}</span>
-          <h2 className="truncate text-xl font-bold leading-tight text-navy">{tour.name}</h2>
+      {tour.heroImage ? (
+        <div className="relative h-28 w-full overflow-hidden rounded-t-card">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={tour.heroImage} alt="" className="h-full w-full object-cover object-right" />
+          {/* Fade the left edge into the card so the title sits on clean white. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-card via-card/70 to-transparent" />
+          <div className="absolute inset-0 flex items-end p-3.5">
+            <div>
+              <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('tour.next')}</span>
+              <h2 className="text-xl font-bold leading-tight text-navy">{tour.name}</h2>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-start gap-3 p-3.5 pb-2">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-light text-teal">
+            <Icon name="mountain" className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('tour.next')}</span>
+            <h2 className="truncate text-xl font-bold leading-tight text-navy">{tour.name}</h2>
+          </div>
+        </div>
+      )}
 
       <dl className="mx-3.5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
         <Facet icon="calendar" label={t('tour.startsIn')} value={t('calendar.days', { n: tour.startsInDays })} />

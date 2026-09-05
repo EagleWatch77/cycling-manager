@@ -113,6 +113,7 @@ export interface TourStage {
 export const DANUBE_TOUR = {
   id: 'danube-tour',
   name: 'Danube Tour',
+  heroImage: '/tours/danube.webp',
   startsInDays: 0,
   focusKey: 'attr.hills',
   weather: 'Premenlivé',

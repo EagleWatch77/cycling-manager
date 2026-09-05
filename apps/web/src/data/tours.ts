@@ -51,6 +51,27 @@ export interface Tour {
  */
 export const TOURS: Tour[] = [
   {
+    id: 'danube-tour',
+    name: 'Danube Tour',
+    image: '/tours/danube.webp',
+    week: 2,
+    dateRange: '12. – 16. máj',
+    startsInDays: 0,
+    registrationOpen: true,
+    difficulty: 'hilly',
+    prestige: 3,
+    suitableFor: ['puncheur', 'rouleur'],
+    jerseys: ['gc', 'points', 'mountain', 'youth'],
+    totalKm: 771,
+    masterStages: [
+      { number: 1, name: 'Bratislava — Nitra', distanceKm: 148, difficulty: 'flat' },
+      { number: 2, name: 'Vyšehrad — Ostrihom', distanceKm: 162, difficulty: 'hilly' },
+      { number: 3, name: 'Komárno — Štúrovo', distanceKm: 134, difficulty: 'flat' },
+      { number: 4, name: 'Banská — Donovaly', distanceKm: 171, difficulty: 'mountain' },
+      { number: 5, name: 'Poprad — Štrbské Pleso', distanceKm: 156, difficulty: 'mountain' },
+    ],
+  },
+  {
     id: 'sample-spring-classic',
     name: 'Spring Opener',
     image: '',
