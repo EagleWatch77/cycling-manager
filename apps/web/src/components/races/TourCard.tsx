@@ -98,12 +98,20 @@ export function TourCard({
           </ul>
         </div>
 
-        <button type="button" disabled
-          className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark/60"
-          title={t('races.soon')}>
-          {t('races.viewDetail')}
-          <span className="text-[9px]">· {t('races.soon')}</span>
-        </button>
+        {tour.id === 'danube-tour' ? (
+          <a href={`/races/${tour.id}`}
+            className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark">
+            {t('races.viewDetail')}
+            <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
+        ) : (
+          <button type="button" disabled
+            className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark/60"
+            title={t('races.soon')}>
+            {t('races.viewDetail')}
+            <span className="text-[9px]">· {t('races.soon')}</span>
+          </button>
+        )}
       </div>
     </article>
   );
