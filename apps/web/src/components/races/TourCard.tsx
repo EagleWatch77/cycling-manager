@@ -16,7 +16,7 @@ const ARCHETYPE_ICON: Record<string, string> = {
   climber: '/rider-types/Vrchkár.png',
   puncheur: '/rider-types/Puncheur.png',
   sprinter: '/rider-types/Šprintér.png',
-  rouleur: '/rider-types/Distance.png',
+  rouleur: '/rider-types/Rouleur.png',
   timeTrial: '/rider-types/Časovkár.png',
   classics: '/rider-types/Klasikár.png',
   allrounder: '/rider-types/Univerzál.png',
