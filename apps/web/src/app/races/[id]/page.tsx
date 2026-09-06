@@ -96,22 +96,31 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
           {/* Left: hero + stages */}
           <div className="col-span-12 space-y-3 lg:col-span-8">
             <Card dense>
-              <div className="relative h-44 w-full overflow-hidden rounded-t-card">
+              <div className="relative h-40 w-full overflow-hidden rounded-t-card">
+                {/* cardImage (clean, text-free) — heroImage is the promotional
+                    poster and already has its own baked-in title/stat bar, which
+                    duplicated and clashed with our own title once the wash-out
+                    overlay was toned down. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tour.heroImage} alt="" className="h-full w-full object-cover object-right" />
-                <div className="absolute inset-0 bg-gradient-to-r from-card via-card/75 to-transparent" />
+                <img src={tour.cardImage} alt="" className="h-full w-full object-cover object-right-top" />
+                {/* Dark scrim on the left only, so the title stays readable without
+                    washing out the photo's own colour and contrast. */}
+                <div className="absolute inset-0 bg-gradient-to-r from-navy/80 via-navy/35 to-transparent" />
                 <div className="absolute inset-0 flex flex-col justify-center p-5">
-                  <h1 className="text-3xl font-bold leading-tight text-navy">{tour.name}</h1>
-                  {isDanube && <p className="mt-1 max-w-xs text-xs text-navy-soft">{DANUBE_META.tagline}</p>}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
-                      {raceTypeLabel}
-                    </span>
-                    <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
-                      {t('detail.stages')}: {stageCount}
-                    </span>
-                  </div>
+                  <h1 className="text-3xl font-bold leading-tight text-white drop-shadow-sm">{tour.name}</h1>
+                  {isDanube && <p className="mt-1 max-w-xs text-xs text-white/85">{DANUBE_META.tagline}</p>}
                 </div>
+              </div>
+
+              {/* Metadata row lives on its own solid background, fully separate from
+                  the hero photo, so it is always readable regardless of the image. */}
+              <div className="flex flex-wrap items-center gap-2 border-t border-line bg-surface px-5 py-3">
+                <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
+                  {raceTypeLabel}
+                </span>
+                <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
+                  {t('detail.stages')}: {stageCount}
+                </span>
               </div>
             </Card>
 
