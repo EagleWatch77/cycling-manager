@@ -131,11 +131,11 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                         </span>
                       </p>
                       <span
-                        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-rail"
+                        className="mt-1.5 flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-teal-rail"
                         title={t(SHINT[s.difficulty])}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={SHINT_ICON[s.difficulty]} alt={t(SHINT[s.difficulty])} className="h-6 w-6 object-contain" />
+                        <img src={SHINT_ICON[s.difficulty]} alt={t(SHINT[s.difficulty])} className="h-11 w-11 object-contain" />
                       </span>
                     </div>
                   </div>
