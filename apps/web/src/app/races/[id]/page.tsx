@@ -36,6 +36,13 @@ const SDIFF: Record<string, string> = {
 const SHINT: Record<string, string> = {
   flat: 'shint.flat', hilly: 'shint.hilly', itt: 'shint.itt', mountain: 'shint.mountain',
 };
+/** Which rider type a stage best suits — shown as an icon, not text (see SHINT for the label used as alt/title). */
+const SHINT_ICON: Record<string, string> = {
+  flat: '/rider-types/Šprintér.png',
+  hilly: '/rider-types/Puncheur.png',
+  itt: '/rider-types/Časovkár.png',
+  mountain: '/rider-types/Vrchkár.png',
+};
 
 /**
  * Tour detail — works for any Tour in the catalogue (data/tours.ts), 404ing
@@ -123,7 +130,13 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                           {t(SDIFF[s.difficulty])}
                         </span>
                       </p>
-                      <p className="mt-0.5 text-2xs text-navy-muted">{t(SHINT[s.difficulty])}</p>
+                      <span
+                        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-rail"
+                        title={t(SHINT[s.difficulty])}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={SHINT_ICON[s.difficulty]} alt={t(SHINT[s.difficulty])} className="h-6 w-6 object-contain" />
+                      </span>
                     </div>
                   </div>
                   <div className="flex-1">
