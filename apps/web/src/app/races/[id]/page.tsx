@@ -79,6 +79,9 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
   const myRegistrations = rider ? await getMySeasonRegistrations(seasonViews.map((v) => v.tour.id)) : [];
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
   const selectionState = getSelectionState(tour.id, seasonViews, selectedTourIds);
+  // Single source of truth for "how many riders are in", shared by the
+  // Tour Overview tile below and the Start List card — both read the same
+  // startList/MAXIMUM_RACE_FIELD values, so they can never disagree.
   const startList = await listStartList(tour.id);
 
   return (
@@ -188,7 +191,11 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
             <Card title={t('detail.tourSummary')} dense>
               <div className="grid grid-cols-2 gap-px bg-line">
                 <Summary label={t('detail.totalDistance')} value={km(totalKm, locale)} icon="flag" />
-                <Summary label={t('detail.stages')} value={String(stageCount)} icon="flag" />
+                <Summary
+                  label={t('detail.registeredCount')}
+                  value={`${startList.length} / ${MAXIMUM_RACE_FIELD}`}
+                  icon="team"
+                />
                 <div className="col-span-2 bg-card p-3">
                   <span className="flex items-center gap-2 text-2xs text-navy-muted">
                     <Icon name="mountain" className="h-4 w-4" /> {t('detail.raceType')}
