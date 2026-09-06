@@ -110,3 +110,33 @@ create policy "riders_update_own"
 grant usage on schema public to authenticated;
 grant select, update on public.profiles to authenticated;
 grant select, insert, update on public.riders to authenticated;
+
+-- ============================================================================
+-- AI / Test Rider Generator V1 — non-human riders for filling test pelotons.
+--
+-- AI riders are ordinary rows in public.riders (same shape, same 15
+-- attributes) with is_ai = true and no player_id. They are never a fake
+-- Supabase auth user. Re-runnable: guarded like the rest of this file.
+-- ============================================================================
+
+alter table public.riders alter column player_id drop not null;
+alter table public.riders add column if not exists is_ai boolean not null default false;
+
+-- Every row is either a real player's rider or an unowned AI filler, never both.
+alter table public.riders drop constraint if exists riders_ai_or_player_check;
+alter table public.riders add constraint riders_ai_or_player_check
+  check ((is_ai and player_id is null) or (not is_ai and player_id is not null));
+
+-- Any authenticated player can see AI riders (they are shared test/race
+-- fillers, not private data) in addition to their own rider.
+drop policy if exists "riders_select_own" on public.riders;
+create policy "riders_select_own"
+  on public.riders for select
+  using (auth.uid() = player_id or is_ai);
+
+-- Widened only to allow the admin/test "Generate Test Peloton" action to
+-- insert unowned AI rows; a real rider row still requires player_id = auth.uid().
+drop policy if exists "riders_insert_own" on public.riders;
+create policy "riders_insert_own"
+  on public.riders for insert
+  with check (auth.uid() = player_id or (is_ai and player_id is null));

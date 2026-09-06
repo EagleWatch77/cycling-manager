@@ -7,6 +7,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Icon } from '@/components/ui/Icon';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
+import { RiderAvatar } from '@/components/rider/RiderAvatar';
 
 const FLAGS: Record<string, string> = {
   SK:'🇸🇰',CZ:'🇨🇿',PL:'🇵🇱',FR:'🇫🇷',IT:'🇮🇹',ES:'🇪🇸',BE:'🇧🇪',NL:'🇳🇱',
@@ -72,9 +73,7 @@ export default async function RiderPage() {
         {/* Header */}
         <Card className="col-span-12" dense>
           <div className="flex flex-wrap items-center gap-5 p-4">
-            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-navy text-teal">
-              <Icon name="rider" className="h-12 w-12" />
-            </span>
+            <RiderAvatar seed={rider.id} size="lg" className="rounded-2xl" />
             <div className="min-w-0">
               <h1 className="text-2xl font-bold leading-tight text-navy">
                 {FLAGS[rider.countryIso2] ?? ''} {rider.firstName} {rider.surname}

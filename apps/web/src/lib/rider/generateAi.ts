@@ -1,23 +1,26 @@
 import {
-  SKILL_ATTRIBUTES, SHAPES, GENERATOR_VERSION,
+  SKILL_ATTRIBUTES, SHAPES,
   ROOKIE_BASE, ROOKIE_BASE_SPREAD, ATTR_NOISE, ATTR_MIN, ATTR_MAX,
   AGE_MIN, AGE_MAX, STRONG_BONUS, WEAK_PENALTY, STARTER_CONDITION,
   POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
   type SkillAttribute,
 } from './config';
+import { AI_GENERATOR_VERSION } from './aiConfig';
 import {
   type Rng, clamp, round, intBetween, noise, pickWeighted, COUNTRIES, FIRST, SUR,
 } from './shared';
 
 /**
- * Starter Rider Generator V1.
+ * AI / Test Rider Generator V1.
  *
- * A pure function: give it a random source and it returns one plausible young
- * Rookie. No I/O, no Supabase, no engine import — the caller persists the
- * result. Deterministic for a given RNG, which is what the tests rely on.
+ * A pure function, same shape as generateStarterRider(): given an RNG and a
+ * target archetype shape, it returns one plausible Rookie-quality AI rider.
+ * No I/O, no Supabase — the caller persists the result with is_ai = true and
+ * no player_id. Unlike the human starter generator, the shape is passed in
+ * (not picked randomly) so the caller can control the peloton's archetype mix.
  */
 
-export interface GeneratedRider {
+export interface GeneratedAiRider {
   firstName: string;
   surname: string;
   countryName: string;
@@ -25,36 +28,17 @@ export interface GeneratedRider {
   age: number;
   attributes: Record<SkillAttribute, number>;
   condition: typeof STARTER_CONDITION;
-  /** Inferred from the numbers, shown to the player. Never a stored class. */
-  inferredArchetype: string;
-  /** Hidden, persisted, no race effect yet. */
+  /** The generation shape used, e.g. 'sprinter'. Controls generation only — never a race-engine class. */
+  archetype: string;
+  /** Hidden, persisted, no race effect yet — same convention as Starter Rider V1. */
   potential: number;
   trainability: number;
   generatorVersion: string;
 }
 
-/**
- * Infer the archetype from the final attributes: whichever shape's strong set
- * scores highest above the rider's own mean wins; if none stands out it is an
- * all-rounder.
- */
-function inferArchetype(attrs: Record<SkillAttribute, number>): string {
-  const mean = SKILL_ATTRIBUTES.reduce((s, a) => s + attrs[a], 0) / SKILL_ATTRIBUTES.length;
-  let best = 'allrounder';
-  let bestEdge = 2.0; // must clear this margin to not be an all-rounder
-  for (const shape of SHAPES) {
-    if (shape.strong.length === 0) continue;
-    const edge = shape.strong.reduce((s, a) => s + (attrs[a] - mean), 0) / shape.strong.length;
-    if (edge > bestEdge) {
-      bestEdge = edge;
-      best = shape.id;
-    }
-  }
-  return best;
-}
+export function generateAiRider(rng: Rng, shapeId: string): GeneratedAiRider {
+  const shape = SHAPES.find((s) => s.id === shapeId) ?? SHAPES[0];
 
-export function generateStarterRider(rng: Rng): GeneratedRider {
-  // Identity.
   const country = pickWeighted(rng, COUNTRIES, (c) => c.weight);
   const firstList = FIRST[country.iso2] ?? FIRST['SK'];
   const surList = SUR[country.iso2] ?? SUR['SK'];
@@ -62,9 +46,8 @@ export function generateStarterRider(rng: Rng): GeneratedRider {
   const surname = surList[Math.floor(rng() * surList.length)];
   const age = intBetween(rng, AGE_MIN, AGE_MAX);
 
-  // Quality: one field-level base for the rider, then per-attribute shaping.
+  // Same quality target as Starter Rider V1: field-level base, per-attribute shaping.
   const base = ROOKIE_BASE + noise(rng, ROOKIE_BASE_SPREAD);
-  const shape = SHAPES[Math.floor(rng() * SHAPES.length)];
 
   const attributes = {} as Record<SkillAttribute, number>;
   for (const attr of SKILL_ATTRIBUTES) {
@@ -83,9 +66,9 @@ export function generateStarterRider(rng: Rng): GeneratedRider {
     age,
     attributes,
     condition: { ...STARTER_CONDITION },
-    inferredArchetype: inferArchetype(attributes),
+    archetype: shape.id,
     potential: intBetween(rng, POTENTIAL_MIN, POTENTIAL_MAX),
     trainability: intBetween(rng, TRAINABILITY_MIN, TRAINABILITY_MAX),
-    generatorVersion: GENERATOR_VERSION,
+    generatorVersion: AI_GENERATOR_VERSION,
   };
 }

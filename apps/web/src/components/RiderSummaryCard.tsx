@@ -4,6 +4,7 @@ import { SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { Card, CardLink } from './ui/Card';
 import { Icon } from './ui/Icon';
 import { ProgressBar } from './ui/ProgressBar';
+import { RiderAvatar } from './rider/RiderAvatar';
 
 /** Six attributes worth surfacing on the compact card; the rest live on /rider. */
 const HIGHLIGHT: SkillAttribute[] = ['climbing', 'hills', 'flat', 'sprint', 'endurance', 'descending'];
@@ -51,9 +52,7 @@ export function RiderSummaryCard({ t, rider }: { t: T; rider: StoredRider | null
   return (
     <Card title={t('rider.title')} dense className="col-span-12 lg:col-span-3 row-span-2">
       <div className="flex items-center gap-3 p-3.5 pb-3">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-navy text-teal">
-          <Icon name="rider" className="h-8 w-8" />
-        </span>
+        <RiderAvatar seed={rider.id} size="md" />
         <div className="min-w-0">
           <p className="truncate text-base font-bold leading-tight text-navy">
             {FLAGS[rider.countryIso2] ?? '🏳️'} {rider.firstName} {rider.surname}
