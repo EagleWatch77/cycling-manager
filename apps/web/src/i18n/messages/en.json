@@ -273,8 +273,6 @@
   "detail.registering": "Registering…",
   "detail.cancelling": "Cancelling…",
   "detail.registerError": "Registration failed. Please try again.",
-  "detail.startList": "Start list",
-  "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Mixed Tour",
   "sdiff.flat": "FLAT",
   "sdiff.hilly": "HILLY",

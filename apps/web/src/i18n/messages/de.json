@@ -273,8 +273,6 @@
   "detail.registering": "Registrierung läuft…",
   "detail.cancelling": "Wird storniert…",
   "detail.registerError": "Registrierung fehlgeschlagen. Bitte erneut versuchen.",
-  "detail.startList": "Startliste",
-  "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Gemischte Tour",
   "sdiff.flat": "FLACH",
   "sdiff.hilly": "HÜGELIG",

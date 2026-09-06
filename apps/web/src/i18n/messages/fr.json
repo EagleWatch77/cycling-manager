@@ -273,8 +273,6 @@
   "detail.registering": "Inscription…",
   "detail.cancelling": "Annulation…",
   "detail.registerError": "L'inscription a échoué. Réessaie.",
-  "detail.startList": "Liste de départ",
-  "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Tour mixte",
   "sdiff.flat": "PLAT",
   "sdiff.hilly": "VALLONNÉ",

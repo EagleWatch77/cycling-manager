@@ -13,7 +13,6 @@ import { MAXIMUM_RACE_FIELD } from '@/lib/rider/aiConfig';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
-import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { StageProfile } from '@/components/races/StageProfile';
 import { StageScoring } from '@/components/races/StageScoring';
 import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
@@ -250,31 +249,6 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                   />
                 )}
               </div>
-            </Card>
-
-            <Card
-              title={t('detail.startList')}
-              action={
-                <span className="text-2xs font-bold text-navy-muted">
-                  {t('detail.startListCount', { n: startList.length, max: MAXIMUM_RACE_FIELD })}
-                </span>
-              }
-              dense
-            >
-              <ul className="p-1.5">
-                {startList.map((s) => (
-                  <li key={s.riderId} className="flex items-center gap-3 px-2 py-2">
-                    <RiderAvatar seed={s.riderId} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-navy">{s.firstName} {s.surname}</p>
-                      <p className="text-2xs text-navy-muted">{s.countryName} · {t('rider.age')} {s.age}</p>
-                    </div>
-                  </li>
-                ))}
-                {startList.length === 0 && (
-                  <li className="px-2 py-3 text-sm text-navy-soft">{t('races.noneEntered')}</li>
-                )}
-              </ul>
             </Card>
           </div>
         </div>

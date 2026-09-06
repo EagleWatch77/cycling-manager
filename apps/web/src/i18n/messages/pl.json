@@ -273,8 +273,6 @@
   "detail.registering": "Rejestruję…",
   "detail.cancelling": "Anuluję…",
   "detail.registerError": "Rejestracja nie powiodła się. Spróbuj ponownie.",
-  "detail.startList": "Lista startowa",
-  "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Mieszany Tour",
   "sdiff.flat": "PŁASKI",
   "sdiff.hilly": "PAGÓRKI",

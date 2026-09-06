@@ -273,8 +273,6 @@
   "detail.registering": "Registruji…",
   "detail.cancelling": "Ruším…",
   "detail.registerError": "Registrace selhala. Zkus to prosím znovu.",
-  "detail.startList": "Startovní listina",
-  "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Smíšená Tour",
   "sdiff.flat": "ROVINA",
   "sdiff.hilly": "KOPCE",
