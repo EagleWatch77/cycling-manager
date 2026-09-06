@@ -42,6 +42,7 @@
   "calendar.days": "in {n} days",
   "calendar.inProgress": "Live",
   "calendar.viewAll": "View full calendar",
+  "calendar.emptySlot": "Not selected yet",
   "tour.next": "Next race",
   "tour.startsIn": "Starts in",
   "tour.stages": "Stages",

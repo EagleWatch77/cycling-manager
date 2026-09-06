@@ -25,6 +25,23 @@ export function visibleStageCount(league: LeagueId): number {
   return VISIBLE_STAGE_COUNT[league];
 }
 
+/**
+ * How many Tours a Rider in this league may select per season. Only Rookie
+ * is tuned today; the other leagues hold a placeholder value so the season
+ * calendar and selection limit already work once they are designed.
+ */
+const MAX_SEASON_TOURS: Record<LeagueId, number> = {
+  rookie: 3,
+  amateur: 3,
+  continental: 3,
+  pro: 3,
+  elite: 3,
+};
+
+export function maxSeasonTours(league: LeagueId): number {
+  return MAX_SEASON_TOURS[league];
+}
+
 /** Filters a master stage list down to what this league may see. */
 export function visibleStages<S>(stages: readonly S[], league: LeagueId): S[] {
   return stages.slice(0, visibleStageCount(league));

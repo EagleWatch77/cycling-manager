@@ -1,5 +1,6 @@
 import { TOURS, type Tour } from './tours';
 import { getWeekDateRange, type SeasonInfo } from '@/lib/calendar/season';
+import { maxSeasonTours } from '@/lib/leagues';
 
 /**
  * Tour schedule foundation V1 — explicit test scheduling data.
@@ -18,8 +19,12 @@ export interface ScheduledTour {
   registrationDeadline: string;
 }
 
-/** Max Tours a Rookie Rider may select in one season. */
-export const MAX_SEASON_TOUR_SELECTIONS = 3;
+/**
+ * Max Tours a Rider may select in one season. All current gameplay is
+ * Rookie-only; see lib/leagues.ts maxSeasonTours() for the per-league values
+ * this will grow into.
+ */
+export const MAX_SEASON_TOUR_SELECTIONS = maxSeasonTours('rookie');
 
 /**
  * Rookie season — 5 Tour choices. Danube and Coastal intentionally share

@@ -1,8 +1,10 @@
 import { getServerDictionary } from '@/i18n/server';
 import { DANUBE_TOUR } from '@/mock/dashboard';
 import { ensureStarterRider } from '@/lib/rider/repository';
+import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
+import { maxSeasonTours, visibleStages } from '@/lib/leagues';
 import { dateRange } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
 import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalendarCard';
@@ -32,21 +34,30 @@ export default async function DashboardPage() {
 
   const season = getCurrentSeasonInfo();
   const scheduled = getSeasonSchedule(season);
-  const events: CalendarEvent[] = scheduled.map((v) => ({
+
+  // Season Calendar card shows only the Rider's own selected Tours (their
+  // season program), never the full 5-Tour choice list — sorted by real
+  // start date, capped at what this league may select.
+  const myRegistrations = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
+  const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
+  const selectedTours = scheduled
+    .filter((v) => selectedTourIds.has(v.tour.id))
+    .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime());
+  const events: CalendarEvent[] = selectedTours.map((v) => ({
     id: v.tour.id,
     name: v.tour.name,
-    stageCount: v.tour.masterStages.length,
+    stageCount: visibleStages(v.tour.masterStages, league as never).length,
     dateRange: dateRange(v.weekStart, v.weekEnd, locale),
-    startsInDays: v.startsInDays,
-    status: v.isCurrentWeek ? 'live' : 'upcoming',
   }));
+  const maxSlots = maxSeasonTours(league as never);
+
   const danubeSchedule = scheduled.find((v) => v.tour.id === DANUBE_TOUR.id);
   const danubeTour = { ...DANUBE_TOUR, startsInDays: danubeSchedule?.startsInDays ?? 0 };
 
   return (
     <AppShell activeId="home" locale={locale}>
       <div className="grid grid-cols-12 gap-3">
-        <SeasonCalendarCard t={t} events={events} />
+        <SeasonCalendarCard t={t} events={events} maxSlots={maxSlots} />
         <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} />
 
         <RiderSummaryCard t={t} rider={rider} />

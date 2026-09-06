@@ -42,6 +42,7 @@
   "calendar.days": "za {n} dni",
   "calendar.inProgress": "Trwa",
   "calendar.viewAll": "Zobacz cały kalendarz",
+  "calendar.emptySlot": "Jeszcze nie wybrano",
   "tour.next": "Kolejny wyścig",
   "tour.startsIn": "Start za",
   "tour.stages": "Etapy",

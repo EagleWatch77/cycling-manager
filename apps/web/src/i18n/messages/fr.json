@@ -42,6 +42,7 @@
   "calendar.days": "dans {n} jours",
   "calendar.inProgress": "En cours",
   "calendar.viewAll": "Voir tout le calendrier",
+  "calendar.emptySlot": "Pas encore choisie",
   "tour.next": "Course suivante",
   "tour.startsIn": "Débute dans",
   "tour.stages": "Étapes",
