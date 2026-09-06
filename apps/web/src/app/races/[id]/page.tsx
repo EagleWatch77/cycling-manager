@@ -4,7 +4,9 @@ import { visibleStages } from '@/lib/leagues';
 import { km } from '@/lib/format';
 import { DANUBE_META, DANUBE_STAGES } from '@/data/danube';
 import { getMyRider } from '@/lib/rider/repository';
-import { getMyRegistration, listStartList } from '@/lib/races/registration';
+import { getMySeasonRegistrations, listStartList } from '@/lib/races/registration';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
 import { MAXIMUM_RACE_FIELD } from '@/lib/rider/aiConfig';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
@@ -48,7 +50,11 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
   const totalKm = stages.reduce((s, x) => s + x.km, 0);
 
   const rider = await getMyRider();
-  const registration = rider ? await getMyRegistration(DANUBE_META.id) : null;
+  const season = getCurrentSeasonInfo();
+  const seasonViews = getSeasonSchedule(season);
+  const myRegistrations = rider ? await getMySeasonRegistrations(seasonViews.map((v) => v.tour.id)) : [];
+  const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
+  const selectionState = getSelectionState(DANUBE_META.id, seasonViews, selectedTourIds);
   const startList = await listStartList(DANUBE_META.id);
   const registerForThisTour = registerForTourAction.bind(null, DANUBE_META.id);
 
@@ -150,27 +156,30 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
 
             <Card dense>
               <div className="p-3.5">
-                {rider ? (
-                  registration ? (
-                    <button type="button" disabled
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
-                      <Icon name="flag" className="h-4 w-4" />
-                      {t('detail.registered')}
-                    </button>
-                  ) : (
-                    <form action={registerForThisTour}>
-                      <button type="submit"
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
-                        <Icon name="flag" className="h-4 w-4" />
-                        {t('detail.registerRider')}
-                      </button>
-                    </form>
-                  )
-                ) : (
+                {!rider ? (
                   <a href="/login"
                     className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
                     {t('detail.loginToRegister')}
                   </a>
+                ) : selectionState === 'selected' ? (
+                  <button type="button" disabled
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
+                    <Icon name="flag" className="h-4 w-4" />
+                    {t('detail.registered')}
+                  </button>
+                ) : selectionState === 'available' ? (
+                  <form action={registerForThisTour}>
+                    <button type="submit"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
+                      <Icon name="flag" className="h-4 w-4" />
+                      {t('detail.registerRider')}
+                    </button>
+                  </form>
+                ) : (
+                  <button type="button" disabled
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-navy-muted/70">
+                    {t(selectionState === 'overlap' ? 'races.dateOverlap' : 'races.limitReached')}
+                  </button>
                 )}
               </div>
             </Card>

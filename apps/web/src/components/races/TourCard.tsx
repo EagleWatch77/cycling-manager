@@ -2,8 +2,8 @@ import type { T } from '@/i18n/config';
 import type { Locale } from '@/i18n/config';
 import type { LeagueId } from '@/lib/leagues';
 import { visibleStages } from '@/lib/leagues';
-import { km, dateRange, fullDate } from '@/lib/format';
-import type { ScheduledTourView } from '@/data/tourSchedule';
+import { km, dateRange } from '@/lib/format';
+import type { ScheduledTourView, TourSelectionState } from '@/data/tourSchedule';
 import { Icon } from '../ui/Icon';
 import { JerseyIcon, type JerseyKind } from './JerseyIcon';
 
@@ -11,25 +11,36 @@ const DIFF_ICON: Record<string, string> = {
   flat: 'flag', hilly: 'mountain', mountain: 'mountain', classics: 'wheel', mixed: 'chart',
 };
 
+const STATE_BADGE: Record<Exclude<TourSelectionState, 'available'>, { className: string; key: string }> = {
+  selected: { className: 'bg-teal text-white', key: 'races.selected' },
+  overlap: { className: 'bg-card/90 text-navy-muted', key: 'races.dateOverlap' },
+  'season-limit': { className: 'bg-card/90 text-navy-muted', key: 'races.limitReached' },
+};
+
 /**
  * One Tour card. Stages are filtered by league via visibleStages(), so a
  * Rookie only ever sees their stages — higher ones are not rendered at all,
- * not greyed out. The detail button is disabled until that screen exists.
+ * not greyed out.
  *
- * Week and registration state come from the real season schedule (view),
- * never from the Tour's own content.
+ * The date badge and selection state come from the real season schedule and
+ * the Rider's current selection (view/state), never from the Tour's own
+ * content. Week number is internal schedule data — used for overlap
+ * detection — and is deliberately not shown here.
  */
 export function TourCard({
-  t, locale, league, view,
+  t, locale, league, view, state, selectAction,
 }: {
   t: T;
   locale: Locale;
   league: LeagueId;
   view: ScheduledTourView;
+  state: TourSelectionState;
+  selectAction: () => Promise<void>;
 }) {
-  const { tour, schedule, weekStart, weekEnd } = view;
+  const { tour, weekStart, weekEnd } = view;
   const stages = visibleStages(tour.masterStages, league);
   const totalKm = tour.totalKm ?? stages.reduce((s, x) => s + x.distanceKm, 0);
+  const badge = state === 'available' ? null : STATE_BADGE[state];
 
   return (
     <article className="flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-card">
@@ -41,16 +52,13 @@ export function TourCard({
           <div className="h-full w-full bg-gradient-to-br from-teal via-teal-dark to-navy" />
         )}
         <span className="absolute left-2 top-2 rounded-md bg-navy/85 px-2 py-1 text-2xs font-semibold text-white backdrop-blur">
-          {t('races.weekN', { n: schedule.weekNumber })}
-          <span className="ml-1 font-normal text-white/70">{dateRange(weekStart, weekEnd, locale)}</span>
+          {dateRange(weekStart, weekEnd, locale)}
         </span>
-        <span className={`absolute right-2 top-2 rounded-md px-2 py-1 text-2xs font-bold ${
-          schedule.registrationOpen ? 'bg-teal text-white' : 'bg-card/90 text-navy'
-        }`}>
-          {schedule.registrationOpen
-            ? t('races.regOpen')
-            : t('races.opensOn', { date: fullDate(new Date(`${schedule.registrationDeadline}T00:00:00Z`), locale) })}
-        </span>
+        {badge && (
+          <span className={`absolute right-2 top-2 rounded-md px-2 py-1 text-2xs font-bold ${badge.className}`}>
+            {t(badge.key)}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col p-3.5">
@@ -100,19 +108,34 @@ export function TourCard({
           </ul>
         </div>
 
-        {tour.id === 'danube-tour' ? (
+        {state === 'available' && (
+          <form action={selectAction} className="mt-3">
+            <button type="submit"
+              className="flex w-full items-center justify-center gap-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark">
+              {t('races.select')}
+            </button>
+          </form>
+        )}
+        {state === 'selected' && (
+          <button type="button" disabled
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark">
+            <Icon name="flag" className="h-3.5 w-3.5" />
+            {t('races.selected')}
+          </button>
+        )}
+        {(state === 'overlap' || state === 'season-limit') && (
+          <button type="button" disabled
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-navy-muted/70">
+            {t(STATE_BADGE[state].key)}
+          </button>
+        )}
+
+        {tour.id === 'danube-tour' && (
           <a href={`/races/${tour.id}`}
-            className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark">
+            className="mt-1.5 flex items-center justify-center gap-1 text-2xs font-medium text-navy-soft hover:text-navy">
             {t('races.viewDetail')}
             <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </a>
-        ) : (
-          <button type="button" disabled
-            className="mt-3 flex items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark/60"
-            title={t('races.soon')}>
-            {t('races.viewDetail')}
-            <span className="text-[9px]">· {t('races.soon')}</span>
-          </button>
         )}
       </div>
     </article>

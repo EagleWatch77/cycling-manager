@@ -1,14 +1,15 @@
 import { getServerDictionary } from '@/i18n/server';
 import { visibleStageCount } from '@/lib/leagues';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { getSeasonSchedule } from '@/data/tourSchedule';
+import { getSeasonSchedule, getSelectionState, MAX_SEASON_TOUR_SELECTIONS } from '@/data/tourSchedule';
+import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TourCard } from '@/components/races/TourCard';
+import { selectTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
-const TOURS_ALLOWED = 3;
 
 /**
  * Races screen. Tour content comes from /data/tours; when each Tour runs
@@ -16,7 +17,9 @@ const TOURS_ALLOWED = 3;
  * (lib/calendar/season) — never a hardcoded season/week/date.
  *
  * Rookie sees only Rookie stages via visibleStages() inside each card. Tour
- * selection and registration happen on the Tour detail page.
+ * selection (up to MAX_SEASON_TOUR_SELECTIONS, no overlapping dates) happens
+ * right on this page; the Danube detail page shares the same underlying
+ * registration.
  */
 export default async function RacesPage() {
   const { t, locale } = await getServerDictionary();
@@ -24,6 +27,9 @@ export default async function RacesPage() {
   const scheduled = getSeasonSchedule(season);
   const raceWeeks = scheduled.map((v) => v.schedule.weekNumber);
   const usesSampleData = scheduled.some((v) => v.tour.id.startsWith('sample-'));
+
+  const myRegistrations = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
+  const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -41,10 +47,13 @@ export default async function RacesPage() {
               <div className="flex-1">
                 <span className="block text-2xs text-navy-muted">{t('races.tourChoice')}</span>
                 <span className="text-sm font-bold text-navy">
-                  {t(`league.${LEAGUE}`)} · 0 / {TOURS_ALLOWED}
+                  {t(`league.${LEAGUE}`)} · {selectedTourIds.size} / {MAX_SEASON_TOUR_SELECTIONS}
                 </span>
                 <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-teal-rail">
-                  <span className="block h-full rounded-full bg-teal" style={{ width: '0%' }} />
+                  <span
+                    className="block h-full rounded-full bg-teal"
+                    style={{ width: `${(selectedTourIds.size / MAX_SEASON_TOUR_SELECTIONS) * 100}%` }}
+                  />
                 </span>
               </div>
             </div>
@@ -90,7 +99,15 @@ export default async function RacesPage() {
         {/* Tour grid */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {scheduled.map((view) => (
-            <TourCard key={view.tour.id} t={t} locale={locale} league={LEAGUE} view={view} />
+            <TourCard
+              key={view.tour.id}
+              t={t}
+              locale={locale}
+              league={LEAGUE}
+              view={view}
+              state={getSelectionState(view.tour.id, scheduled, selectedTourIds)}
+              selectAction={selectTourAction.bind(null, view.tour.id)}
+            />
           ))}
         </div>
         {scheduled.length === 0 && (
@@ -127,7 +144,7 @@ export default async function RacesPage() {
         <p className="text-2xs text-navy-muted">
           {t('races.weeksNote', { league: t(`league.${LEAGUE}`) })}
           {' · '}
-          {t('races.canChoose', { n: TOURS_ALLOWED })}
+          {t('races.canChoose', { n: MAX_SEASON_TOUR_SELECTIONS })}
           {' · '}
           {visibleStageCount(LEAGUE)} {t('tour.stages').toLowerCase()}
         </p>

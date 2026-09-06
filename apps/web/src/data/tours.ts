@@ -40,14 +40,13 @@ export interface Tour {
 }
 
 /**
- * SAMPLE DATA — replace with your five real Tours (and drop images into
- * /public/tours/). Kept minimal on purpose so the layout is visible.
+ * The five Rookie-season Tour choices. Images live under /public/tours/.
  */
 export const TOURS: Tour[] = [
   {
     id: 'danube-tour',
     name: 'Danube Tour',
-    image: '/tours/danube.webp',
+    image: '/tours/Danube-tour.png',
     difficulty: 'hilly',
     prestige: 3,
     suitableFor: ['puncheur', 'rouleur'],
@@ -62,26 +61,26 @@ export const TOURS: Tour[] = [
     ],
   },
   {
-    id: 'sample-spring-classic',
-    name: 'Spring Opener',
-    image: '',
+    id: 'coastal-tour',
+    name: 'Coastal Tour',
+    image: '/tours/Coastal-tour.png',
     difficulty: 'flat',
     prestige: 2,
     suitableFor: ['sprinter', 'rouleur'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
-    totalKm: 368,
+    totalKm: 342,
     masterStages: [
-      { number: 1, name: 'Prológ', distanceKm: 12, difficulty: 'flat' },
-      { number: 2, name: 'Rovinatá etapa', distanceKm: 176, difficulty: 'flat' },
-      { number: 3, name: 'Zvlnená etapa', distanceKm: 180, difficulty: 'hilly' },
-      { number: 4, name: 'Horská etapa', distanceKm: 165, difficulty: 'mountain' },
-      { number: 5, name: 'Záverečná', distanceKm: 158, difficulty: 'flat' },
+      { number: 1, name: 'Prológ pri mori', distanceKm: 14, difficulty: 'flat' },
+      { number: 2, name: 'Pobrežná rovinka', distanceKm: 172, difficulty: 'flat' },
+      { number: 3, name: 'Zátoková etapa', distanceKm: 156, difficulty: 'flat' },
+      { number: 4, name: 'Veterná pláň', distanceKm: 168, difficulty: 'hilly' },
+      { number: 5, name: 'Finiš na promenáde', distanceKm: 148, difficulty: 'flat' },
     ],
   },
   {
-    id: 'sample-mountain-tour',
-    name: 'Highland Tour',
-    image: '',
+    id: 'highlands-tour',
+    name: 'Highlands Tour',
+    image: '/tours/Highlands-tour.png',
     difficulty: 'mountain',
     prestige: 4,
     suitableFor: ['climber', 'puncheur'],
@@ -93,6 +92,36 @@ export const TOURS: Tour[] = [
       { number: 3, name: 'Kráľovská etapa', distanceKm: 175, difficulty: 'mountain' },
       { number: 4, name: 'Vysokohorská', distanceKm: 168, difficulty: 'mountain' },
       { number: 5, name: 'Časovka do vrchu', distanceKm: 38, difficulty: 'mountain' },
+    ],
+  },
+  {
+    id: 'northern-crown-tour',
+    name: 'Northern Crown Tour',
+    image: '/tours/Northerd-crown-tour.png',
+    difficulty: 'classics',
+    prestige: 3,
+    suitableFor: ['classics', 'rouleur'],
+    jerseys: ['gc', 'points', 'mountain', 'youth'],
+    totalKm: 386,
+    masterStages: [
+      { number: 1, name: 'Severná brána', distanceKm: 168, difficulty: 'flat' },
+      { number: 2, name: 'Kamenné cesty', distanceKm: 174, difficulty: 'hilly' },
+      { number: 3, name: 'Koruna severu', distanceKm: 44, difficulty: 'flat' },
+    ],
+  },
+  {
+    id: 'silver-horizon-tour',
+    name: 'Silver Horizon Tour',
+    image: '/tours/Silver-horizont-tour.png',
+    difficulty: 'mixed',
+    prestige: 4,
+    suitableFor: ['allrounder', 'timeTrial'],
+    jerseys: ['gc', 'points', 'mountain', 'youth'],
+    totalKm: 428,
+    masterStages: [
+      { number: 1, name: 'Strieborné jazero', distanceKm: 162, difficulty: 'flat' },
+      { number: 2, name: 'Horizontová vlna', distanceKm: 176, difficulty: 'hilly' },
+      { number: 3, name: 'Časovka Obzor', distanceKm: 28, difficulty: 'flat' },
     ],
   },
 ];

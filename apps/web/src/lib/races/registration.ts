@@ -1,6 +1,8 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
 
 /**
  * Tour Registration V1 — links a Rider (not the player account) to a
@@ -40,14 +42,46 @@ export async function getMyRegistration(tourId: string): Promise<StoredRegistrat
   return fromRow(data);
 }
 
+/** The current player's registrations among the given Tour ids (e.g. one season's Tours). */
+export async function getMySeasonRegistrations(tourIds: string[]): Promise<StoredRegistration[]> {
+  const rider = await getMyRider();
+  if (!rider || tourIds.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('tour_registrations')
+    .select('*')
+    .eq('rider_id', rider.id)
+    .in('tour_id', tourIds);
+
+  if (error || !data) return [];
+  return data.map(fromRow);
+}
+
 export type RegisterResult =
   | { ok: true }
-  | { ok: false; reason: 'no-rider' | 'already-registered' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'already-registered' | 'date-overlap' | 'season-limit' | 'error' };
 
-/** Registers the current player's Rider for a Tour. Idempotent-safe: a duplicate is reported, not thrown. */
+/**
+ * Registers the current player's Rider for a Tour ("Tour selection").
+ * Enforces the same rules the Races page shows: max MAX_SEASON_TOUR_SELECTIONS
+ * per season, and no two Tours whose real race dates overlap — checked here,
+ * not only in the UI, so this cannot be bypassed by calling the action directly.
+ */
 export async function registerForTour(tourId: string): Promise<RegisterResult> {
   const rider = await getMyRider();
   if (!rider) return { ok: false, reason: 'no-rider' };
+
+  const info = getCurrentSeasonInfo();
+  const seasonViews = getSeasonSchedule(info);
+  const seasonTourIds = seasonViews.map((v) => v.tour.id);
+  const existing = await getMySeasonRegistrations(seasonTourIds);
+  const selectedTourIds = new Set(existing.map((r) => r.tourId));
+
+  const state = getSelectionState(tourId, seasonViews, selectedTourIds);
+  if (state === 'selected') return { ok: false, reason: 'already-registered' };
+  if (state === 'overlap') return { ok: false, reason: 'date-overlap' };
+  if (state === 'season-limit') return { ok: false, reason: 'season-limit' };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -55,7 +89,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
     .insert({ rider_id: rider.id, tour_id: tourId });
 
   if (error) {
-    // Postgres unique_violation — the Rider already has a registration for this Tour.
+    // Postgres unique_violation — a concurrent request won the same race.
     if (error.code === '23505') return { ok: false, reason: 'already-registered' };
     return { ok: false, reason: 'error' };
   }

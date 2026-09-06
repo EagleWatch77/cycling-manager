@@ -18,10 +18,19 @@ export interface ScheduledTour {
   registrationDeadline: string;
 }
 
+/** Max Tours a Rookie Rider may select in one season. */
+export const MAX_SEASON_TOUR_SELECTIONS = 3;
+
+/**
+ * Rookie season — 5 Tour choices. Danube and Coastal intentionally share
+ * week 5 (same real date range): a Rider may enter either, never both.
+ */
 export const TOUR_SCHEDULE: ScheduledTour[] = [
-  { tourId: 'sample-spring-classic', seasonId: 'season-1', weekNumber: 1, registrationOpen: false, registrationDeadline: '2026-08-20' },
-  { tourId: 'danube-tour', seasonId: 'season-1', weekNumber: 3, registrationOpen: true, registrationDeadline: '2026-09-13' },
-  { tourId: 'sample-mountain-tour', seasonId: 'season-1', weekNumber: 6, registrationOpen: false, registrationDeadline: '2026-10-04' },
+  { tourId: 'highlands-tour', seasonId: 'season-1', weekNumber: 2, registrationOpen: true, registrationDeadline: '2026-08-27' },
+  { tourId: 'danube-tour', seasonId: 'season-1', weekNumber: 5, registrationOpen: true, registrationDeadline: '2026-09-17' },
+  { tourId: 'coastal-tour', seasonId: 'season-1', weekNumber: 5, registrationOpen: true, registrationDeadline: '2026-09-17' },
+  { tourId: 'northern-crown-tour', seasonId: 'season-1', weekNumber: 7, registrationOpen: true, registrationDeadline: '2026-10-01' },
+  { tourId: 'silver-horizon-tour', seasonId: 'season-1', weekNumber: 9, registrationOpen: true, registrationDeadline: '2026-10-15' },
 ];
 
 /** A schedule entry joined with its Tour content and real calendar dates. */
@@ -60,4 +69,39 @@ export function getSeasonSchedule(info: SeasonInfo): ScheduledTourView[] {
 /** The schedule entry for one Tour in the given season, if any. */
 export function getScheduleForTour(tourId: string, info: SeasonInfo): ScheduledTour | undefined {
   return TOUR_SCHEDULE.find((s) => s.tourId === tourId && s.seasonId === info.seasonId);
+}
+
+function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart.getTime() <= bEnd.getTime() && aEnd.getTime() >= bStart.getTime();
+}
+
+/**
+ * Tour selection V1 — a Rider picks up to MAX_SEASON_TOUR_SELECTIONS Tours
+ * per season and cannot hold two whose race dates overlap. Pure function:
+ * the caller supplies which Tour ids are already selected (from the
+ * Rider's persisted registrations), so this has no I/O of its own.
+ */
+export type TourSelectionState = 'available' | 'selected' | 'overlap' | 'season-limit';
+
+export function getSelectionState(
+  tourId: string,
+  seasonViews: ScheduledTourView[],
+  selectedTourIds: ReadonlySet<string>,
+  maxSelections: number = MAX_SEASON_TOUR_SELECTIONS,
+): TourSelectionState {
+  if (selectedTourIds.has(tourId)) return 'selected';
+
+  const target = seasonViews.find((v) => v.tour.id === tourId);
+  if (!target) return 'available';
+
+  const overlapsSelected = seasonViews.some(
+    (v) => selectedTourIds.has(v.tour.id)
+      && v.tour.id !== tourId
+      && rangesOverlap(v.weekStart, v.weekEnd, target.weekStart, target.weekEnd),
+  );
+  if (overlapsSelected) return 'overlap';
+
+  if (selectedTourIds.size >= maxSelections) return 'season-limit';
+
+  return 'available';
 }
