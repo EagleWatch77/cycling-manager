@@ -11,6 +11,17 @@ const DIFF_ICON: Record<string, string> = {
   flat: 'flag', hilly: 'mountain', mountain: 'mountain', classics: 'wheel', mixed: 'chart',
 };
 
+/** Rider archetype -> illustration under public/rider-types/ (real on-disk filenames, Slovak-named). */
+const ARCHETYPE_ICON: Record<string, string> = {
+  climber: '/rider-types/Vrchkár.png',
+  puncheur: '/rider-types/Puncheur.png',
+  sprinter: '/rider-types/Šprintér.png',
+  rouleur: '/rider-types/Distance.png',
+  timeTrial: '/rider-types/Časovkár.png',
+  classics: '/rider-types/Klasikár.png',
+  allrounder: '/rider-types/Univerzál.png',
+};
+
 const STATE_BADGE: Record<Exclude<TourSelectionState, 'available'>, { className: string; key: string }> = {
   selected: { className: 'bg-teal text-white', key: 'races.selected' },
   overlap: { className: 'bg-card/90 text-navy-muted', key: 'races.dateOverlap' },
@@ -82,10 +93,20 @@ export function TourCard({
 
         <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-2.5">
           <div>
-            <span className="block text-2xs text-navy-muted">{t('races.difficulty')}</span>
+            <span className="block text-2xs text-navy-muted">{t('races.profile')}</span>
             <span className="text-xs font-semibold text-navy">{t(`diff.${tour.difficulty}`)}</span>
           </div>
           <div>
+            <span className="block text-2xs text-navy-muted">{t('races.difficulty')}</span>
+            {/* Segments, not stars: prestige already owns the star/dot-rating
+                language below, so difficulty gets its own shape. */}
+            <span className="flex gap-0.5 pt-1.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span key={i} className={`h-1.5 w-3 rounded-sm ${i < tour.difficultyRating ? 'bg-navy' : 'bg-line'}`} />
+              ))}
+            </span>
+          </div>
+          <div className="col-span-2">
             <span className="block text-2xs text-navy-muted">{t('races.prestige')}</span>
             <span className="flex gap-0.5 pt-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -97,9 +118,17 @@ export function TourCard({
 
         <div className="mt-2.5">
           <span className="block text-2xs text-navy-muted">{t('races.suitableFor')}</span>
-          <span className="text-xs font-semibold text-navy">
-            {tour.suitableFor.map((a) => t(`style.${a}`)).join(', ')}
-          </span>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5">
+            {tour.suitableFor.map((a) => (
+              <span key={a} className="flex items-center gap-1.5">
+                {ARCHETYPE_ICON[a] && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ARCHETYPE_ICON[a]} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                )}
+                <span className="text-xs font-semibold text-navy">{t(`style.${a}`)}</span>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className="mt-2.5 border-t border-line pt-2.5">

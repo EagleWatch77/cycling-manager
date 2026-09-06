@@ -32,7 +32,15 @@ export interface Tour {
   cardImage: string;
   /** Larger promotional artwork (may include title/branding) for the Tour detail hero. */
   heroImage: string;
+  /** Route profile (flat/hilly/mountain/classics/mixed) — NOT a difficulty rating. Shown on cards as "Profil". */
   difficulty: Difficulty;
+  /**
+   * Overall difficulty, 1 (easiest) – 5 (hardest), shown as a segmented
+   * indicator on cards. No scoring/simulation-derived difficulty model exists
+   * yet, so this is hand-set per Tour (see data/tours.ts entries) rather than
+   * calculated — revisit once race simulation can inform it.
+   */
+  difficultyRating: number;
   /** 1–5 dots. */
   prestige: number;
   /** Archetype ids that suit this Tour, e.g. ["puncheur","climber"]. */
@@ -55,6 +63,7 @@ export const TOURS: Tour[] = [
     cardImage: '/tours/Danube-tour-card.png',
     heroImage: '/tours/Danube-tour.png',
     difficulty: 'hilly',
+    difficultyRating: 3,
     prestige: 3,
     suitableFor: ['puncheur', 'rouleur'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
@@ -73,6 +82,7 @@ export const TOURS: Tour[] = [
     cardImage: '/tours/Coastal-tour-card.png',
     heroImage: '/tours/Coastal-tour.png',
     difficulty: 'flat',
+    difficultyRating: 2,
     prestige: 2,
     suitableFor: ['sprinter', 'rouleur'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
@@ -91,6 +101,7 @@ export const TOURS: Tour[] = [
     cardImage: '/tours/Highlands-tour-card.png',
     heroImage: '/tours/Highlands-tour.png',
     difficulty: 'mountain',
+    difficultyRating: 5,
     prestige: 4,
     suitableFor: ['climber', 'puncheur'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
@@ -109,6 +120,7 @@ export const TOURS: Tour[] = [
     cardImage: '/tours/Northern-crown-tour-card.png',
     heroImage: '/tours/Northerd-crown-tour.png',
     difficulty: 'classics',
+    difficultyRating: 4,
     prestige: 3,
     suitableFor: ['classics', 'rouleur'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
@@ -125,6 +137,7 @@ export const TOURS: Tour[] = [
     cardImage: '/tours/Silver-horizon-tour-card.png',
     heroImage: '/tours/Silver-horizont-tour.png',
     difficulty: 'mixed',
+    difficultyRating: 3,
     prestige: 4,
     suitableFor: ['allrounder', 'timeTrial'],
     jerseys: ['gc', 'points', 'mountain', 'youth'],
