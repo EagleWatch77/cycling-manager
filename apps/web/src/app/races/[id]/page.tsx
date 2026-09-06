@@ -7,14 +7,17 @@ import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { StageProfile } from '@/components/races/StageProfile';
+import { StageScoring } from '@/components/races/StageScoring';
+import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
 
 const LEAGUE = 'rookie' as const;
 
-const JERSEYS: { key: string; color: string; nameKey: string }[] = [
-  { key: 'jersey.gc', color: '#2563eb', nameKey: 'jersey.gc' },
-  { key: 'jersey.points', color: '#16a34a', nameKey: 'jersey.points' },
-  { key: 'jersey.mountain', color: '#dc2626', nameKey: 'jersey.mountain' },
-  { key: 'jersey.youth', color: '#e5e7eb', nameKey: 'jersey.youth' },
+const JERSEYS: { kind: JerseyKind; nameKey: string }[] = [
+  { kind: 'gc', nameKey: 'jersey.gc' },
+  { kind: 'points', nameKey: 'jersey.points' },
+  { kind: 'mountain', nameKey: 'jersey.mountain' },
+  { kind: 'youth', nameKey: 'jersey.youth' },
+  // Team jersey exists but is only shown in leagues with teams (not Rookie).
 ];
 
 const SDIFF: Record<string, string> = {
@@ -97,6 +100,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                       <span>{s.to} · {s.endM} m</span>
                     </div>
                     <StageProfile stage={s} />
+                    <StageScoring t={t} stage={s} />
                   </div>
                 </div>
               </Card>
@@ -126,11 +130,8 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
             <Card title={t('detail.jerseys')} dense>
               <ul className="p-3.5">
                 {JERSEYS.map((j) => (
-                  <li key={j.key} className="flex items-center gap-3 border-b border-line py-2 last:border-0">
-                    <span className="flex h-8 w-6 items-end justify-center rounded-sm border border-line"
-                      style={{ background: j.color }}>
-                      <span className="mb-1 h-1 w-3.5 rounded-sm bg-white/70" />
-                    </span>
+                  <li key={j.kind} className="flex items-center gap-3 border-b border-line py-2 last:border-0">
+                    <JerseyIcon kind={j.kind} className="h-10 w-9" />
                     <span className="text-sm font-semibold text-navy">{t(j.nameKey)}</span>
                   </li>
                 ))}

@@ -270,5 +270,14 @@
   "shint.flat": "Idéal pour les sprinteurs",
   "shint.hilly": "Puncheurs et coureurs de classiques",
   "shint.itt": "Spécialistes du chrono",
-  "shint.mountain": "Grimpeurs et leaders GC"
+  "shint.mountain": "Grimpeurs et leaders GC",
+  "score.finish": "Arrivée d’étape",
+  "score.sprint": "Sprint intermédiaire",
+  "score.kom": "Prix de la montagne",
+  "score.points": "pts",
+  "score.bonus": "bonus",
+  "score.cat": "Cat.",
+  "score.summary": "Barème de l’étape",
+  "score.sec": "s",
+  "jersey.team": "Équipe"
 }

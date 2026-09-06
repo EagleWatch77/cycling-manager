@@ -270,5 +270,14 @@
   "shint.flat": "Ideal para esprínters",
   "shint.hilly": "Puncheurs y clasicómanos",
   "shint.itt": "Contrarrelojistas",
-  "shint.mountain": "Escaladores y líderes GC"
+  "shint.mountain": "Escaladores y líderes GC",
+  "score.finish": "Meta de etapa",
+  "score.sprint": "Sprint intermedio",
+  "score.kom": "Premio de montaña",
+  "score.points": "pts",
+  "score.bonus": "bonif.",
+  "score.cat": "Cat.",
+  "score.summary": "Puntuación de etapa",
+  "score.sec": "s",
+  "jersey.team": "Equipos"
 }

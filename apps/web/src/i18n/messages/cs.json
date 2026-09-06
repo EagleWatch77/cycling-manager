@@ -270,5 +270,14 @@
   "shint.flat": "Nejlepší pro sprintery",
   "shint.hilly": "Puncheři a klasikáři",
   "shint.itt": "Časovkáři",
-  "shint.mountain": "Vrchaři a lídři GC"
+  "shint.mountain": "Vrchaři a lídři GC",
+  "score.finish": "Cíl etapy",
+  "score.sprint": "Sprinterská prémie",
+  "score.kom": "Vrchařská prémie",
+  "score.points": "body",
+  "score.bonus": "bonus",
+  "score.cat": "Kat.",
+  "score.summary": "Bodování etapy",
+  "score.sec": "s",
+  "jersey.team": "Týmová"
 }

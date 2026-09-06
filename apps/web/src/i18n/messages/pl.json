@@ -270,5 +270,14 @@
   "shint.flat": "Najlepszy dla sprinterów",
   "shint.hilly": "Puncherzy i klasykowcy",
   "shint.itt": "Czasowcy",
-  "shint.mountain": "Górale i liderzy GC"
+  "shint.mountain": "Górale i liderzy GC",
+  "score.finish": "Meta etapu",
+  "score.sprint": "Lotna premia",
+  "score.kom": "Premia górska",
+  "score.points": "pkt",
+  "score.bonus": "bonus",
+  "score.cat": "Kat.",
+  "score.summary": "Punktacja etapu",
+  "score.sec": "s",
+  "jersey.team": "Drużynowa"
 }

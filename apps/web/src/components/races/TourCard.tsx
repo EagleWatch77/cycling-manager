@@ -5,12 +5,10 @@ import { visibleStages } from '@/lib/leagues';
 import { km } from '@/lib/format';
 import type { Tour } from '@/data/tours';
 import { Icon } from '../ui/Icon';
+import { JerseyIcon, type JerseyKind } from './JerseyIcon';
 
 const DIFF_ICON: Record<string, string> = {
   flat: 'flag', hilly: 'mountain', mountain: 'mountain', classics: 'wheel', mixed: 'chart',
-};
-const JERSEY_COLOR: Record<string, string> = {
-  gc: '#eab308', points: '#16a34a', mountain: '#dc2626', youth: '#2563eb',
 };
 
 /**
@@ -89,9 +87,7 @@ export function TourCard({
           <ul className="flex gap-3">
             {tour.jerseys.map((j) => (
               <li key={j} className="flex flex-col items-center gap-0.5">
-                <span className="flex h-6 w-5 items-end justify-center rounded-sm" style={{ background: JERSEY_COLOR[j] }}>
-                  <span className="mb-0.5 h-1 w-3 rounded-sm bg-white/70" />
-                </span>
+                <JerseyIcon kind={j as JerseyKind} className="h-7 w-6" />
                 <span className="text-[9px] text-navy-muted">{t(`jersey.${j}`)}</span>
               </li>
             ))}

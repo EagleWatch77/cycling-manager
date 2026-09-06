@@ -270,5 +270,14 @@
   "shint.flat": "Best for sprinters",
   "shint.hilly": "Puncheurs and classics riders",
   "shint.itt": "Time trial specialists",
-  "shint.mountain": "Climbers and GC leaders"
+  "shint.mountain": "Climbers and GC leaders",
+  "score.finish": "Stage finish",
+  "score.sprint": "Intermediate sprint",
+  "score.kom": "Mountain (KOM)",
+  "score.points": "pts",
+  "score.bonus": "bonus",
+  "score.cat": "Cat.",
+  "score.summary": "Stage scoring",
+  "score.sec": "s",
+  "jersey.team": "Team"
 }

@@ -270,5 +270,14 @@
   "shint.flat": "Am besten für Sprinter",
   "shint.hilly": "Puncheure und Klassikerfahrer",
   "shint.itt": "Zeitfahrspezialisten",
-  "shint.mountain": "Kletterer und GC-Leader"
+  "shint.mountain": "Kletterer und GC-Leader",
+  "score.finish": "Etappenziel",
+  "score.sprint": "Zwischensprint",
+  "score.kom": "Bergwertung",
+  "score.points": "Pkt",
+  "score.bonus": "Bonus",
+  "score.cat": "Kat.",
+  "score.summary": "Etappenwertung",
+  "score.sec": "s",
+  "jersey.team": "Team"
 }

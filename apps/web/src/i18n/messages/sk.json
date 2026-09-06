@@ -270,5 +270,14 @@
   "shint.flat": "Najlepšie pre šprintérov",
   "shint.hilly": "Puncheri a klasikári",
   "shint.itt": "Časovkári",
-  "shint.mountain": "Vrchári a lídri GC"
+  "shint.mountain": "Vrchári a lídri GC",
+  "score.finish": "Cieľ etapy",
+  "score.sprint": "Šprintérska prémia",
+  "score.kom": "Vrchárska prémia",
+  "score.points": "body",
+  "score.bonus": "bonus",
+  "score.cat": "Kat.",
+  "score.summary": "Bodovanie etapy",
+  "score.sec": "s",
+  "jersey.team": "Tímová"
 }
