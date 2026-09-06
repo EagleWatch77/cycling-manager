@@ -33,7 +33,7 @@ export function TourPreviewCard({
     }));
 
   return (
-    <Card className="col-span-12 lg:col-span-8" dense>
+    <Card className="col-span-12 lg:col-span-7" dense>
       {tour.heroImage ? (
         <div className="relative h-28 w-full overflow-hidden rounded-t-card">
           {/* eslint-disable-next-line @next/next/no-img-element */}

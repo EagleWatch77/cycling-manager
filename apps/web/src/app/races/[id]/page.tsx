@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getServerDictionary } from '@/i18n/server';
 import { visibleStages } from '@/lib/leagues';
-import { km } from '@/lib/format';
+import { km, money } from '@/lib/format';
 import { TOURS } from '@/data/tours';
+import { getTourRewards } from '@/data/rewards';
 import { DANUBE_META, DANUBE_STAGES } from '@/data/danube';
 import { getMyRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations, listStartList } from '@/lib/races/registration';
@@ -63,6 +64,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
     ? danubeStages.reduce((s, x) => s + x.km, 0)
     : (tour.totalKm ?? genericStages.reduce((s, x) => s + x.distanceKm, 0));
   const raceTypeLabel = isDanube ? t('raceType.mixed') : t(`diff.${tour.difficulty}`);
+  const rewards = getTourRewards(tour.prestige);
 
   const rider = await getMyRider();
   const season = getCurrentSeasonInfo();
@@ -174,12 +176,20 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
               </div>
             </Card>
 
+            <Card title={t('detail.rewards')} dense>
+              <div className="grid grid-cols-2 gap-px bg-line">
+                <Summary label={t('detail.rewardOverall')} value={money(rewards.overallWinner, locale)} icon="trophy" />
+                <Summary label={t('detail.rewardStage')} value={money(rewards.stageWinner, locale)} icon="euro" />
+              </div>
+            </Card>
+
             <Card title={t('detail.jerseys')} dense>
               <ul className="p-3.5">
                 {JERSEYS.map((j) => (
                   <li key={j.kind} className="flex items-center gap-3 border-b border-line py-2 last:border-0">
                     <JerseyIcon kind={j.kind} className="h-10 w-9" />
-                    <span className="text-sm font-semibold text-navy">{t(j.nameKey)}</span>
+                    <span className="flex-1 text-sm font-semibold text-navy">{t(j.nameKey)}</span>
+                    <span className="text-xs font-semibold text-teal-dark">{money(rewards.jerseyWinner, locale)}</span>
                   </li>
                 ))}
               </ul>

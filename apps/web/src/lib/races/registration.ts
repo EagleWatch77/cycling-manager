@@ -91,6 +91,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   if (error) {
     // Postgres unique_violation — a concurrent request won the same race.
     if (error.code === '23505') return { ok: false, reason: 'already-registered' };
+    console.error('[registerForTour] insert failed', { tourId, riderId: rider.id, error });
     return { ok: false, reason: 'error' };
   }
   return { ok: true };
@@ -112,7 +113,10 @@ export async function unregisterFromTour(tourId: string): Promise<UnregisterResu
     .eq('rider_id', rider.id)
     .eq('tour_id', tourId);
 
-  if (error) return { ok: false, reason: 'error' };
+  if (error) {
+    console.error('[unregisterFromTour] delete failed', { tourId, riderId: rider.id, error });
+    return { ok: false, reason: 'error' };
+  }
   if (!count) return { ok: false, reason: 'not-registered' };
   return { ok: true };
 }
