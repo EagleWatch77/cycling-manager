@@ -92,7 +92,6 @@ export const DANUBE_META = {
   id: 'danube-tour',
   name: 'Danube Tour',
   tagline: 'Ride the Great River',
-  image: '/tours/danube.webp',
   raceType: 'mixed' as const,
   totalKm: DANUBE_STAGES.reduce((s, x) => s + x.km, 0),
 };

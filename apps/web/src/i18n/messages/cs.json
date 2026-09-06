@@ -265,6 +265,8 @@
   "detail.bestFor": "Nejvhodnější pro",
   "detail.note": "Vzdálenosti a převýšení jsou přibližné a mohou se změnit.",
   "detail.loginToRegister": "Pro registraci se přihlas",
+  "detail.registerRider": "Registrovat jezdce",
+  "detail.registered": "✓ Jezdec registrován",
   "detail.startList": "Startovní listina",
   "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Smíšená Tour",

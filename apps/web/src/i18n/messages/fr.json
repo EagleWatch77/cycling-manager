@@ -265,6 +265,8 @@
   "detail.bestFor": "Idéal pour",
   "detail.note": "Distances et dénivelés sont approximatifs et sujets à modification.",
   "detail.loginToRegister": "Connecte-toi pour t'inscrire",
+  "detail.registerRider": "Inscrire le coureur",
+  "detail.registered": "✓ Coureur inscrit",
   "detail.startList": "Liste de départ",
   "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Tour mixte",

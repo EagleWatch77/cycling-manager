@@ -8,7 +8,6 @@ import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TourCard } from '@/components/races/TourCard';
-import { selectTourAction, unselectTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
 
@@ -17,10 +16,10 @@ const LEAGUE = 'rookie' as const;
  * comes from /data/tourSchedule, joined here against the real season/week
  * (lib/calendar/season) — never a hardcoded season/week/date.
  *
- * Rookie sees only Rookie stages via visibleStages() inside each card. Tour
- * selection (up to MAX_SEASON_TOUR_SELECTIONS, no overlapping dates) happens
- * right on this page; the Danube detail page shares the same underlying
- * registration.
+ * Rookie sees only Rookie stages via visibleStages() inside each card. Cards
+ * are read-only choices here: the primary action always opens the Tour
+ * detail page (/races/[id]), and registration (up to
+ * MAX_SEASON_TOUR_SELECTIONS, no overlapping dates) happens there.
  */
 export default async function RacesPage() {
   const { t, locale } = await getServerDictionary();
@@ -110,11 +109,6 @@ export default async function RacesPage() {
               league={LEAGUE}
               view={view}
               state={getSelectionState(view.tour.id, scheduled, selectedTourIds)}
-              toggleAction={
-                selectedTourIds.has(view.tour.id)
-                  ? unselectTourAction.bind(null, view.tour.id)
-                  : selectTourAction.bind(null, view.tour.id)
-              }
             />
           ))}
         </div>

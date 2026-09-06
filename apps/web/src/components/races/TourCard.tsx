@@ -26,17 +26,18 @@ const STATE_BADGE: Record<Exclude<TourSelectionState, 'available'>, { className:
  * the Rider's current selection (view/state), never from the Tour's own
  * content. Week number is internal schedule data — used for overlap
  * detection — and is deliberately not shown here.
+ *
+ * The primary action never selects a Tour directly: it always opens the
+ * Tour detail page (/races/[id]), where registration actually happens.
  */
 export function TourCard({
-  t, locale, league, view, state, toggleAction,
+  t, locale, league, view, state,
 }: {
   t: T;
   locale: Locale;
   league: LeagueId;
   view: ScheduledTourView;
   state: TourSelectionState;
-  /** Selects the Tour when available, un-selects it when already selected. */
-  toggleAction: () => Promise<void>;
 }) {
   const { tour, weekStart, weekEnd } = view;
   const stages = visibleStages(tour.masterStages, league);
@@ -50,9 +51,9 @@ export function TourCard({
       }`}
     >
       <div className="relative h-32 w-full overflow-hidden">
-        {tour.image ? (
+        {tour.cardImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={tour.image} alt="" className="h-full w-full object-cover" />
+          <img src={tour.cardImage} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-teal via-teal-dark to-navy" />
         )}
@@ -114,27 +115,23 @@ export function TourCard({
         </div>
 
         {state === 'available' && (
-          <form action={toggleAction} className="mt-3">
-            <button type="submit"
-              className="flex w-full items-center justify-center gap-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark">
-              {t('races.select')}
-            </button>
-          </form>
+          <a href={`/races/${tour.id}`}
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark">
+            {t('races.select')}
+          </a>
         )}
         {state === 'selected' && (
-          <form action={toggleAction} className="mt-3">
-            <button type="submit"
-              className="flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark transition-colors hover:bg-line">
-              <Icon name="flag" className="h-3.5 w-3.5" />
-              {t('races.cancelSelection')}
-            </button>
-          </form>
+          <a href={`/races/${tour.id}`}
+            className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-teal-dark transition-colors hover:bg-line">
+            <Icon name="flag" className="h-3.5 w-3.5" />
+            {t('races.selected')}
+          </a>
         )}
         {(state === 'overlap' || state === 'season-limit') && (
-          <button type="button" disabled
+          <a href={`/races/${tour.id}`}
             className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-navy-muted/70">
             {t(STATE_BADGE[state].key)}
-          </button>
+          </a>
         )}
       </div>
     </article>

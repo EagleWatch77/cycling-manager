@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getServerDictionary } from '@/i18n/server';
 import { visibleStages } from '@/lib/leagues';
 import { km } from '@/lib/format';
+import { TOURS } from '@/data/tours';
 import { DANUBE_META, DANUBE_STAGES } from '@/data/danube';
 import { getMyRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations, listStartList } from '@/lib/races/registration';
@@ -35,30 +36,43 @@ const SHINT: Record<string, string> = {
 };
 
 /**
- * Tour detail. Only Danube exists as canonical data today, so any other id
- * 404s rather than rendering an empty shell. Stages are filtered by league:
- * a Rookie sees stages 1–3, higher ones are not rendered at all.
+ * Tour detail — works for any Tour in the catalogue (data/tours.ts), 404ing
+ * only for an unknown id. Danube has rich authored stage data (data/danube.ts:
+ * elevation profile, sprint/KOM markers, scoring) and gets the full stage
+ * breakdown; every other Tour renders its real masterStages (number, name,
+ * distance, difficulty) without inventing elevation/marker data it doesn't have.
+ *
+ * This is where Tour selection actually happens — "Vybrať Tour" on the Races
+ * list only ever links here, it never selects directly.
  *
  * No weather here — that is race-instance data, not a Tour property.
  */
 export default async function TourDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (id !== DANUBE_META.id) notFound();
+  const tour = TOURS.find((x) => x.id === id);
+  if (!tour) notFound();
 
+  const isDanube = tour.id === DANUBE_META.id;
   const { t, locale } = await getServerDictionary();
-  const stages = visibleStages(DANUBE_STAGES, LEAGUE);
-  const totalKm = stages.reduce((s, x) => s + x.km, 0);
+
+  const danubeStages = isDanube ? visibleStages(DANUBE_STAGES, LEAGUE) : [];
+  const genericStages = visibleStages(tour.masterStages, LEAGUE);
+  const stageCount = isDanube ? danubeStages.length : genericStages.length;
+  const totalKm = isDanube
+    ? danubeStages.reduce((s, x) => s + x.km, 0)
+    : (tour.totalKm ?? genericStages.reduce((s, x) => s + x.distanceKm, 0));
+  const raceTypeLabel = isDanube ? t('raceType.mixed') : t(`diff.${tour.difficulty}`);
 
   const rider = await getMyRider();
   const season = getCurrentSeasonInfo();
   const seasonViews = getSeasonSchedule(season);
   const myRegistrations = rider ? await getMySeasonRegistrations(seasonViews.map((v) => v.tour.id)) : [];
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
-  const selectionState = getSelectionState(DANUBE_META.id, seasonViews, selectedTourIds);
-  const startList = await listStartList(DANUBE_META.id);
+  const selectionState = getSelectionState(tour.id, seasonViews, selectedTourIds);
+  const startList = await listStartList(tour.id);
   const toggleSelectionForThisTour = selectionState === 'selected'
-    ? unregisterFromTourAction.bind(null, DANUBE_META.id)
-    : registerForTourAction.bind(null, DANUBE_META.id);
+    ? unregisterFromTourAction.bind(null, tour.id)
+    : registerForTourAction.bind(null, tour.id);
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -77,24 +91,24 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
             <Card dense>
               <div className="relative h-44 w-full overflow-hidden rounded-t-card">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={DANUBE_META.image} alt="" className="h-full w-full object-cover object-right" />
+                <img src={tour.heroImage} alt="" className="h-full w-full object-cover object-right" />
                 <div className="absolute inset-0 bg-gradient-to-r from-card via-card/75 to-transparent" />
                 <div className="absolute inset-0 flex flex-col justify-center p-5">
-                  <h1 className="text-3xl font-bold leading-tight text-navy">{DANUBE_META.name}</h1>
-                  <p className="mt-1 max-w-xs text-xs text-navy-soft">{DANUBE_META.tagline}</p>
+                  <h1 className="text-3xl font-bold leading-tight text-navy">{tour.name}</h1>
+                  {isDanube && <p className="mt-1 max-w-xs text-xs text-navy-soft">{DANUBE_META.tagline}</p>}
                   <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
-                      {t('raceType.mixed')}
+                      {raceTypeLabel}
                     </span>
                     <span className="rounded-lg border border-line bg-card px-2.5 py-1 text-2xs font-semibold text-navy">
-                      {t('detail.stages')}: {stages.length}
+                      {t('detail.stages')}: {stageCount}
                     </span>
                   </div>
                 </div>
               </div>
             </Card>
 
-            {stages.map((s) => (
+            {isDanube ? danubeStages.map((s) => (
               <Card key={s.number} dense>
                 <div className="flex flex-col gap-3 p-3.5 md:flex-row md:items-center">
                   <div className="flex items-center gap-3 md:w-52 md:shrink-0">
@@ -122,6 +136,23 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
               </Card>
+            )) : genericStages.map((s) => (
+              <Card key={s.number} dense>
+                <div className="flex items-center gap-3 p-3.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-navy text-lg font-bold text-white">
+                    {s.number}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-navy">{s.name}</p>
+                    <p className="text-xs text-navy-soft">
+                      {km(s.distanceKm, locale)}
+                      <span className="ml-1.5 rounded bg-teal-rail px-1.5 py-0.5 text-[10px] font-bold text-teal-dark">
+                        {t(`diff.${s.difficulty}`)}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </Card>
             ))}
 
             <p className="flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-2 text-2xs text-navy-muted">
@@ -135,12 +166,12 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
             <Card title={t('detail.tourSummary')} dense>
               <div className="grid grid-cols-2 gap-px bg-line">
                 <Summary label={t('detail.totalDistance')} value={km(totalKm, locale)} icon="flag" />
-                <Summary label={t('detail.stages')} value={String(stages.length)} icon="flag" />
+                <Summary label={t('detail.stages')} value={String(stageCount)} icon="flag" />
                 <div className="col-span-2 bg-card p-3">
                   <span className="flex items-center gap-2 text-2xs text-navy-muted">
                     <Icon name="mountain" className="h-4 w-4" /> {t('detail.raceType')}
                   </span>
-                  <span className="mt-0.5 block text-lg font-bold text-navy">{t('raceType.mixed')}</span>
+                  <span className="mt-0.5 block text-lg font-bold text-navy">{raceTypeLabel}</span>
                 </div>
               </div>
             </Card>
@@ -164,19 +195,23 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     {t('detail.loginToRegister')}
                   </a>
                 ) : selectionState === 'selected' ? (
-                  <form action={toggleSelectionForThisTour}>
-                    <button type="submit"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark transition-colors hover:bg-line">
-                      <Icon name="flag" className="h-4 w-4" />
-                      {t('races.cancelSelection')}
-                    </button>
-                  </form>
+                  <div className="space-y-2">
+                    <div className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
+                      {t('detail.registered')}
+                    </div>
+                    <form action={toggleSelectionForThisTour}>
+                      <button type="submit"
+                        className="w-full text-center text-2xs font-medium text-navy-soft transition-colors hover:text-navy">
+                        {t('races.cancelSelection')}
+                      </button>
+                    </form>
+                  </div>
                 ) : selectionState === 'available' ? (
                   <form action={toggleSelectionForThisTour}>
                     <button type="submit"
                       className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
                       <Icon name="flag" className="h-4 w-4" />
-                      {t('races.select')}
+                      {t('detail.registerRider')}
                     </button>
                   </form>
                 ) : (

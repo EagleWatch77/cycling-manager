@@ -265,6 +265,8 @@
   "detail.bestFor": "Best for",
   "detail.note": "Distances and elevations are approximate and subject to change.",
   "detail.loginToRegister": "Log in to register",
+  "detail.registerRider": "Register Rider",
+  "detail.registered": "✓ Rider registered",
   "detail.startList": "Start list",
   "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Mixed Tour",

@@ -265,6 +265,8 @@
   "detail.bestFor": "Am besten für",
   "detail.note": "Distanzen und Höhen sind ungefähr und können sich ändern.",
   "detail.loginToRegister": "Zum Anmelden einloggen",
+  "detail.registerRider": "Fahrer anmelden",
+  "detail.registered": "✓ Fahrer angemeldet",
   "detail.startList": "Startliste",
   "detail.startListCount": "{n} / {max}",
   "raceType.mixed": "Gemischte Tour",

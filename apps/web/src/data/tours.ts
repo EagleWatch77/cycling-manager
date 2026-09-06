@@ -24,8 +24,14 @@ export interface TourStage {
 export interface Tour {
   id: string;
   name: string;
-  /** Path under /public, e.g. "/tours/alpine.webp". Empty string → gradient placeholder. */
-  image: string;
+  /**
+   * Clean scenic cover for the Races grid card — no baked-in title/text/UI.
+   * Empty string → gradient placeholder. Rendered with object-fit: cover at
+   * a fixed aspect ratio, never stretched.
+   */
+  cardImage: string;
+  /** Larger promotional artwork (may include title/branding) for the Tour detail hero. */
+  heroImage: string;
   difficulty: Difficulty;
   /** 1–5 dots. */
   prestige: number;
@@ -46,7 +52,8 @@ export const TOURS: Tour[] = [
   {
     id: 'danube-tour',
     name: 'Danube Tour',
-    image: '/tours/Danube-tour.png',
+    cardImage: '/tours/Danube-tour-card.png',
+    heroImage: '/tours/Danube-tour.png',
     difficulty: 'hilly',
     prestige: 3,
     suitableFor: ['puncheur', 'rouleur'],
@@ -63,7 +70,8 @@ export const TOURS: Tour[] = [
   {
     id: 'coastal-tour',
     name: 'Coastal Tour',
-    image: '/tours/Coastal-tour.png',
+    cardImage: '/tours/Coastal-tour-card.png',
+    heroImage: '/tours/Coastal-tour.png',
     difficulty: 'flat',
     prestige: 2,
     suitableFor: ['sprinter', 'rouleur'],
@@ -80,7 +88,8 @@ export const TOURS: Tour[] = [
   {
     id: 'highlands-tour',
     name: 'Highlands Tour',
-    image: '/tours/Highlands-tour.png',
+    cardImage: '/tours/Highlands-tour-card.png',
+    heroImage: '/tours/Highlands-tour.png',
     difficulty: 'mountain',
     prestige: 4,
     suitableFor: ['climber', 'puncheur'],
@@ -97,7 +106,8 @@ export const TOURS: Tour[] = [
   {
     id: 'northern-crown-tour',
     name: 'Northern Crown Tour',
-    image: '/tours/Northerd-crown-tour.png',
+    cardImage: '/tours/Northern-crown-tour-card.png',
+    heroImage: '/tours/Northerd-crown-tour.png',
     difficulty: 'classics',
     prestige: 3,
     suitableFor: ['classics', 'rouleur'],
@@ -112,7 +122,8 @@ export const TOURS: Tour[] = [
   {
     id: 'silver-horizon-tour',
     name: 'Silver Horizon Tour',
-    image: '/tours/Silver-horizont-tour.png',
+    cardImage: '/tours/Silver-horizon-tour-card.png',
+    heroImage: '/tours/Silver-horizont-tour.png',
     difficulty: 'mixed',
     prestige: 4,
     suitableFor: ['allrounder', 'timeTrial'],
