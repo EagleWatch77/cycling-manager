@@ -3,12 +3,17 @@ import { getServerDictionary } from '@/i18n/server';
 import { visibleStages } from '@/lib/leagues';
 import { km } from '@/lib/format';
 import { DANUBE_META, DANUBE_STAGES } from '@/data/danube';
+import { getMyRider } from '@/lib/rider/repository';
+import { getMyRegistration, listStartList } from '@/lib/races/registration';
+import { MAXIMUM_RACE_FIELD } from '@/lib/rider/aiConfig';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
+import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { StageProfile } from '@/components/races/StageProfile';
 import { StageScoring } from '@/components/races/StageScoring';
 import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
+import { registerForTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
 
@@ -41,6 +46,11 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
   const { t, locale } = await getServerDictionary();
   const stages = visibleStages(DANUBE_STAGES, LEAGUE);
   const totalKm = stages.reduce((s, x) => s + x.km, 0);
+
+  const rider = await getMyRider();
+  const registration = rider ? await getMyRegistration(DANUBE_META.id) : null;
+  const startList = await listStartList(DANUBE_META.id);
+  const registerForThisTour = registerForTourAction.bind(null, DANUBE_META.id);
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -135,6 +145,58 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     <span className="text-sm font-semibold text-navy">{t(j.nameKey)}</span>
                   </li>
                 ))}
+              </ul>
+            </Card>
+
+            <Card dense>
+              <div className="p-3.5">
+                {rider ? (
+                  registration ? (
+                    <button type="button" disabled
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
+                      <Icon name="flag" className="h-4 w-4" />
+                      {t('detail.registered')}
+                    </button>
+                  ) : (
+                    <form action={registerForThisTour}>
+                      <button type="submit"
+                        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
+                        <Icon name="flag" className="h-4 w-4" />
+                        {t('detail.registerRider')}
+                      </button>
+                    </form>
+                  )
+                ) : (
+                  <a href="/login"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
+                    {t('detail.loginToRegister')}
+                  </a>
+                )}
+              </div>
+            </Card>
+
+            <Card
+              title={t('detail.startList')}
+              action={
+                <span className="text-2xs font-bold text-navy-muted">
+                  {t('detail.startListCount', { n: startList.length, max: MAXIMUM_RACE_FIELD })}
+                </span>
+              }
+              dense
+            >
+              <ul className="p-1.5">
+                {startList.map((s) => (
+                  <li key={s.riderId} className="flex items-center gap-3 px-2 py-2">
+                    <RiderAvatar seed={s.riderId} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-navy">{s.firstName} {s.surname}</p>
+                      <p className="text-2xs text-navy-muted">{s.countryName} · {t('rider.age')} {s.age}</p>
+                    </div>
+                  </li>
+                ))}
+                {startList.length === 0 && (
+                  <li className="px-2 py-3 text-sm text-navy-soft">{t('races.noneEntered')}</li>
+                )}
               </ul>
             </Card>
           </div>

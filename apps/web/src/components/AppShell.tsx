@@ -2,12 +2,18 @@ import type { ReactNode } from 'react';
 import { getDictionary, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/server';
 import { PLAYER } from '@/mock/dashboard';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { fullDate } from '@/lib/format';
 import { SidebarNavigation } from './SidebarNavigation';
 import { TopStatusBar } from './TopStatusBar';
 
 /**
  * Shared chrome for every page: left rail plus top status bar. Pages render
  * only their own content, so the shell stays in one place.
+ *
+ * Season/week/date come from the real server clock (lib/calendar/season),
+ * never a hardcoded mock date — this is the one place that value is computed
+ * for the whole app shell.
  */
 export async function AppShell({
   activeId, children, locale,
@@ -18,14 +24,16 @@ export async function AppShell({
 }) {
   const active = locale ?? (await getLocale());
   const t = getDictionary(active);
+  const season = getCurrentSeasonInfo();
   return (
     <div className="flex min-h-screen">
       <SidebarNavigation
         t={t}
         league={PLAYER.league}
         activeId={activeId}
-        seasonLabel="Sezóna 2026"
-        dateLabel="14. máj 2026"
+        seasonLabel={`${t('races.season')} ${season.seasonNumber}`}
+        weekLabel={`${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`}
+        dateLabel={fullDate(season.now, active)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopStatusBar t={t} locale={active} player={PLAYER} />

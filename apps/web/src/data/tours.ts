@@ -1,10 +1,10 @@
 /**
  * Tour catalogue for the Races screen.
  *
- * This is the single place your real Tours go. Add entries here — image, name,
- * schedule, stage list, difficulty, prestige — and the screen fills itself in.
- * The sample entries below are clearly marked and can be deleted once your five
- * real Tours are in.
+ * This is the single place your real Tours go: content only — image, name,
+ * stage list, difficulty, prestige. When a Tour runs (season/week,
+ * registration) lives separately in data/tourSchedule.ts, so the same Tour
+ * content can be reused across seasons without duplicating it.
  *
  * `masterStages` is the full stage list; the screen shows only the stages a
  * league can see via visibleStages(), so a Rookie never sees stage 4+.
@@ -26,12 +26,6 @@ export interface Tour {
   name: string;
   /** Path under /public, e.g. "/tours/alpine.webp". Empty string → gradient placeholder. */
   image: string;
-  /** Race week this Tour opens in (season model comes later; shown as a badge). */
-  week: number;
-  dateRange: string;
-  /** Days until it starts; used when registration is not yet open. */
-  startsInDays: number;
-  registrationOpen: boolean;
   difficulty: Difficulty;
   /** 1–5 dots. */
   prestige: number;
@@ -54,10 +48,6 @@ export const TOURS: Tour[] = [
     id: 'danube-tour',
     name: 'Danube Tour',
     image: '/tours/danube.webp',
-    week: 2,
-    dateRange: '12. – 16. máj',
-    startsInDays: 0,
-    registrationOpen: true,
     difficulty: 'hilly',
     prestige: 3,
     suitableFor: ['puncheur', 'rouleur'],
@@ -75,10 +65,6 @@ export const TOURS: Tour[] = [
     id: 'sample-spring-classic',
     name: 'Spring Opener',
     image: '',
-    week: 1,
-    dateRange: '5. – 11. máj',
-    startsInDays: 0,
-    registrationOpen: true,
     difficulty: 'flat',
     prestige: 2,
     suitableFor: ['sprinter', 'rouleur'],
@@ -96,10 +82,6 @@ export const TOURS: Tour[] = [
     id: 'sample-mountain-tour',
     name: 'Highland Tour',
     image: '',
-    week: 4,
-    dateRange: '26. máj – 1. jún',
-    startsInDays: 12,
-    registrationOpen: false,
     difficulty: 'mountain',
     prestige: 4,
     suitableFor: ['climber', 'puncheur'],

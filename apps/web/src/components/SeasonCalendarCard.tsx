@@ -1,6 +1,14 @@
 import type { T } from '@/i18n/config';
-import type { CalendarEvent } from '@/mock/dashboard';
 import { Card, CardLink } from './ui/Card';
+
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  stageCount: number;
+  dateRange: string;
+  startsInDays: number;
+  status: 'live' | 'upcoming';
+}
 
 /** Compact upcoming-events list. The live event is highlighted. */
 export function SeasonCalendarCard({ t, events }: { t: T; events: CalendarEvent[] }) {

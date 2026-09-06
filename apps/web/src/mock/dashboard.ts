@@ -82,21 +82,6 @@ export const LIVE_RACE: LiveRace = {
   ],
 };
 
-export interface CalendarEvent {
-  id: string;
-  name: string;
-  stageCount: number;
-  dateRange: string;
-  startsInDays: number;
-  status: 'live' | 'upcoming';
-}
-
-export const SEASON_CALENDAR: CalendarEvent[] = [
-  { id: 'danube-tour', name: 'Danube Tour', stageCount: 5, dateRange: '12. – 16. máj', startsInDays: 0, status: 'live' },
-  { id: 'karst-classic', name: 'Karst Classic', stageCount: 1, dateRange: '24. máj', startsInDays: 12, status: 'upcoming' },
-  { id: 'tatra-ascent', name: 'Tatra Ascent', stageCount: 3, dateRange: '2. – 4. jún', startsInDays: 21, status: 'upcoming' },
-];
-
 export interface TourStage {
   number: number;
   name: string;

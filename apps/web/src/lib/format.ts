@@ -26,3 +26,19 @@ export function elapsed(seconds: number): string {
   const m = Math.floor((s % 3600) / 60);
   return `${h}h ${String(m).padStart(2, '0')}' ${String(s % 60).padStart(2, '0')}"`;
 }
+
+/**
+ * Real-calendar date formatting, locale-aware via Intl (the locale codes we
+ * ship — sk, en, cs, pl, de, fr, es — are valid BCP-47 tags on their own), so
+ * month/day names follow the existing i18n locale without a separate
+ * hand-maintained translation table.
+ */
+export function fullDate(date: Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+}
+
+/** Short "16 Aug – 22 Aug" style range for a calendar week. */
+export function dateRange(start: Date, end: Date, locale: Locale): string {
+  const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
+  return `${fmt.format(start)} – ${fmt.format(end)}`;
+}

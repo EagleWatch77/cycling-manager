@@ -8,12 +8,13 @@ import { Icon } from './ui/Icon';
  * per-league availability from `isAvailable()`, so no league logic lives here.
  */
 export function SidebarNavigation({
-  t, league, activeId, seasonLabel, dateLabel,
+  t, league, activeId, seasonLabel, weekLabel, dateLabel,
 }: {
   t: T;
   league: LeagueId;
   activeId: string;
   seasonLabel: string;
+  weekLabel: string;
   dateLabel: string;
 }) {
   return (
@@ -33,7 +34,7 @@ export function SidebarNavigation({
         <div className="mt-3 flex items-center gap-2 px-2 text-2xs text-navy-muted">
           <Icon name="calendar" className="h-3.5 w-3.5" />
           <span>
-            {seasonLabel}
+            {seasonLabel} · {weekLabel}
             <span className="block text-navy-soft">{dateLabel}</span>
           </span>
         </div>

@@ -140,3 +140,43 @@ drop policy if exists "riders_insert_own" on public.riders;
 create policy "riders_insert_own"
   on public.riders for insert
   with check (auth.uid() = player_id or (is_ai and player_id is null));
+
+-- ============================================================================
+-- Tour Registration V1 — a Rider (not the player account) enters a
+-- scheduled Tour. Tours themselves are static app content (data/tours.ts,
+-- data/tourSchedule.ts), not a DB table, so tour_id is a plain text id with
+-- no foreign key — validated against that catalogue at the application layer.
+-- ============================================================================
+
+create table if not exists public.tour_registrations (
+  id             uuid primary key default gen_random_uuid(),
+  rider_id       uuid not null references public.riders (id) on delete cascade,
+  tour_id        text not null,
+  registered_at  timestamptz not null default now(),
+  unique (rider_id, tour_id)
+);
+
+-- The UNIQUE above is what blocks a Rider from registering twice for the same
+-- Tour; a second insert simply fails.
+
+alter table public.tour_registrations enable row level security;
+
+-- A start list is public race information (who has entered), so any
+-- authenticated player may read every registration, not just their own.
+drop policy if exists "tour_registrations_select_all" on public.tour_registrations;
+create policy "tour_registrations_select_all"
+  on public.tour_registrations for select
+  using (true);
+
+-- A player may only register a Rider they own; AI riders are never entered here.
+drop policy if exists "tour_registrations_insert_own_rider" on public.tour_registrations;
+create policy "tour_registrations_insert_own_rider"
+  on public.tour_registrations for insert
+  with check (
+    exists (
+      select 1 from public.riders r
+      where r.id = rider_id and r.player_id = auth.uid()
+    )
+  );
+
+grant select, insert on public.tour_registrations to authenticated;

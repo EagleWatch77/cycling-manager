@@ -1,29 +1,29 @@
 import { getServerDictionary } from '@/i18n/server';
 import { visibleStageCount } from '@/lib/leagues';
-import { TOURS } from '@/data/tours';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { getSeasonSchedule } from '@/data/tourSchedule';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TourCard } from '@/components/races/TourCard';
 
 const LEAGUE = 'rookie' as const;
-const RACE_WEEKS = [2, 5, 8]; // shown as a hint; real season model comes later
-const SEASON = 1;
-const WEEK = 1;
-const WEEKS_TOTAL = 10;
 const TOURS_ALLOWED = 3;
 
 /**
- * Races screen. Tours come from the /data/tours catalogue; drop your five real
- * Tours (and images under /public/tours) in there and this fills in.
+ * Races screen. Tour content comes from /data/tours; when each Tour runs
+ * comes from /data/tourSchedule, joined here against the real season/week
+ * (lib/calendar/season) — never a hardcoded season/week/date.
  *
  * Rookie sees only Rookie stages via visibleStages() inside each card. Tour
- * selection, registration and the season model are not wired yet — this is the
- * visual shell, ready for that step.
+ * selection and registration happen on the Tour detail page.
  */
 export default async function RacesPage() {
   const { t, locale } = await getServerDictionary();
-  const usesSampleData = TOURS.some((x) => x.id.startsWith('sample-'));
+  const season = getCurrentSeasonInfo();
+  const scheduled = getSeasonSchedule(season);
+  const raceWeeks = scheduled.map((v) => v.schedule.weekNumber);
+  const usesSampleData = scheduled.some((v) => v.tour.id.startsWith('sample-'));
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -55,7 +55,7 @@ export default async function RacesPage() {
               <Icon name="calendar" className="h-6 w-6 text-teal" />
               <div>
                 <span className="block text-2xs text-navy-muted">{t('races.raceWeeks')}</span>
-                <span className="text-sm font-bold text-navy">{RACE_WEEKS.join(' · ')}</span>
+                <span className="text-sm font-bold text-navy">{raceWeeks.join(' · ')}</span>
               </div>
             </div>
           </Card>
@@ -65,7 +65,7 @@ export default async function RacesPage() {
               <Icon name="calendar" className="h-5 w-5 text-navy-muted" />
               <div>
                 <span className="block text-2xs text-navy-muted">{t('races.season')}</span>
-                <span className="text-sm font-bold text-navy">{SEASON}</span>
+                <span className="text-sm font-bold text-navy">{season.seasonNumber}</span>
               </div>
             </div>
           </Card>
@@ -75,7 +75,7 @@ export default async function RacesPage() {
               <Icon name="calendar" className="h-5 w-5 text-navy-muted" />
               <div>
                 <span className="block text-2xs text-navy-muted">{t('races.week')}</span>
-                <span className="text-sm font-bold text-navy">{WEEK} / {WEEKS_TOTAL}</span>
+                <span className="text-sm font-bold text-navy">{season.currentWeek} / {season.totalWeeks}</span>
               </div>
             </div>
           </Card>
@@ -89,10 +89,13 @@ export default async function RacesPage() {
 
         {/* Tour grid */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {TOURS.map((tour) => (
-            <TourCard key={tour.id} t={t} locale={locale} league={LEAGUE} tour={tour} />
+          {scheduled.map((view) => (
+            <TourCard key={view.tour.id} t={t} locale={locale} league={LEAGUE} view={view} />
           ))}
         </div>
+        {scheduled.length === 0 && (
+          <p className="text-sm text-navy-soft">{t('races.noneEntered')}</p>
+        )}
 
         {/* Explainer + your program */}
         <div className="grid grid-cols-12 gap-3">

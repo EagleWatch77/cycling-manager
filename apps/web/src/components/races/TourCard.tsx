@@ -2,8 +2,8 @@ import type { T } from '@/i18n/config';
 import type { Locale } from '@/i18n/config';
 import type { LeagueId } from '@/lib/leagues';
 import { visibleStages } from '@/lib/leagues';
-import { km } from '@/lib/format';
-import type { Tour } from '@/data/tours';
+import { km, dateRange, fullDate } from '@/lib/format';
+import type { ScheduledTourView } from '@/data/tourSchedule';
 import { Icon } from '../ui/Icon';
 import { JerseyIcon, type JerseyKind } from './JerseyIcon';
 
@@ -15,15 +15,19 @@ const DIFF_ICON: Record<string, string> = {
  * One Tour card. Stages are filtered by league via visibleStages(), so a
  * Rookie only ever sees their stages — higher ones are not rendered at all,
  * not greyed out. The detail button is disabled until that screen exists.
+ *
+ * Week and registration state come from the real season schedule (view),
+ * never from the Tour's own content.
  */
 export function TourCard({
-  t, locale, league, tour,
+  t, locale, league, view,
 }: {
   t: T;
   locale: Locale;
   league: LeagueId;
-  tour: Tour;
+  view: ScheduledTourView;
 }) {
+  const { tour, schedule, weekStart, weekEnd } = view;
   const stages = visibleStages(tour.masterStages, league);
   const totalKm = tour.totalKm ?? stages.reduce((s, x) => s + x.distanceKm, 0);
 
@@ -37,13 +41,15 @@ export function TourCard({
           <div className="h-full w-full bg-gradient-to-br from-teal via-teal-dark to-navy" />
         )}
         <span className="absolute left-2 top-2 rounded-md bg-navy/85 px-2 py-1 text-2xs font-semibold text-white backdrop-blur">
-          {t('races.weekN', { n: tour.week })}
-          <span className="ml-1 font-normal text-white/70">{tour.dateRange}</span>
+          {t('races.weekN', { n: schedule.weekNumber })}
+          <span className="ml-1 font-normal text-white/70">{dateRange(weekStart, weekEnd, locale)}</span>
         </span>
         <span className={`absolute right-2 top-2 rounded-md px-2 py-1 text-2xs font-bold ${
-          tour.registrationOpen ? 'bg-teal text-white' : 'bg-card/90 text-navy'
+          schedule.registrationOpen ? 'bg-teal text-white' : 'bg-card/90 text-navy'
         }`}>
-          {tour.registrationOpen ? t('races.regOpen') : t('races.inDays', { n: tour.startsInDays })}
+          {schedule.registrationOpen
+            ? t('races.regOpen')
+            : t('races.opensOn', { date: fullDate(new Date(`${schedule.registrationDeadline}T00:00:00Z`), locale) })}
         </span>
       </div>
 
