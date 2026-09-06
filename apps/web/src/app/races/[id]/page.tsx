@@ -16,6 +16,7 @@ import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { StageProfile } from '@/components/races/StageProfile';
 import { StageScoring } from '@/components/races/StageScoring';
 import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
+import { TourRegistrationButton } from '@/components/races/TourRegistrationButton';
 import { registerForTourAction, unregisterFromTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
@@ -70,9 +71,6 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
   const selectionState = getSelectionState(tour.id, seasonViews, selectedTourIds);
   const startList = await listStartList(tour.id);
-  const toggleSelectionForThisTour = selectionState === 'selected'
-    ? unregisterFromTourAction.bind(null, tour.id)
-    : registerForTourAction.bind(null, tour.id);
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -194,31 +192,23 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
                     {t('detail.loginToRegister')}
                   </a>
-                ) : selectionState === 'selected' ? (
-                  <div className="space-y-2">
-                    <div className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
-                      {t('detail.registered')}
-                    </div>
-                    <form action={toggleSelectionForThisTour}>
-                      <button type="submit"
-                        className="w-full text-center text-2xs font-medium text-navy-soft transition-colors hover:text-navy">
-                        {t('races.cancelSelection')}
-                      </button>
-                    </form>
-                  </div>
-                ) : selectionState === 'available' ? (
-                  <form action={toggleSelectionForThisTour}>
-                    <button type="submit"
-                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
-                      <Icon name="flag" className="h-4 w-4" />
-                      {t('detail.registerRider')}
-                    </button>
-                  </form>
                 ) : (
-                  <button type="button" disabled
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-navy-muted/70">
-                    {t(selectionState === 'overlap' ? 'races.dateOverlap' : 'races.limitReached')}
-                  </button>
+                  <TourRegistrationButton
+                    tourId={tour.id}
+                    initialState={selectionState}
+                    labels={{
+                      register: t('detail.registerRider'),
+                      registering: t('detail.registering'),
+                      registered: t('detail.registered'),
+                      cancel: t('races.cancelSelection'),
+                      cancelling: t('detail.cancelling'),
+                      overlap: t('races.dateOverlap'),
+                      seasonLimit: t('races.limitReached'),
+                      genericError: t('detail.registerError'),
+                    }}
+                    registerAction={registerForTourAction}
+                    unregisterAction={unregisterFromTourAction}
+                  />
                 )}
               </div>
             </Card>
