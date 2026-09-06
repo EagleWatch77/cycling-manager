@@ -15,7 +15,7 @@ import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { StageProfile } from '@/components/races/StageProfile';
 import { StageScoring } from '@/components/races/StageScoring';
 import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
-import { registerForTourAction } from './actions';
+import { registerForTourAction, unregisterFromTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
 
@@ -56,7 +56,9 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
   const selectionState = getSelectionState(DANUBE_META.id, seasonViews, selectedTourIds);
   const startList = await listStartList(DANUBE_META.id);
-  const registerForThisTour = registerForTourAction.bind(null, DANUBE_META.id);
+  const toggleSelectionForThisTour = selectionState === 'selected'
+    ? unregisterFromTourAction.bind(null, DANUBE_META.id)
+    : registerForTourAction.bind(null, DANUBE_META.id);
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -162,17 +164,19 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     {t('detail.loginToRegister')}
                   </a>
                 ) : selectionState === 'selected' ? (
-                  <button type="button" disabled
-                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark">
-                    <Icon name="flag" className="h-4 w-4" />
-                    {t('detail.registered')}
-                  </button>
+                  <form action={toggleSelectionForThisTour}>
+                    <button type="submit"
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-teal-dark transition-colors hover:bg-line">
+                      <Icon name="flag" className="h-4 w-4" />
+                      {t('races.cancelSelection')}
+                    </button>
+                  </form>
                 ) : selectionState === 'available' ? (
-                  <form action={registerForThisTour}>
+                  <form action={toggleSelectionForThisTour}>
                     <button type="submit"
                       className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark">
                       <Icon name="flag" className="h-4 w-4" />
-                      {t('detail.registerRider')}
+                      {t('races.select')}
                     </button>
                   </form>
                 ) : (

@@ -179,4 +179,16 @@ create policy "tour_registrations_insert_own_rider"
     )
   );
 
-grant select, insert on public.tour_registrations to authenticated;
+-- A player may cancel their own Rider's selection (Tour selection is
+-- reversible — clicking a selected Tour again unselects it).
+drop policy if exists "tour_registrations_delete_own_rider" on public.tour_registrations;
+create policy "tour_registrations_delete_own_rider"
+  on public.tour_registrations for delete
+  using (
+    exists (
+      select 1 from public.riders r
+      where r.id = rider_id and r.player_id = auth.uid()
+    )
+  );
+
+grant select, insert, delete on public.tour_registrations to authenticated;

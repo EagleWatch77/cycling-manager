@@ -3,11 +3,12 @@ import { visibleStageCount } from '@/lib/leagues';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState, MAX_SEASON_TOUR_SELECTIONS } from '@/data/tourSchedule';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
+import { dateRange } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TourCard } from '@/components/races/TourCard';
-import { selectTourAction } from './actions';
+import { selectTourAction, unselectTourAction } from './actions';
 
 const LEAGUE = 'rookie' as const;
 
@@ -30,6 +31,9 @@ export default async function RacesPage() {
 
   const myRegistrations = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
+  const myProgram = scheduled
+    .filter((v) => selectedTourIds.has(v.tour.id))
+    .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime());
 
   return (
     <AppShell activeId="races" locale={locale}>
@@ -106,7 +110,11 @@ export default async function RacesPage() {
               league={LEAGUE}
               view={view}
               state={getSelectionState(view.tour.id, scheduled, selectedTourIds)}
-              selectAction={selectTourAction.bind(null, view.tour.id)}
+              toggleAction={
+                selectedTourIds.has(view.tour.id)
+                  ? unselectTourAction.bind(null, view.tour.id)
+                  : selectTourAction.bind(null, view.tour.id)
+              }
             />
           ))}
         </div>
@@ -134,10 +142,24 @@ export default async function RacesPage() {
           </Card>
 
           <Card title={t('races.yourProgram')} dense className="col-span-12 lg:col-span-5">
-            <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
-              <Icon name="calendar" className="h-8 w-8 text-navy-muted/50" />
-              <p className="max-w-xs text-xs text-navy-soft">{t('races.noneEntered')}</p>
-            </div>
+            {myProgram.length > 0 ? (
+              <ul className="divide-y divide-line">
+                {myProgram.map((v) => (
+                  <li key={v.tour.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-teal bg-teal" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-navy">{v.tour.name}</span>
+                      <span className="block text-2xs text-navy-muted">{dateRange(v.weekStart, v.weekEnd, locale)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 py-8 text-center">
+                <Icon name="calendar" className="h-8 w-8 text-navy-muted/50" />
+                <p className="max-w-xs text-xs text-navy-soft">{t('races.noneEntered')}</p>
+              </div>
+            )}
           </Card>
         </div>
 

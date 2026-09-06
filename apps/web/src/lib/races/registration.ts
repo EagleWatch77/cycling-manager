@@ -96,6 +96,27 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   return { ok: true };
 }
 
+export type UnregisterResult =
+  | { ok: true }
+  | { ok: false; reason: 'no-rider' | 'not-registered' | 'error' };
+
+/** Cancels the current player's Rider's selection for a Tour ("un-select"). */
+export async function unregisterFromTour(tourId: string): Promise<UnregisterResult> {
+  const rider = await getMyRider();
+  if (!rider) return { ok: false, reason: 'no-rider' };
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from('tour_registrations')
+    .delete({ count: 'exact' })
+    .eq('rider_id', rider.id)
+    .eq('tour_id', tourId);
+
+  if (error) return { ok: false, reason: 'error' };
+  if (!count) return { ok: false, reason: 'not-registered' };
+  return { ok: true };
+}
+
 export interface StartListEntry {
   riderId: string;
   firstName: string;

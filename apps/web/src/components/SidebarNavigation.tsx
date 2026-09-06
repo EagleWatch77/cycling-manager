@@ -1,6 +1,7 @@
 import type { T } from '@/i18n/config';
 import type { LeagueId } from '@/lib/leagues';
 import { PRIMARY_NAV, SECONDARY_NAV, SETTINGS_NAV, isAvailable, type NavItem } from '@/lib/navigation';
+import { Logo } from './public/Logo';
 import { Icon } from './ui/Icon';
 
 /**
@@ -19,11 +20,8 @@ export function SidebarNavigation({
 }) {
   return (
     <nav className="flex w-52 shrink-0 flex-col border-r border-line bg-card">
-      <div className="flex items-center gap-2.5 px-4 py-4">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy text-teal">
-          <Icon name="mountain" className="h-5 w-5" />
-        </span>
-        <span className="text-sm font-bold leading-tight text-navy">{t('app.name')}</span>
+      <div className="flex items-center px-4 py-4">
+        <Logo className="h-auto w-full" width={150} priority />
       </div>
 
       <NavGroup t={t} label={t('nav.group.core')} items={PRIMARY_NAV} league={league} activeId={activeId} />
