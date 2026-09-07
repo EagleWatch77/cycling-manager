@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TrainingPlan, SaveTrainingResult } from '@/lib/training/repository';
-import type { TrainingIntensity, WeekType } from '@/lib/training/config';
+import type { TrainingIntensity } from '@/lib/training/config';
 import type { SkillAttribute } from '@/lib/rider/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
@@ -13,9 +13,7 @@ type FocusOption = { id: string; label: string };
 /**
  * Custom listbox (not a native <select>) so the currently selected Focus,
  * and every option in the open list, can show its glossy /ride-icon —
- * native <option> elements cannot render images. Technical-focus options
- * simply have no dedicated icon yet, so RiderStatIcon renders its neutral
- * placeholder for them instead of an unrelated icon.
+ * native <option> elements cannot render images.
  */
 function FocusSelect({ options, value, onChange }: {
   options: FocusOption[];
@@ -75,10 +73,14 @@ function FocusSelect({ options, value, onChange }: {
 /**
  * Training configuration for the one week that's ever plannable (always
  * `weekNumber` = current week + 1 — the caller, training/page.tsx, is the
- * single source of truth for that). There is no edit and no cancel: once
- * `saveAction` succeeds, the plan is permanent until the training engine
- * processes it (lib/training/engine.ts) — the component has exactly two
- * states, set (`plan`) or not (form), never a third "editing" state.
+ * single source of truth for that). Performance focus only: Tactics and
+ * Technique cannot be trained here — they grow only through race processing
+ * — so `performanceFocus` is the only option list this component ever shows.
+ *
+ * There is no edit and no cancel: once `saveAction` succeeds, the plan is
+ * permanent until the training engine processes it
+ * (lib/training/engine.ts) — the component has exactly two states, set
+ * (`plan`) or not (form), never a third "editing" state.
  *
  * `initialPlan` comes from a fresh server read on every page load, so a
  * confirmed plan survives a reload correctly — this never relies on
@@ -86,8 +88,7 @@ function FocusSelect({ options, value, onChange }: {
  */
 export function TrainingConfigForm({
   seasonId, weekNumber, totalWeeks,
-  initialPlan, performanceFocus, technicalFocus,
-  technicalWeeksUsed, maxTechnicalWeeks,
+  initialPlan, performanceFocus,
   labels, saveAction,
 }: {
   seasonId: string;
@@ -95,67 +96,48 @@ export function TrainingConfigForm({
   totalWeeks: number;
   initialPlan: TrainingPlan | null;
   performanceFocus: FocusOption[];
-  technicalFocus: FocusOption[];
-  technicalWeeksUsed: number;
-  maxTechnicalWeeks: number;
   labels: {
     forWeek: string;
     confirmedTitle: string;
     statusLabel: string;
     statusPlanned: string;
+    weekTypePerformance: string;
     focusLabel: string;
     intensityLabel: string;
-    weekTypeLabel: string;
-    weekTypePerformance: string;
-    weekTypeTechnical: string;
     intensityLight: string;
     intensityNormal: string;
     intensityHard: string;
     save: string;
     saving: string;
-    technicalLimitReached: string;
-    technicalWeeksUsedLabel: string;
     focusRequired: string;
     saveError: string;
   };
   saveAction: (input: {
-    seasonId: string; weekNumber: number; weekType: WeekType; focus: string; intensity: TrainingIntensity;
+    seasonId: string; weekNumber: number; focus: string; intensity: TrainingIntensity;
   }) => Promise<SaveTrainingResult>;
 }) {
   const router = useRouter();
   const [plan, setPlan] = useState(initialPlan);
-  const [weekType, setWeekType] = useState<WeekType>('performance');
   const [focus, setFocus] = useState<string>(performanceFocus[0]?.id ?? '');
   const [intensity, setIntensity] = useState<TrainingIntensity>('normal');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const submittingRef = useRef(false);
 
-  const focusOptions = weekType === 'performance' ? performanceFocus : technicalFocus;
-  const technicalLocked = weekType === 'technical' && technicalWeeksUsed >= maxTechnicalWeeks;
-
-  function switchWeekType(next: WeekType) {
-    setWeekType(next);
-    const opts = next === 'performance' ? performanceFocus : technicalFocus;
-    if (!opts.some((o) => o.id === focus)) setFocus(opts[0]?.id ?? '');
-  }
-
   function handleSave() {
     // submittingRef closes the gap between a click and React re-rendering the
     // button as disabled=true — pending only flips once startTransition's
     // callback actually starts, so a fast double-click could otherwise fire
     // the server action twice before that happens.
-    if (submittingRef.current || pending || technicalLocked || !focus) return;
+    if (submittingRef.current || pending || !focus) return;
     submittingRef.current = true;
     setError(null);
     startTransition(async () => {
       try {
-        const result = await saveAction({ seasonId, weekNumber, weekType, focus, intensity });
+        const result = await saveAction({ seasonId, weekNumber, focus, intensity });
         if (result.ok) {
           setPlan(result.plan);
           router.refresh();
-        } else if (result.reason === 'technical-limit') {
-          setError(labels.technicalLimitReached);
         } else if (result.reason === 'invalid-focus') {
           setError(labels.focusRequired);
         } else {
@@ -168,11 +150,9 @@ export function TrainingConfigForm({
   }
 
   if (plan) {
-    const focusLabel = (plan.weekType === 'performance' ? performanceFocus : technicalFocus)
-      .find((o) => o.id === plan.focus)?.label ?? plan.focus;
+    const focusLabel = performanceFocus.find((o) => o.id === plan.focus)?.label ?? plan.focus;
     const intensityLabel = plan.intensity === 'light' ? labels.intensityLight
       : plan.intensity === 'hard' ? labels.intensityHard : labels.intensityNormal;
-    const weekTypeLabel = plan.weekType === 'technical' ? labels.weekTypeTechnical : labels.weekTypePerformance;
 
     return (
       <div className="space-y-3">
@@ -183,7 +163,7 @@ export function TrainingConfigForm({
             {focusLabel}
           </p>
           <p className="mt-2 text-sm text-navy-soft">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
-          <p className="text-sm text-navy-soft">{intensityLabel} · {weekTypeLabel}</p>
+          <p className="text-sm text-navy-soft">{intensityLabel} · {labels.weekTypePerformance}</p>
           <p className="mt-3 flex items-center gap-2">
             <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.statusLabel}</span>
             <span className="rounded bg-teal px-2 py-0.5 text-2xs font-bold uppercase text-white">{labels.statusPlanned}</span>
@@ -197,34 +177,10 @@ export function TrainingConfigForm({
     <div className="space-y-4">
       <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
 
-      {/* Week type */}
-      <div>
-        <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.weekTypeLabel}</span>
-        <div className="grid grid-cols-2 gap-1.5">
-          <button type="button" onClick={() => switchWeekType('performance')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-              weekType === 'performance' ? 'bg-teal text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
-            }`}>
-            {labels.weekTypePerformance}
-          </button>
-          <button type="button" onClick={() => switchWeekType('technical')}
-            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-              weekType === 'technical' ? 'bg-teal text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
-            }`}>
-            {labels.weekTypeTechnical}
-          </button>
-        </div>
-        {weekType === 'technical' && (
-          <p className="mt-1.5 text-sm text-navy-muted">
-            {labels.technicalWeeksUsedLabel}: {technicalWeeksUsed} / {maxTechnicalWeeks}
-          </p>
-        )}
-      </div>
-
       {/* Focus */}
       <div>
         <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.focusLabel}</span>
-        <FocusSelect options={focusOptions} value={focus} onChange={setFocus} />
+        <FocusSelect options={performanceFocus} value={focus} onChange={setFocus} />
       </div>
 
       {/* Intensity */}
@@ -246,18 +202,13 @@ export function TrainingConfigForm({
         </div>
       </div>
 
-      {technicalLocked && (
-        <p className="rounded-lg border border-warn/30 bg-warn/5 px-2.5 py-1.5 text-sm text-warn">
-          {labels.technicalLimitReached}
-        </p>
-      )}
       {error && (
         <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-2.5 py-1.5 text-sm text-danger">
           {error}
         </p>
       )}
 
-      <button type="button" onClick={handleSave} disabled={pending || technicalLocked || !focus} aria-busy={pending}
+      <button type="button" onClick={handleSave} disabled={pending || !focus} aria-busy={pending}
         className="w-full rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark disabled:cursor-not-allowed disabled:opacity-70">
         {pending ? labels.saving : labels.save}
       </button>

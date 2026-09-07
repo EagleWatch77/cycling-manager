@@ -24,7 +24,7 @@ export function DevAttributeRow({
 }) {
   return (
     <li className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
-      <RiderStatIcon src={icon} alt={label} size={20} />
+      <RiderStatIcon src={icon} alt={label} size={24} />
       <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{label}</span>
       {variant === 'stars' ? (
         <span className="shrink-0 text-base leading-none tracking-[1px]" aria-label={`${level}/5`}>

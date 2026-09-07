@@ -2,12 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { saveTrainingPlan, type SaveTrainingResult } from '@/lib/training/repository';
-import type { TrainingIntensity, WeekType } from '@/lib/training/config';
+import type { TrainingIntensity } from '@/lib/training/config';
 
 export async function saveTrainingAction(input: {
   seasonId: string;
   weekNumber: number;
-  weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {

@@ -9,16 +9,16 @@ import {
 import { scoreToLevel, potentialToStars } from '@/lib/rider/development';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
-import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
-import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON } from '@/lib/training/config';
+import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
+import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { processCompletedTrainings } from '@/lib/training/engine';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
-import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
+import { ConditionRow, type Trend } from '@/components/rider/ConditionRow';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
@@ -28,7 +28,16 @@ const FLAGS: Record<string, string> = {
   DE: '🇩🇪', GB: '🇬🇧', US: '🇺🇸', AU: '🇦🇺', CO: '🇨🇴', DK: '🇩🇰', NO: '🇳🇴', SI: '🇸🇮',
 };
 
-const TECHNIQUE_PREVIEW: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface'];
+/**
+ * Tactics/Technique attribute sets shown for reference on this page. Kept to
+ * exactly the real SkillAttribute ids the rider data model has (see
+ * lib/rider/config.ts) — the race engine's own AttributeKey type additionally
+ * has `reaction` and `timeTrial`, which the web app's rider generator never
+ * produces yet, and a `breakawayEffort` which is an in-race tactical choice
+ * enum, not a persistent rider skill — none of the three are invented here.
+ * See the chat report for the full architecture note.
+ */
+const TECHNIQUE_KEYS: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface'];
 const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyManagement'];
 
 /**
@@ -36,6 +45,10 @@ const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyMa
  * lib/navigation.ts). Shows enough of the Rider to make a training call
  * without navigating away, but is not a second Rider profile: full Tactics/
  * Technique detail stays on /rider.
+ *
+ * Only Performance is trainable here — Tactics and Technique grow through
+ * race processing, never through a plan created on this page (see
+ * TrainingConfigForm, which only ever offers PERFORMANCE_FOCUS).
  *
  * Green "+N" bonuses shown anywhere on this page are real: they come only
  * from the most recently *processed* training's persisted primary/secondary
@@ -87,14 +100,12 @@ export default async function TrainingPage() {
   // A race in this (or any) week has no bearing on whether it's plannable.
   const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
 
-  const [plan, technicalUsed, recent] = await Promise.all([
+  const [plan, recent] = await Promise.all([
     getTrainingPlan(season.seasonId, plannableWeek),
-    countTechnicalWeeksUsed(season.seasonId),
     listRecentCompletedTrainings(3),
   ]);
 
   const performanceOptions = PERFORMANCE_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
-  const technicalOptions = TECHNICAL_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
 
   // Rozvoj never shows exact development numbers — only a 1-5 visual read.
   // See lib/rider/development.ts for the centralized value->level mapping.
@@ -103,14 +114,6 @@ export default async function TrainingPage() {
   const professionalismLevel = scoreToLevel(rider.professionalism, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX);
   const recoveryLevel = scoreToLevel(rider.recovery, RECOVERY_MIN, RECOVERY_MAX);
   const experienceLevel = scoreToLevel(rider.attributes.experience, ATTR_MIN, ATTR_MAX);
-
-  const condition: { key: string; conditionKey: ConditionKey; value: number }[] = [
-    { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy },
-    { key: 'rider.fatigue', conditionKey: 'fatigue', value: rider.condition.fatigue },
-    { key: 'rider.form', conditionKey: 'form', value: rider.condition.form },
-    { key: 'rider.fitness', conditionKey: 'fitness', value: rider.condition.fitness },
-    { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale },
-  ];
 
   // Real bonus overlay: only the single most recently processed training,
   // never anything guessed. Condition fields have no such gain in the real
@@ -124,6 +127,22 @@ export default async function TrainingPage() {
   if (lastCompleted?.secondaryAttr && lastCompleted.secondaryGain !== null) {
     bonuses[lastCompleted.secondaryAttr as SkillAttribute] = lastCompleted.secondaryGain;
   }
+
+  // Stav jazdca trends: a direction, never a fabricated number. The engine
+  // (lib/training/engine.ts) is the only thing that ever changes condition,
+  // and it always costs energy and adds fatigue when a plan is processed —
+  // form/fitness/morale have no driver of change yet, so their trend is
+  // honestly flat until the game design gives them one. `hasProcessedTraining`
+  // is a real persisted fact (at least one applied training exists), not a
+  // guess about "now".
+  const hasProcessedTraining = recent.length > 0;
+  const conditionRows: { key: string; conditionKey: ConditionKey; value: number; trend: Trend; goodDirection: 'up' | 'down' }[] = [
+    { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy, trend: hasProcessedTraining ? 'down' : 'flat', goodDirection: 'up' },
+    { key: 'rider.fatigue', conditionKey: 'fatigue', value: rider.condition.fatigue, trend: hasProcessedTraining ? 'up' : 'flat', goodDirection: 'down' },
+    { key: 'rider.form', conditionKey: 'form', value: rider.condition.form, trend: 'flat', goodDirection: 'up' },
+    { key: 'rider.fitness', conditionKey: 'fitness', value: rider.condition.fitness, trend: 'flat', goodDirection: 'up' },
+    { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale, trend: 'flat', goodDirection: 'up' },
+  ];
 
   // "Posledné tréningy": completed weeks plus the currently scheduled one
   // (if any), so the player sees where it sits relative to what already ran.
@@ -152,7 +171,7 @@ export default async function TrainingPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-navy">{t('trainingPage.title')}</h1>
-            <p className="mt-0.5 text-sm text-navy-soft">{t('trainingPage.subtitle')}</p>
+            <p className="mt-0.5 text-sm font-medium text-navy-soft">{t('trainingPage.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-card px-3 py-2 text-2xs text-navy-muted">
             <Icon name="calendar" className="h-3.5 w-3.5 text-teal" />
@@ -189,7 +208,7 @@ export default async function TrainingPage() {
             </Card>
 
             <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
-              showStatIcons statIconSize={20} showBars={false} bonuses={bonuses} />
+              showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
           </div>
 
           {/* CENTER — training configuration */}
@@ -202,26 +221,19 @@ export default async function TrainingPage() {
                   totalWeeks={season.totalWeeks}
                   initialPlan={plan}
                   performanceFocus={performanceOptions}
-                  technicalFocus={technicalOptions}
-                  technicalWeeksUsed={technicalUsed}
-                  maxTechnicalWeeks={MAX_TECHNICAL_WEEKS_PER_SEASON}
                   labels={{
                     forWeek: t('trainingPage.forWeek'),
                     confirmedTitle: t('trainingPage.savedTitle'),
                     statusLabel: t('trainingPage.statusLabel'),
                     statusPlanned: t('trainingPage.statusPlanned'),
+                    weekTypePerformance: t('trainingPage.weekTypePerformance'),
                     focusLabel: t('trainingPage.focus'),
                     intensityLabel: t('trainingPage.intensity'),
-                    weekTypeLabel: t('trainingPage.weekType'),
-                    weekTypePerformance: t('trainingPage.weekTypePerformance'),
-                    weekTypeTechnical: t('trainingPage.weekTypeTechnical'),
                     intensityLight: t('trainingPage.intensityLight'),
                     intensityNormal: t('trainingPage.intensityNormal'),
                     intensityHard: t('trainingPage.intensityHard'),
                     save: t('trainingPage.save'),
                     saving: t('trainingPage.saving'),
-                    technicalLimitReached: t('trainingPage.technicalLimitReached'),
-                    technicalWeeksUsedLabel: t('trainingPage.technicalWeeksUsedLabel'),
                     focusRequired: t('trainingPage.focusRequired'),
                     saveError: t('trainingPage.saveError'),
                   }}
@@ -245,14 +257,9 @@ export default async function TrainingPage() {
 
             <Card title={<span className="text-sm text-teal-dark">{t('group.condition')}</span>} dense>
               <ul className="p-3.5">
-                {condition.map((c) => (
-                  <li key={c.key} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
-                    <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={20} />
-                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(c.key)}>
-                      {t(c.key)}
-                    </span>
-                    <span className="shrink-0 text-base font-bold tabular-nums text-navy">{c.value}</span>
-                  </li>
+                {conditionRows.map((c) => (
+                  <ConditionRow key={c.key} icon={getConditionStatIcon(c.conditionKey)} label={t(c.key)}
+                    value={c.value} trend={c.trend} goodDirection={c.goodDirection} />
                 ))}
               </ul>
             </Card>
@@ -260,9 +267,8 @@ export default async function TrainingPage() {
         </div>
 
         {/* BOTTOM — recent training history, tactics, technique, side by side */}
-        <div className="grid grid-cols-12 gap-3">
-          <Card title={<span className="text-sm text-teal-dark">{t('trainingPage.recentHistory')}</span>} dense
-            className="col-span-12 lg:col-span-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.15fr_0.9fr_1fr]">
+          <Card title={<span className="text-sm text-teal-dark">{t('trainingPage.recentHistory')}</span>} dense>
             {historyRows.length === 0 ? (
               <p className="p-3.5 text-sm text-navy-soft">{t('trainingPage.noHistory')}</p>
             ) : (
@@ -284,21 +290,18 @@ export default async function TrainingPage() {
           </Card>
 
           <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes}
-            showBars={false} bonuses={bonuses} className="col-span-12 lg:col-span-4" />
+            showBars={false} bonuses={bonuses} />
 
-          <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense
-            className="col-span-12 lg:col-span-4">
+          <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense>
             <ul className="p-3.5">
-              {TECHNIQUE_PREVIEW.map((k) => (
-                <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+              {TECHNIQUE_KEYS.map((k) => (
+                <li key={k} className="grid grid-cols-[minmax(0,1fr)_60px_42px] items-center gap-2 border-b border-line py-2 last:border-0">
+                  <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
                     {t(`attr.${k}`)}
                   </span>
-                  <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
-                    <span className="text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
-                    {bonuses[k] != null && (
-                      <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
-                    )}
+                  <span className="text-right text-base font-semibold tabular-nums text-navy">{rider.attributes[k]}</span>
+                  <span className="text-right text-xs font-bold tabular-nums text-teal-dark">
+                    {bonuses[k] != null ? `+${bonuses[k]}` : ''}
                   </span>
                 </li>
               ))}

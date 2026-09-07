@@ -2,10 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import {
-  MAX_TECHNICAL_WEEKS_PER_SEASON, PERFORMANCE_FOCUS, TECHNICAL_FOCUS,
-  type TrainingIntensity, type WeekType,
-} from './config';
+import { PERFORMANCE_FOCUS, type TrainingIntensity, type WeekType } from './config';
 
 const VALID_INTENSITIES: readonly TrainingIntensity[] = ['light', 'normal', 'hard'];
 
@@ -85,22 +82,6 @@ export async function getTrainingPlan(seasonId: string, weekNumber: number): Pro
   return fromRow(data);
 }
 
-/** How many Technical weeks the current player's Rider has already used this season. */
-export async function countTechnicalWeeksUsed(seasonId: string): Promise<number> {
-  const rider = await getMyRider();
-  if (!rider) return 0;
-
-  const supabase = await createClient();
-  const { count } = await supabase
-    .from('training_plans')
-    .select('id', { count: 'exact', head: true })
-    .eq('rider_id', rider.id)
-    .eq('season_id', seasonId)
-    .eq('week_type', 'technical');
-
-  return count ?? 0;
-}
-
 /** The most recent completed (applied) training blocks — real outcomes only, never predictions. */
 export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingPlan[]> {
   const rider = await getMyRider();
@@ -121,7 +102,7 @@ export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingP
 
 export type SaveTrainingResult =
   | { ok: true; plan: TrainingPlan }
-  | { ok: false; reason: 'no-rider' | 'locked' | 'technical-limit' | 'invalid-focus' | 'already-processed' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'locked' | 'invalid-focus' | 'already-processed' | 'error' };
 
 /**
  * Saves the current player's training plan for the one week that's ever
@@ -130,21 +111,22 @@ export type SaveTrainingResult =
  * the current week, or even in the plannable week itself, has no bearing on
  * whether training can be scheduled — those are independent systems.
  *
+ * Always writes week_type 'performance': Tactics and Technique cannot be
+ * trained directly from this page — they only grow through race processing
+ * — so `focus` must be one of PERFORMANCE_FOCUS's 6 real attributes.
+ *
  * Once a plan exists for that week it is permanent: this function is only
  * ever called while no plan exists yet (the UI removes the form the moment
  * one is saved, and never offers an edit/cancel path — see
  * TrainingConfigForm). The `already-processed` guard and the upsert are
  * still here as defense in depth, not because normal use reaches them.
  *
- * Rejects a focus that isn't one of the real attributes for the chosen week
- * type, and enforces the Technical-week season cap. The unique constraint
- * on (rider_id, season_id, week_number) is the final backstop against two
- * plans for the same week.
+ * The unique constraint on (rider_id, season_id, week_number) is the final
+ * backstop against two plans for the same week.
  */
 export async function saveTrainingPlan(input: {
   seasonId: string;
   weekNumber: number;
-  weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {
@@ -159,21 +141,12 @@ export async function saveTrainingPlan(input: {
     return { ok: false, reason: 'locked' };
   }
 
-  const validFocusList = input.weekType === 'technical' ? TECHNICAL_FOCUS : PERFORMANCE_FOCUS;
-  if (!VALID_INTENSITIES.includes(input.intensity) || !validFocusList.includes(input.focus as never)) {
+  if (!VALID_INTENSITIES.includes(input.intensity) || !PERFORMANCE_FOCUS.includes(input.focus as never)) {
     return { ok: false, reason: 'invalid-focus' };
   }
 
   const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
   if (existing?.appliedAt) return { ok: false, reason: 'already-processed' };
-
-  if (input.weekType === 'technical') {
-    const used = await countTechnicalWeeksUsed(input.seasonId);
-    const alreadyCountedThisWeek = existing?.weekType === 'technical';
-    if (used >= MAX_TECHNICAL_WEEKS_PER_SEASON && !alreadyCountedThisWeek) {
-      return { ok: false, reason: 'technical-limit' };
-    }
-  }
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -183,7 +156,7 @@ export async function saveTrainingPlan(input: {
         rider_id: rider.id,
         season_id: input.seasonId,
         week_number: input.weekNumber,
-        week_type: input.weekType,
+        week_type: 'performance' satisfies WeekType,
         focus: input.focus,
         intensity: input.intensity,
         updated_at: new Date().toISOString(),

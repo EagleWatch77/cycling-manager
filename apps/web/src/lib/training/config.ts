@@ -19,21 +19,21 @@ import { POTENTIAL_MIN, POTENTIAL_MAX, ATTR_MIN, ATTR_MAX, type SkillAttribute }
  */
 
 export type TrainingIntensity = 'light' | 'normal' | 'hard';
+/**
+ * 'technical' is kept only so a pre-existing DB row (week_type check
+ * constraint allows it) still reads back without a type error. The
+ * "technical week" feature — training Tactics/Technique directly — has been
+ * retired: those two families now grow only through race processing (see
+ * SECONDARY_ATTRIBUTE below, which is otherwise unaffected), never through a
+ * plan a player creates here. Nothing in the app ever writes 'technical'
+ * anymore — see saveTrainingPlan in lib/training/repository.ts.
+ */
 export type WeekType = 'performance' | 'technical';
 
-/** The 6 real Performance-group skills a Rider can pick as a Performance-week focus. */
+/** The 6 real Performance-group skills a Rider can pick as a training focus. The only focus family plannable from the Training page. */
 export const PERFORMANCE_FOCUS: readonly SkillAttribute[] = [
   'climbing', 'hills', 'flat', 'sprint', 'endurance', 'acceleration',
 ];
-
-/** Tactics + Technique skills a Rider can pick as a Technical-week focus. */
-export const TECHNICAL_FOCUS: readonly SkillAttribute[] = [
-  'positioning', 'attackTiming', 'energyManagement',
-  'descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface',
-];
-
-/** How many Technical weeks a Rider may use per season. Not derived from any existing rule — see report. */
-export const MAX_TECHNICAL_WEEKS_PER_SEASON = 3;
 
 export const INTENSITY_MULTIPLIER: Record<TrainingIntensity, number> = {
   light: 1.0,

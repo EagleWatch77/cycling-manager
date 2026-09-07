@@ -15,15 +15,17 @@ import { RiderStatIcon } from './RiderStatIcon';
  * prop — no icon, glossy or outline, is introduced for those so nothing gets
  * mixed within a single row list.
  *
- * `showBars` defaults to on (the Rider page keeps the teal progress rail).
- * The Training page turns it off for a quieter label/value list — see the
- * training page for the reasoning.
+ * `showBars` defaults to on (the Rider page keeps the teal progress rail,
+ * flex-laid-out row). The Training page turns it off for a 3-column grid
+ * row instead — [icon+label] [value] [gain] — where the gain column has a
+ * fixed reserved width whether or not a bonus exists, so the value's
+ * position never shifts row to row.
  *
  * `bonuses` is an optional real-gain overlay: when a row's key is present,
- * a green "+N" renders after its value. Callers must only pass gains that
- * actually happened (e.g. the most recently processed training's persisted
- * primary/secondary gain) — never a guess or a preview, so this stays
- * trustworthy history rather than a fabricated number.
+ * a green "+N" renders in the gain column. Callers must only pass gains
+ * that actually happened (e.g. the most recently processed training's
+ * persisted primary/secondary gain) — never a guess or a preview, so this
+ * stays trustworthy history rather than a fabricated number.
  */
 export function AttributeGroup({
   t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28, bonuses,
@@ -49,23 +51,38 @@ export function AttributeGroup({
       }>
       <ul className="p-3.5">
         {keys.map((k) => (
-          <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
-            {showStatIcons && (
-              <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
-            )}
-            <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
-              {t(`attr.${k}`)}
-            </span>
-            {showBars && (
-              <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
-            )}
-            <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
-              <span className="text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
-              {bonuses?.[k] != null && (
-                <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
+          showBars ? (
+            <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
+              {showStatIcons && (
+                <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
               )}
-            </span>
-          </li>
+              <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                {t(`attr.${k}`)}
+              </span>
+              <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+              <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
+                <span className="text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
+                {bonuses?.[k] != null && (
+                  <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
+                )}
+              </span>
+            </li>
+          ) : (
+            <li key={k} className="grid grid-cols-[minmax(0,1fr)_60px_42px] items-center gap-2 border-b border-line py-2 last:border-0">
+              <span className="flex min-w-0 items-center gap-2.5">
+                {showStatIcons && (
+                  <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
+                )}
+                <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                  {t(`attr.${k}`)}
+                </span>
+              </span>
+              <span className="text-right text-base font-semibold tabular-nums text-navy">{attributes[k]}</span>
+              <span className="text-right text-xs font-bold tabular-nums text-teal-dark">
+                {bonuses?.[k] != null ? `+${bonuses[k]}` : ''}
+              </span>
+            </li>
+          )
         ))}
       </ul>
     </Card>
