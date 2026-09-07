@@ -516,3 +516,101 @@ create index if not exists market_riders_first_name_trgm_idx
   on public.market_riders using gin (first_name gin_trgm_ops);
 create index if not exists market_riders_surname_trgm_idx
   on public.market_riders using gin (surname gin_trgm_ops);
+
+-- ============================================================================
+-- Race Results / Rankings V1.
+--
+-- No race ever simulates and writes a result yet — packages/race-engine
+-- exists and can simulate a stage, but nothing in this app currently calls
+-- it or persists its output. This table is the landing spot for whenever
+-- that pipeline is built (a race-processing job/action would insert one row
+-- per rider per finished tour); until then it stays empty and the Rebríčky
+-- (Rankings) page correctly shows its "not available yet" empty state,
+-- rather than any invented number. `points` is computed application-side
+-- from `position` via lib/ranking/scoring.ts (pointsForPosition) at the
+-- moment a result is recorded — never derived again at read time, so the
+-- scoring formula can change later without rewriting history.
+--
+-- tour_id is a plain text id with no foreign key, same rationale as
+-- tour_registrations.tour_id above (tours are static app content, not a
+-- DB table).
+-- ============================================================================
+
+create table if not exists public.race_results (
+  id           uuid primary key default gen_random_uuid(),
+  season_id    text not null,
+  tour_id      text not null,
+  rider_id     uuid not null references public.riders (id) on delete cascade,
+  position     int  not null check (position > 0),
+  points       int  not null check (points >= 0),
+  recorded_at  timestamptz not null default now(),
+  unique (season_id, tour_id, rider_id)
+);
+
+alter table public.race_results enable row level security;
+
+-- Results are public race information (like a start list), so any
+-- authenticated player may read every result, not just their own rider's.
+drop policy if exists "race_results_select_all" on public.race_results;
+create policy "race_results_select_all"
+  on public.race_results for select
+  using (true);
+
+-- No player-facing write path exists (nothing simulates a race yet) — only
+-- an admin can insert/update/delete, same defense-in-depth pattern as
+-- market_riders_admin_all, ready for whatever future job records results.
+drop policy if exists "race_results_admin_all" on public.race_results;
+create policy "race_results_admin_all"
+  on public.race_results for all
+  using (exists (select 1 from public.admin_users a where a.user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users a where a.user_id = auth.uid()));
+
+grant select, insert, update, delete on public.race_results to authenticated;
+
+create index if not exists race_results_season_rider_idx
+  on public.race_results (season_id, rider_id);
+create index if not exists race_results_season_position_idx
+  on public.race_results (season_id, position);
+
+create index if not exists riders_first_name_trgm_idx
+  on public.riders using gin (first_name gin_trgm_ops);
+create index if not exists riders_surname_trgm_idx
+  on public.riders using gin (surname gin_trgm_ops);
+
+-- Per-season aggregation the Rankings ("Jazdci") page reads directly —
+-- SUM(points)/wins/podiums per rider, computed fresh from race_results on
+-- every query, never a second persisted "current points" number that could
+-- drift out of sync with the underlying results.
+--
+-- Deliberately WITHOUT security_invoker: public.riders' own RLS
+-- (riders_select_own) only lets a player see their own rider plus AI
+-- fillers — an invoker-rights view would silently show an incomplete,
+-- wrong leaderboard (everyone else's real riders missing) instead of a
+-- real one. Running with the view owner's rights bypasses that row-level
+-- restriction for this query only, which is safe here specifically
+-- because the view's column list is fixed and never includes anything
+-- beyond public identity + aggregated results — no attributes, potential,
+-- trainability, condition, or any other hidden field is selectable through
+-- it no matter who queries it. This is the same "leak-proof window"
+-- pattern as a public leaderboard in any RLS-based app: row-level security
+-- stays strict on the base table; the view is the one deliberate, narrow
+-- exception, scoped by its column list rather than by row visibility.
+create or replace view public.rider_rankings as
+select
+  rr.season_id,
+  rr.rider_id,
+  r.first_name,
+  r.surname,
+  r.country_name,
+  r.country_iso2,
+  r.age,
+  sum(rr.points)::int as points,
+  count(*) filter (where rr.position = 1)::int as wins,
+  count(*) filter (where rr.position <= 3)::int as podiums,
+  count(*)::int as races,
+  min(rr.position)::int as best_position
+from public.race_results rr
+join public.riders r on r.id = rr.rider_id
+group by rr.season_id, rr.rider_id, r.first_name, r.surname, r.country_name, r.country_iso2, r.age;
+
+grant select on public.rider_rankings to authenticated;
