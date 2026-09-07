@@ -439,3 +439,80 @@ create policy "market_riders_admin_all"
   with check (exists (select 1 from public.admin_users a where a.user_id = auth.uid()));
 
 grant select, insert, update, delete on public.market_riders to authenticated;
+
+-- ============================================================================
+-- Trh jazdcov (player Transfer Market) V1 — read-only browsing.
+--
+-- Premium account entitlement: a SEPARATE table, deliberately not a boolean
+-- column on public.profiles. profiles already has a broad "update own row"
+-- policy for the player's own display settings — if is_premium lived there,
+-- that same policy would let a player grant themselves Premium with a plain
+-- authenticated Supabase client call. Mirrors the public.admin_users
+-- pattern exactly: presence of a row = entitlement, and there is NO
+-- insert/update/delete policy for `authenticated` at all, so a player's own
+-- client can never write to this table under any circumstances — only a
+-- manual admin SQL statement (see the template below, same shape as the
+-- admin_users one) or, later, a real purchase-flow server action using the
+-- same authenticated+RLS pattern can grant it.
+--
+--   insert into public.premium_entitlements (user_id)
+--   select id from auth.users where email = 'you@example.com'
+--   on conflict (user_id) do nothing;
+--
+-- ============================================================================
+
+create table if not exists public.premium_entitlements (
+  user_id    uuid primary key references auth.users (id) on delete cascade,
+  granted_at timestamptz not null default now()
+);
+
+alter table public.premium_entitlements enable row level security;
+
+drop policy if exists "premium_entitlements_select_own" on public.premium_entitlements;
+create policy "premium_entitlements_select_own"
+  on public.premium_entitlements for select
+  using (user_id = auth.uid());
+
+grant select on public.premium_entitlements to authenticated;
+
+-- Replaces the earlier player-facing market_riders policy: a normal player
+-- may read an 'available' FREE rider, or a PREMIUM rider only while they
+-- hold a premium_entitlements row, or a rider they personally acquired
+-- (any tier, any status — their own acquisition history). A free player's
+-- Supabase client asking directly for tier='premium' rows gets zero back
+-- from this policy, regardless of what the app layer does — the DB is the
+-- authoritative gate, not just the /transfers tab UI.
+drop policy if exists "market_riders_select_available" on public.market_riders;
+create policy "market_riders_select_available"
+  on public.market_riders for select
+  using (
+    acquired_by_player_id = auth.uid()
+    or (
+      status = 'available'
+      and (
+        tier = 'free'
+        or exists (select 1 from public.premium_entitlements pe where pe.user_id = auth.uid())
+      )
+    )
+  );
+
+-- Every player market query filters by (season_id, tier, status) first —
+-- this composite index covers that exactly. Additional single-column
+-- indexes back the Premium advanced filters (country/archetype/age/
+-- potential) and sorting.
+create index if not exists market_riders_season_tier_status_idx
+  on public.market_riders (season_id, tier, status);
+create index if not exists market_riders_country_idx on public.market_riders (country_name);
+create index if not exists market_riders_archetype_idx on public.market_riders (inferred_archetype);
+create index if not exists market_riders_age_idx on public.market_riders (age);
+create index if not exists market_riders_potential_idx on public.market_riders (potential);
+
+-- Name search (Premium "Hľadať jazdca...") uses ILIKE '%text%', which a
+-- plain B-tree index cannot accelerate — trigram indexes are what make that
+-- fast at thousands of rows. pg_trgm ships with Supabase/Postgres, just not
+-- enabled by default.
+create extension if not exists pg_trgm;
+create index if not exists market_riders_first_name_trgm_idx
+  on public.market_riders using gin (first_name gin_trgm_ops);
+create index if not exists market_riders_surname_trgm_idx
+  on public.market_riders using gin (surname gin_trgm_ops);

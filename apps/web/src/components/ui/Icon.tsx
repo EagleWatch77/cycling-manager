@@ -27,6 +27,8 @@ const PATHS: Record<string, string> = {
   wheel: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 21V3M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4',
   chain: 'M9 12a3 3 0 0 1 3-3h2a3 3 0 0 1 0 6h-2M15 12a3 3 0 0 1-3 3h-2a3 3 0 0 1 0-6h2',
   helmet: 'M4 15a8 8 0 0 1 16 0zM3 15h18v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+  cart: 'M4 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H7M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM17 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+  crown: 'M4 18h16l-1.2-8.5L14 12l-2-6.5L10 12 5.2 9.5 4 18zM4 18v2h16v-2',
 };
 
 export function Icon({ name, className = 'h-4 w-4' }: { name: string; className?: string }) {

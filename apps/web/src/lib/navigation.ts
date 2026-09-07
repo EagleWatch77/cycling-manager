@@ -33,7 +33,12 @@ export const PRIMARY_NAV: readonly NavItem[] = [
 export const SECONDARY_NAV: readonly NavItem[] = [
   { id: 'team', href: '/team', labelKey: 'nav.team', icon: 'team', availableIn: TEAM_LEAGUES },
   { id: 'scouting', href: '/scouting', labelKey: 'nav.scouting', icon: 'search', availableIn: TEAM_LEAGUES },
-  { id: 'transfers', href: '/transfers', labelKey: 'nav.transfers', icon: 'swap', availableIn: TEAM_LEAGUES },
+  // Trh jazdcov (Transfer Market) — unlike the other team-era sections,
+  // this is available from Rookie onward: a market to browse/sign riders
+  // makes sense even before a player has a multi-rider team, and Rookie is
+  // currently the only functional league, so gating this to TEAM_LEAGUES
+  // would make the whole feature unreachable for every real player today.
+  { id: 'transfers', href: '/transfers', labelKey: 'nav.transfers', icon: 'cart' },
   { id: 'staff', href: '/staff', labelKey: 'nav.staff', icon: 'staff', availableIn: TEAM_LEAGUES },
   { id: 'finance', href: '/finance', labelKey: 'nav.finance', icon: 'coin', availableIn: TEAM_LEAGUES },
   { id: 'facilities', href: '/facilities', labelKey: 'nav.facilities', icon: 'building', availableIn: TEAM_LEAGUES },
