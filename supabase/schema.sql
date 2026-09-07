@@ -263,3 +263,16 @@ create policy "training_plans_update_own"
   );
 
 grant select, insert, update on public.training_plans to authenticated;
+
+-- A player may cancel their own Rider's still-scheduled plan (Training V1 —
+-- "Zrušiť plán"). Restricted to applied_at IS NULL at the policy level too:
+-- a processed plan is history and can never be deleted through the app.
+drop policy if exists "training_plans_delete_own" on public.training_plans;
+create policy "training_plans_delete_own"
+  on public.training_plans for delete
+  using (
+    applied_at is null
+    and exists (select 1 from public.riders r where r.id = rider_id and r.player_id = auth.uid())
+  );
+
+grant delete on public.training_plans to authenticated;

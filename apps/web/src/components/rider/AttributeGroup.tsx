@@ -18,9 +18,15 @@ import { RiderStatIcon } from './RiderStatIcon';
  * `showBars` defaults to on (the Rider page keeps the teal progress rail).
  * The Training page turns it off for a quieter label/value list — see the
  * training page for the reasoning.
+ *
+ * `bonuses` is an optional real-gain overlay: when a row's key is present,
+ * a green "+N" renders after its value. Callers must only pass gains that
+ * actually happened (e.g. the most recently processed training's persisted
+ * primary/secondary gain) — never a guess or a preview, so this stays
+ * trustworthy history rather than a fabricated number.
  */
 export function AttributeGroup({
-  t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28,
+  t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28, bonuses,
 }: {
   t: T;
   titleKey: string;
@@ -31,6 +37,7 @@ export function AttributeGroup({
   showStatIcons?: boolean;
   showBars?: boolean;
   statIconSize?: number;
+  bonuses?: Partial<Record<SkillAttribute, number>>;
 }) {
   return (
     <Card dense className={className}
@@ -52,8 +59,11 @@ export function AttributeGroup({
             {showBars && (
               <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
             )}
-            <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">
-              {attributes[k]}
+            <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
+              <span className="text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
+              {bonuses?.[k] != null && (
+                <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
+              )}
             </span>
           </li>
         ))}

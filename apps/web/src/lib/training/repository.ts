@@ -173,6 +173,42 @@ export async function saveTrainingPlan(input: {
   return { ok: true, plan: fromRow(data) };
 }
 
+export type CancelTrainingResult =
+  | { ok: true }
+  | { ok: false; reason: 'no-rider' | 'locked' | 'already-processed' | 'not-found' | 'error' };
+
+/**
+ * Cancels (deletes) the current player's training plan for a season week.
+ * Only ever allowed for the current week, and only while the plan is still
+ * unprocessed — once a plan has a real result (applied_at set) it's history,
+ * not something to undo. The `applied_at IS NULL` filter on the delete is
+ * the same DB-level backstop used elsewhere against a race with the
+ * processing engine.
+ */
+export async function cancelTrainingPlan(input: {
+  seasonId: string;
+  weekNumber: number;
+  isCurrentWeek: boolean;
+}): Promise<CancelTrainingResult> {
+  const rider = await getMyRider();
+  if (!rider) return { ok: false, reason: 'no-rider' };
+  if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
+
+  const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
+  if (!existing) return { ok: false, reason: 'not-found' };
+  if (existing.appliedAt) return { ok: false, reason: 'already-processed' };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('training_plans')
+    .delete()
+    .eq('id', existing.id)
+    .is('applied_at', null);
+
+  if (error) return { ok: false, reason: 'error' };
+  return { ok: true };
+}
+
 /** Every scheduled-but-not-yet-processed plan for a rider, oldest week first. Used only by the training engine. */
 export async function listUnprocessedTrainingPlans(riderId: string): Promise<TrainingPlan[]> {
   const supabase = await createClient();

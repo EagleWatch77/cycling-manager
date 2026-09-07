@@ -6,6 +6,7 @@ import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON, potentialCeiling } from '@/lib/training/config';
 import { processCompletedTrainings } from '@/lib/training/engine';
+import { calculateGrowth } from '@/lib/training/growth';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -13,15 +14,15 @@ import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
-import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
-import { saveTrainingAction } from './actions';
+import { TrainingConfigForm, type ExpectedGrowthPreview } from '@/components/training/TrainingConfigForm';
+import { saveTrainingAction, cancelTrainingAction } from './actions';
 
 const FLAGS: Record<string, string> = {
   SK: '🇸🇰', CZ: '🇨🇿', PL: '🇵🇱', FR: '🇫🇷', IT: '🇮🇹', ES: '🇪🇸', BE: '🇧🇪', NL: '🇳🇱',
   DE: '🇩🇪', GB: '🇬🇧', US: '🇺🇸', AU: '🇦🇺', CO: '🇨🇴', DK: '🇩🇰', NO: '🇳🇴', SI: '🇸🇮',
 };
 
-const TECHNIQUE_PREVIEW: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding'];
+const TECHNIQUE_PREVIEW: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface'];
 const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyManagement'];
 
 /**
@@ -30,8 +31,12 @@ const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyMa
  * without navigating away, but is not a second Rider profile: full Tactics/
  * Technique detail stays on /rider.
  *
- * Deliberately never shows a predicted gain. See lib/training/growth.ts for
- * why: the formula exists, but nothing computes or previews it here.
+ * Green "+N" bonuses shown anywhere on this page are real: they come only
+ * from the most recently *processed* training's persisted primary/secondary
+ * gain (lib/training/repository.ts), never fabricated. The one exception is
+ * the "Očakávané prírastky" preview inside the still-scheduled plan card,
+ * which is explicitly labelled as an estimate and computed live from the
+ * real formula — see TrainingConfigForm.
  */
 export default async function TrainingPage() {
   const { t, locale } = await getServerDictionary();
@@ -90,6 +95,63 @@ export default async function TrainingPage() {
     { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale },
   ];
 
+  // Real bonus overlay: only the single most recently processed training,
+  // never anything guessed. Condition fields have no such gain in the real
+  // model (training only ever costs energy/adds fatigue), so they never
+  // carry a "+N" here.
+  const lastCompleted = recent[0] ?? null;
+  const bonuses: Partial<Record<SkillAttribute, number>> = {};
+  if (lastCompleted?.primaryAttr && lastCompleted.primaryGain !== null) {
+    bonuses[lastCompleted.primaryAttr as SkillAttribute] = lastCompleted.primaryGain;
+  }
+  if (lastCompleted?.secondaryAttr && lastCompleted.secondaryGain !== null) {
+    bonuses[lastCompleted.secondaryAttr as SkillAttribute] = lastCompleted.secondaryGain;
+  }
+
+  // Live estimate for the still-scheduled plan — same formula the engine
+  // uses, computed against today's stats. Never persisted, never shown as
+  // final; TrainingConfigForm labels it "expected", not "actual".
+  const expectedGrowth: ExpectedGrowthPreview | null = plan && !plan.appliedAt
+    ? (() => {
+        const focus = plan.focus as SkillAttribute;
+        const g = calculateGrowth({
+          focus,
+          intensity: plan.intensity,
+          currentValue: rider.attributes[focus],
+          trainability: rider.trainability,
+          professionalism: rider.professionalism,
+          age: rider.age,
+          potential: rider.potential,
+        });
+        return {
+          primaryLabel: t(`attr.${g.primaryAttr}`),
+          primaryGain: g.primaryGain,
+          secondaryLabel: g.secondaryAttr ? t(`attr.${g.secondaryAttr}`) : null,
+          secondaryGain: g.secondaryGain ?? null,
+        };
+      })()
+    : null;
+
+  // "Posledné tréningy": completed weeks plus the currently scheduled one
+  // (if any), so the player sees where it sits relative to what already ran.
+  type HistoryRow = { key: string; weekNumber: number; label: string; done: boolean };
+  const historyRows: HistoryRow[] = [
+    ...recent.map((h): HistoryRow => ({
+      key: h.id,
+      weekNumber: h.weekNumber,
+      label: SKILL_ATTRIBUTES.includes(h.focus as SkillAttribute) ? t(`attr.${h.focus}`) : h.focus,
+      done: true,
+    })),
+    ...(plan && !plan.appliedAt
+      ? [{
+          key: plan.id,
+          weekNumber: plan.weekNumber,
+          label: SKILL_ATTRIBUTES.includes(plan.focus as SkillAttribute) ? t(`attr.${plan.focus}`) : plan.focus,
+          done: false,
+        } satisfies HistoryRow]
+      : []),
+  ];
+
   return (
     <AppShell activeId="training" locale={locale}>
       <div className="space-y-3">
@@ -134,7 +196,7 @@ export default async function TrainingPage() {
             </Card>
 
             <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
-              showStatIcons statIconSize={20} showBars={false} />
+              showStatIcons statIconSize={20} showBars={false} bonuses={bonuses} />
           </div>
 
           {/* CENTER — training configuration */}
@@ -144,6 +206,7 @@ export default async function TrainingPage() {
                 <TrainingConfigForm
                   seasonId={season.seasonId}
                   weekNumber={season.currentWeek}
+                  totalWeeks={season.totalWeeks}
                   isRaceWeek={isRaceWeek}
                   isCurrentWeek
                   initialPlan={plan}
@@ -151,8 +214,15 @@ export default async function TrainingPage() {
                   technicalFocus={technicalOptions}
                   technicalWeeksUsed={technicalUsed}
                   maxTechnicalWeeks={MAX_TECHNICAL_WEEKS_PER_SEASON}
+                  expectedGrowth={expectedGrowth}
                   labels={{
                     heading: t('trainingPage.settings'),
+                    windowTitle: t('trainingPage.windowTitle'),
+                    plannedTitle: t('trainingPage.savedTitle'),
+                    appliesTo: t('trainingPage.appliesTo'),
+                    typeLabel: t('trainingPage.type'),
+                    planningNote: t('trainingPage.planningNote'),
+                    expectedGains: t('trainingPage.expectedGains'),
                     focusLabel: t('trainingPage.focus'),
                     intensityLabel: t('trainingPage.intensity'),
                     weekTypeLabel: t('trainingPage.weekType'),
@@ -166,6 +236,8 @@ export default async function TrainingPage() {
                     saving: t('trainingPage.saving'),
                     edit: t('trainingPage.edit'),
                     cancelEdit: t('trainingPage.cancelEdit'),
+                    cancelPlan: t('trainingPage.cancelPlan'),
+                    cancelling: t('trainingPage.cancelling'),
                     savedTitle: t('trainingPage.savedTitle'),
                     savedWeekType: t('trainingPage.weekTypeTechnical'),
                     raceWeekLocked: t('trainingPage.raceWeekLocked'),
@@ -174,14 +246,16 @@ export default async function TrainingPage() {
                     focusRequired: t('trainingPage.focusRequired'),
                     saveError: t('trainingPage.saveError'),
                     saveSuccess: t('trainingPage.saveSuccess'),
+                    cancelError: t('trainingPage.cancelError'),
                   }}
                   saveAction={saveTrainingAction}
+                  cancelAction={cancelTrainingAction}
                 />
               </div>
             </Card>
           </div>
 
-          {/* RIGHT — development, condition, tactics/technique */}
+          {/* RIGHT — development, condition */}
           <div className="col-span-12 space-y-3 lg:col-span-3">
             <Card title={<span className="text-sm text-teal-dark">{t('group.development')}</span>} dense>
               <ul className="p-3.5">
@@ -208,7 +282,12 @@ export default async function TrainingPage() {
                 <li className="flex items-center gap-2.5 py-2">
                   <RiderStatIcon src={getSkillStatIcon('experience')} alt={t('attr.experience')} size={20} />
                   <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('attr.experience')}</span>
-                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.attributes.experience}</span>
+                  <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
+                    <span className="text-base font-bold tabular-nums text-navy">{rider.attributes.experience}</span>
+                    {bonuses.experience != null && (
+                      <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses.experience}</span>
+                    )}
+                  </span>
                 </li>
               </ul>
             </Card>
@@ -226,61 +305,55 @@ export default async function TrainingPage() {
                 ))}
               </ul>
             </Card>
-
-            <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes} showBars={false} />
-
-            <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense>
-              <ul className="p-3.5">
-                {TECHNIQUE_PREVIEW.map((k) => (
-                  <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
-                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
-                      {t(`attr.${k}`)}
-                    </span>
-                    <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="/rider"
-                className="flex items-center justify-center gap-1 border-t border-line px-3.5 py-2 text-xs font-medium text-teal transition-colors hover:bg-teal-rail">
-                {t('trainingPage.viewAll')}
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </a>
-            </Card>
           </div>
         </div>
 
-        {/* BOTTOM — recent training history */}
-        <Card title={t('trainingPage.recentHistory')} dense>
-          {recent.length === 0 ? (
-            <p className="p-3.5 text-sm text-navy-soft">{t('trainingPage.noHistory')}</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {recent.map((h) => {
-                const label = SKILL_ATTRIBUTES.includes(h.focus as SkillAttribute) ? t(`attr.${h.focus}`) : h.focus;
-                const intensityLabel = h.intensity === 'light' ? t('trainingPage.intensityLight')
-                  : h.intensity === 'hard' ? t('trainingPage.intensityHard') : t('trainingPage.intensityNormal');
-                return (
-                  <li key={h.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-navy">{label}</p>
-                      <p className="text-2xs text-navy-muted">{intensityLabel} · {t('races.weekN', { n: h.weekNumber })}</p>
-                    </div>
-                    {h.primaryGain !== null && (
-                      <span className="shrink-0 text-xs font-bold text-teal">
-                        +{h.primaryGain} {t(`attr.${h.primaryAttr}`)}
-                        {h.secondaryGain !== null && h.secondaryAttr && (
-                          <>, +{h.secondaryGain} {t(`attr.${h.secondaryAttr}`)}</>
-                        )}
-                      </span>
-                    )}
+        {/* BOTTOM — recent training history, tactics, technique, side by side */}
+        <div className="grid grid-cols-12 gap-3">
+          <Card title={<span className="text-sm text-teal-dark">{t('trainingPage.recentHistory')}</span>} dense
+            className="col-span-12 lg:col-span-4">
+            {historyRows.length === 0 ? (
+              <p className="p-3.5 text-sm text-navy-soft">{t('trainingPage.noHistory')}</p>
+            ) : (
+              <ul className="p-3.5">
+                {historyRows.map((h) => (
+                  <li key={h.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
+                    <span className="min-w-0 truncate text-[15px] text-navy">
+                      {t('races.weekN', { n: h.weekNumber })} · {h.label}
+                    </span>
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold uppercase ${
+                      h.done ? 'bg-surface text-navy-muted' : 'bg-teal-rail text-teal-dark'
+                    }`}>
+                      {h.done ? t('trainingPage.statusDone') : t('trainingPage.statusPlanned')}
+                    </span>
                   </li>
-                );
-              })}
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes}
+            showBars={false} bonuses={bonuses} className="col-span-12 lg:col-span-4" />
+
+          <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense
+            className="col-span-12 lg:col-span-4">
+            <ul className="p-3.5">
+              {TECHNIQUE_PREVIEW.map((k) => (
+                <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                    {t(`attr.${k}`)}
+                  </span>
+                  <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
+                    <span className="text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
+                    {bonuses[k] != null && (
+                      <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
             </ul>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
     </AppShell>
   );

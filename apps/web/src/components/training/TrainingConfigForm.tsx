@@ -2,11 +2,25 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { TrainingPlan, SaveTrainingResult } from '@/lib/training/repository';
+import type { TrainingPlan, SaveTrainingResult, CancelTrainingResult } from '@/lib/training/repository';
 import type { TrainingIntensity, WeekType } from '@/lib/training/config';
 import type { SkillAttribute } from '@/lib/rider/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
+
+/**
+ * A read-only preview of what the current plan would earn if processed
+ * today — computed server-side by the same calculateGrowth() the real
+ * engine uses (lib/training/growth.ts), never a separate/fabricated number.
+ * Labelled "expected", not final: intensity/condition can still change
+ * before the week actually resolves, and this is never persisted.
+ */
+export type ExpectedGrowthPreview = {
+  primaryLabel: string;
+  primaryGain: number;
+  secondaryLabel: string | null;
+  secondaryGain: number | null;
+};
 
 type FocusOption = { id: string; label: string };
 
@@ -80,18 +94,23 @@ function FocusSelect({ options, value, onChange }: {
  * (e.g. the Technical-week counter) — an imperative call does not
  * auto-refresh the route the way a native form action does.
  *
- * Deliberately does NOT compute or show any predicted gain: the player picks
- * focus/intensity/week type, nothing more, per the game-design rule that the
- * exact outcome stays unknown until training is processed.
+ * The saved-plan view shows an "Očakávané prírastky" (expected gains)
+ * preview via `expectedGrowth` — computed server-side with the real
+ * calculateGrowth() formula against the rider's stats today, never
+ * fabricated. It is explicitly labelled as an estimate: the real, final
+ * result is only ever written by the training engine once the week is
+ * actually processed (lib/training/engine.ts), and that's what
+ * listRecentCompletedTrainings later shows as history.
  */
 export function TrainingConfigForm({
-  seasonId, weekNumber, isRaceWeek, isCurrentWeek,
+  seasonId, weekNumber, totalWeeks, isRaceWeek, isCurrentWeek,
   initialPlan, performanceFocus, technicalFocus,
-  technicalWeeksUsed, maxTechnicalWeeks,
-  labels, saveAction,
+  technicalWeeksUsed, maxTechnicalWeeks, expectedGrowth,
+  labels, saveAction, cancelAction,
 }: {
   seasonId: string;
   weekNumber: number;
+  totalWeeks: number;
   isRaceWeek: boolean;
   isCurrentWeek: boolean;
   initialPlan: TrainingPlan | null;
@@ -99,8 +118,16 @@ export function TrainingConfigForm({
   technicalFocus: FocusOption[];
   technicalWeeksUsed: number;
   maxTechnicalWeeks: number;
+  /** Preview for `initialPlan` specifically — null once the form is edited away from it. */
+  expectedGrowth: ExpectedGrowthPreview | null;
   labels: {
     heading: string;
+    windowTitle: string;
+    plannedTitle: string;
+    appliesTo: string;
+    typeLabel: string;
+    planningNote: string;
+    expectedGains: string;
     focusLabel: string;
     intensityLabel: string;
     weekTypeLabel: string;
@@ -114,6 +141,8 @@ export function TrainingConfigForm({
     saving: string;
     edit: string;
     cancelEdit: string;
+    cancelPlan: string;
+    cancelling: string;
     savedTitle: string;
     savedWeekType: string;
     raceWeekLocked: string;
@@ -122,11 +151,13 @@ export function TrainingConfigForm({
     focusRequired: string;
     saveError: string;
     saveSuccess: string;
+    cancelError: string;
   };
   saveAction: (input: {
     seasonId: string; weekNumber: number; weekType: WeekType; focus: string; intensity: TrainingIntensity;
     isRaceWeek: boolean; isCurrentWeek: boolean;
   }) => Promise<SaveTrainingResult>;
+  cancelAction: (input: { seasonId: string; weekNumber: number; isCurrentWeek: boolean }) => Promise<CancelTrainingResult>;
 }) {
   const router = useRouter();
   const [plan, setPlan] = useState(initialPlan);
@@ -137,6 +168,7 @@ export function TrainingConfigForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [cancelling, setCancelling] = useState(false);
   const submittingRef = useRef(false);
 
   if (isRaceWeek) {
@@ -192,30 +224,95 @@ export function TrainingConfigForm({
     });
   }
 
+  function handleCancel() {
+    if (cancelling || pending) return;
+    setCancelling(true);
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await cancelAction({ seasonId, weekNumber, isCurrentWeek });
+        if (result.ok) {
+          setPlan(null);
+          setEditing(true);
+          setSuccess(false);
+          router.refresh();
+        } else {
+          setError(labels.cancelError);
+        }
+      } finally {
+        setCancelling(false);
+      }
+    });
+  }
+
   if (plan && !editing) {
     const focusLabel = (plan.weekType === 'performance' ? performanceFocus : technicalFocus)
       .find((o) => o.id === plan.focus)?.label ?? plan.focus;
     const intensityLabel = plan.intensity === 'light' ? labels.intensityLight
       : plan.intensity === 'hard' ? labels.intensityHard : labels.intensityNormal;
+    const weekTypeLabel = plan.weekType === 'technical' ? labels.savedWeekType : labels.weekTypePerformance;
 
     return (
       <div className="space-y-3">
         <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.heading}</p>
+        <p className="-mt-2 text-xs font-semibold uppercase tracking-wide text-navy-muted">{labels.windowTitle}</p>
+
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.savedTitle}</p>
-          <p className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
+          <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.plannedTitle}</p>
+          <p className="mt-1.5 flex items-center gap-2 text-lg font-bold text-navy">
             <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={32} />
             {focusLabel}
           </p>
-          <p className="text-sm text-navy-soft">
-            {intensityLabel} · {plan.weekType === 'technical' ? labels.savedWeekType : labels.weekTypePerformance}
-          </p>
+
+          <dl className="mt-3 space-y-1 text-sm">
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-navy-soft">{labels.appliesTo}</dt>
+              <dd className="font-semibold text-navy">{weekNumber} / {totalWeeks}</dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-navy-soft">{labels.typeLabel}</dt>
+              <dd className="font-semibold text-navy">{intensityLabel} · {weekTypeLabel}</dd>
+            </div>
+          </dl>
+
+          <p className="mt-2.5 text-xs text-navy-muted">{labels.planningNote}</p>
+
+          {expectedGrowth && (
+            <div className="mt-3 border-t border-teal/20 pt-2.5">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.expectedGains}</p>
+              <ul className="mt-1 space-y-0.5 text-sm">
+                <li className="flex items-center justify-between">
+                  <span className="text-navy-soft">{expectedGrowth.primaryLabel}</span>
+                  <span className="font-bold text-teal-dark">+{expectedGrowth.primaryGain}</span>
+                </li>
+                {expectedGrowth.secondaryLabel && expectedGrowth.secondaryGain !== null && (
+                  <li className="flex items-center justify-between">
+                    <span className="text-navy-soft">{expectedGrowth.secondaryLabel}</span>
+                    <span className="font-bold text-teal-dark">+{expectedGrowth.secondaryGain}</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
+
+        {error && (
+          <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-2.5 py-1.5 text-sm text-danger">
+            {error}
+          </p>
+        )}
+
         {isCurrentWeek && (
-          <button type="button" onClick={() => setEditing(true)}
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-semibold text-navy-soft transition-colors hover:bg-teal-rail hover:text-navy">
-            {labels.edit}
-          </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setEditing(true)} disabled={cancelling}
+              className="flex-1 rounded-lg border border-line bg-card px-3 py-2 text-sm font-semibold text-navy-soft transition-colors hover:bg-teal-rail hover:text-navy disabled:opacity-60">
+              {labels.edit}
+            </button>
+            <button type="button" onClick={handleCancel} disabled={cancelling} aria-busy={cancelling}
+              className="flex-1 rounded-lg border border-danger/30 bg-card px-3 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-60">
+              {cancelling ? labels.cancelling : labels.cancelPlan}
+            </button>
+          </div>
         )}
       </div>
     );
