@@ -253,6 +253,8 @@
   "trainingPage.cancelError": "Cancelling failed. Please try again.",
   "trainingPage.statusDone": "Completed",
   "trainingPage.statusPlanned": "Planned",
+  "trainingPage.forWeek": "Training for week",
+  "trainingPage.statusLabel": "Status",
   "trainingPage.saveError": "Saving the training failed. Please try again.",
   "trainingPage.saveSuccess": "Training saved.",
   "trainingPage.recentHistory": "Recent training",

@@ -6,7 +6,6 @@ import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON, potentialCeiling } from '@/lib/training/config';
 import { processCompletedTrainings } from '@/lib/training/engine';
-import { calculateGrowth } from '@/lib/training/growth';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -14,8 +13,8 @@ import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
-import { TrainingConfigForm, type ExpectedGrowthPreview } from '@/components/training/TrainingConfigForm';
-import { saveTrainingAction, cancelTrainingAction } from './actions';
+import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
+import { saveTrainingAction } from './actions';
 
 const FLAGS: Record<string, string> = {
   SK: '🇸🇰', CZ: '🇨🇿', PL: '🇵🇱', FR: '🇫🇷', IT: '🇮🇹', ES: '🇪🇸', BE: '🇧🇪', NL: '🇳🇱',
@@ -33,10 +32,11 @@ const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyMa
  *
  * Green "+N" bonuses shown anywhere on this page are real: they come only
  * from the most recently *processed* training's persisted primary/secondary
- * gain (lib/training/repository.ts), never fabricated. The one exception is
- * the "Očakávané prírastky" preview inside the still-scheduled plan card,
- * which is explicitly labelled as an estimate and computed live from the
- * real formula — see TrainingConfigForm.
+ * gain (lib/training/repository.ts), never fabricated or previewed.
+ *
+ * A plan, once confirmed, is permanent — no edit, no cancel — until the
+ * engine processes it. Races never gate whether training can be scheduled;
+ * `currentWeekHasRace` only drives the informational header badge.
  */
 export default async function TrainingPage() {
   const { t, locale } = await getServerDictionary();
@@ -71,13 +71,14 @@ export default async function TrainingPage() {
   const rider = (await getMyRider()) ?? riderBeforeProcessing;
 
   const scheduled = getSeasonSchedule(season);
+  // Purely informational (header badge) — never gates training planning.
   const currentWeekHasRace = scheduled.some((v) => v.isCurrentWeek);
 
   // Training can only ever be scheduled one week ahead of right now — see
   // plannableWeekNumber() in lib/training/repository.ts, which enforces this
   // server-side too. Clamped at the season's last week (no week beyond it).
+  // A race in this (or any) week has no bearing on whether it's plannable.
   const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
-  const plannableWeekHasRace = scheduled.some((v) => v.schedule.weekNumber === plannableWeek);
 
   const [plan, technicalUsed, recent] = await Promise.all([
     getTrainingPlan(season.seasonId, plannableWeek),
@@ -113,30 +114,6 @@ export default async function TrainingPage() {
   if (lastCompleted?.secondaryAttr && lastCompleted.secondaryGain !== null) {
     bonuses[lastCompleted.secondaryAttr as SkillAttribute] = lastCompleted.secondaryGain;
   }
-
-  // Live estimate for the still-scheduled plan — same formula the engine
-  // uses, computed against today's stats. Never persisted, never shown as
-  // final; TrainingConfigForm labels it "expected", not "actual".
-  const expectedGrowth: ExpectedGrowthPreview | null = plan && !plan.appliedAt
-    ? (() => {
-        const focus = plan.focus as SkillAttribute;
-        const g = calculateGrowth({
-          focus,
-          intensity: plan.intensity,
-          currentValue: rider.attributes[focus],
-          trainability: rider.trainability,
-          professionalism: rider.professionalism,
-          age: rider.age,
-          potential: rider.potential,
-        });
-        return {
-          primaryLabel: t(`attr.${g.primaryAttr}`),
-          primaryGain: g.primaryGain,
-          secondaryLabel: g.secondaryAttr ? t(`attr.${g.secondaryAttr}`) : null,
-          secondaryGain: g.secondaryGain ?? null,
-        };
-      })()
-    : null;
 
   // "Posledné tréningy": completed weeks plus the currently scheduled one
   // (if any), so the player sees where it sits relative to what already ran.
@@ -213,24 +190,16 @@ export default async function TrainingPage() {
                   seasonId={season.seasonId}
                   weekNumber={plannableWeek}
                   totalWeeks={season.totalWeeks}
-                  isRaceWeek={plannableWeekHasRace}
-                  // Always true: this form only ever targets `plannableWeek`
-                  // (the one editable week), never a past or later one.
-                  isCurrentWeek
                   initialPlan={plan}
                   performanceFocus={performanceOptions}
                   technicalFocus={technicalOptions}
                   technicalWeeksUsed={technicalUsed}
                   maxTechnicalWeeks={MAX_TECHNICAL_WEEKS_PER_SEASON}
-                  expectedGrowth={expectedGrowth}
                   labels={{
-                    heading: t('trainingPage.settings'),
-                    windowTitle: t('trainingPage.windowTitle'),
-                    plannedTitle: t('trainingPage.savedTitle'),
-                    appliesTo: t('trainingPage.appliesTo'),
-                    typeLabel: t('trainingPage.type'),
-                    planningNote: t('trainingPage.planningNote'),
-                    expectedGains: t('trainingPage.expectedGains'),
+                    forWeek: t('trainingPage.forWeek'),
+                    confirmedTitle: t('trainingPage.savedTitle'),
+                    statusLabel: t('trainingPage.statusLabel'),
+                    statusPlanned: t('trainingPage.statusPlanned'),
                     focusLabel: t('trainingPage.focus'),
                     intensityLabel: t('trainingPage.intensity'),
                     weekTypeLabel: t('trainingPage.weekType'),
@@ -240,24 +209,13 @@ export default async function TrainingPage() {
                     intensityNormal: t('trainingPage.intensityNormal'),
                     intensityHard: t('trainingPage.intensityHard'),
                     save: t('trainingPage.save'),
-                    saveEdit: t('trainingPage.saveEdit'),
                     saving: t('trainingPage.saving'),
-                    edit: t('trainingPage.edit'),
-                    cancelEdit: t('trainingPage.cancelEdit'),
-                    cancelPlan: t('trainingPage.cancelPlan'),
-                    cancelling: t('trainingPage.cancelling'),
-                    savedTitle: t('trainingPage.savedTitle'),
-                    savedWeekType: t('trainingPage.weekTypeTechnical'),
-                    raceWeekLocked: t('trainingPage.raceWeekLocked'),
                     technicalLimitReached: t('trainingPage.technicalLimitReached'),
                     technicalWeeksUsedLabel: t('trainingPage.technicalWeeksUsedLabel'),
                     focusRequired: t('trainingPage.focusRequired'),
                     saveError: t('trainingPage.saveError'),
-                    saveSuccess: t('trainingPage.saveSuccess'),
-                    cancelError: t('trainingPage.cancelError'),
                   }}
                   saveAction={saveTrainingAction}
-                  cancelAction={cancelTrainingAction}
                 />
               </div>
             </Card>

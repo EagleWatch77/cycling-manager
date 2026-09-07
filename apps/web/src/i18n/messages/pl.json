@@ -253,6 +253,8 @@
   "trainingPage.cancelError": "Anulowanie nie powiodło się. Spróbuj ponownie.",
   "trainingPage.statusDone": "Zakończony",
   "trainingPage.statusPlanned": "Zaplanowany",
+  "trainingPage.forWeek": "Trening na tydzień",
+  "trainingPage.statusLabel": "Status",
   "trainingPage.saveError": "Zapisanie treningu nie powiodło się. Spróbuj ponownie.",
   "trainingPage.saveSuccess": "Trening zapisany.",
   "trainingPage.recentHistory": "Ostatnie treningi",

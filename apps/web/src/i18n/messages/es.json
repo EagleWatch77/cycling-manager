@@ -253,6 +253,8 @@
   "trainingPage.cancelError": "No se pudo cancelar. Inténtalo de nuevo.",
   "trainingPage.statusDone": "Completado",
   "trainingPage.statusPlanned": "Planificado",
+  "trainingPage.forWeek": "Entrenamiento para la semana",
+  "trainingPage.statusLabel": "Estado",
   "trainingPage.saveError": "Error al guardar el entrenamiento. Inténtalo de nuevo.",
   "trainingPage.saveSuccess": "Entrenamiento guardado.",
   "trainingPage.recentHistory": "Entrenamientos recientes",

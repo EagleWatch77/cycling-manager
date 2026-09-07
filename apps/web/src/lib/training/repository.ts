@@ -121,21 +121,25 @@ export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingP
 
 export type SaveTrainingResult =
   | { ok: true; plan: TrainingPlan }
-  | { ok: false; reason: 'no-rider' | 'race-week' | 'locked' | 'technical-limit' | 'invalid-focus' | 'already-processed' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'locked' | 'technical-limit' | 'invalid-focus' | 'already-processed' | 'error' };
 
 /**
- * Saves (creates or edits) the current player's training plan. Always
- * targets exactly one week ahead of the real current week — see
- * plannableWeekNumber() — so a plan can never be scheduled for the week
- * already underway, nor for anything further out. Refuses to schedule
- * training in a race week, rejects a focus that isn't one of the real
- * attributes for the chosen week type, refuses to touch a plan that was
- * already processed (its result would go stale — see engine.ts), and
- * enforces the Technical-week season cap. The unique constraint on
- * (rider_id, season_id, week_number) is the final backstop against a
- * duplicate plan for the same week — this function upserts on that key, so
- * a second submit for the same week edits the existing row instead of
- * creating a second one.
+ * Saves the current player's training plan for the one week that's ever
+ * plannable — exactly one week ahead of the real current week, see
+ * plannableWeekNumber(). Races do not gate this at all: a race scheduled in
+ * the current week, or even in the plannable week itself, has no bearing on
+ * whether training can be scheduled — those are independent systems.
+ *
+ * Once a plan exists for that week it is permanent: this function is only
+ * ever called while no plan exists yet (the UI removes the form the moment
+ * one is saved, and never offers an edit/cancel path — see
+ * TrainingConfigForm). The `already-processed` guard and the upsert are
+ * still here as defense in depth, not because normal use reaches them.
+ *
+ * Rejects a focus that isn't one of the real attributes for the chosen week
+ * type, and enforces the Technical-week season cap. The unique constraint
+ * on (rider_id, season_id, week_number) is the final backstop against two
+ * plans for the same week.
  */
 export async function saveTrainingPlan(input: {
   seasonId: string;
@@ -143,13 +147,9 @@ export async function saveTrainingPlan(input: {
   weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
-  isRaceWeek: boolean;
-  isCurrentWeek: boolean;
 }): Promise<SaveTrainingResult> {
   const rider = await getMyRider();
   if (!rider) return { ok: false, reason: 'no-rider' };
-  if (input.isRaceWeek) return { ok: false, reason: 'race-week' };
-  if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
 
   // Authoritative "only 1 week ahead" rule — recomputed here, not trusted
   // from the client, so a direct call can't schedule further out or into
@@ -195,47 +195,6 @@ export async function saveTrainingPlan(input: {
 
   if (error || !data) return { ok: false, reason: 'error' };
   return { ok: true, plan: fromRow(data) };
-}
-
-export type CancelTrainingResult =
-  | { ok: true }
-  | { ok: false; reason: 'no-rider' | 'locked' | 'already-processed' | 'not-found' | 'error' };
-
-/**
- * Cancels (deletes) the current player's training plan for a season week.
- * Only ever allowed for the current week, and only while the plan is still
- * unprocessed — once a plan has a real result (applied_at set) it's history,
- * not something to undo. The `applied_at IS NULL` filter on the delete is
- * the same DB-level backstop used elsewhere against a race with the
- * processing engine.
- */
-export async function cancelTrainingPlan(input: {
-  seasonId: string;
-  weekNumber: number;
-  isCurrentWeek: boolean;
-}): Promise<CancelTrainingResult> {
-  const rider = await getMyRider();
-  if (!rider) return { ok: false, reason: 'no-rider' };
-  if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
-
-  const plannable = plannableWeekNumber();
-  if (input.seasonId !== plannable.seasonId || input.weekNumber !== plannable.weekNumber) {
-    return { ok: false, reason: 'locked' };
-  }
-
-  const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
-  if (!existing) return { ok: false, reason: 'not-found' };
-  if (existing.appliedAt) return { ok: false, reason: 'already-processed' };
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from('training_plans')
-    .delete()
-    .eq('id', existing.id)
-    .is('applied_at', null);
-
-  if (error) return { ok: false, reason: 'error' };
-  return { ok: true };
 }
 
 /** Every scheduled-but-not-yet-processed plan for a rider, oldest week first. Used only by the training engine. */

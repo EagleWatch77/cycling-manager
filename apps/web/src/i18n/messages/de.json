@@ -253,6 +253,8 @@
   "trainingPage.cancelError": "Stornieren fehlgeschlagen. Bitte erneut versuchen.",
   "trainingPage.statusDone": "Abgeschlossen",
   "trainingPage.statusPlanned": "Geplant",
+  "trainingPage.forWeek": "Training für Woche",
+  "trainingPage.statusLabel": "Status",
   "trainingPage.saveError": "Speichern des Trainings fehlgeschlagen. Bitte erneut versuchen.",
   "trainingPage.saveSuccess": "Training gespeichert.",
   "trainingPage.recentHistory": "Letzte Trainings",

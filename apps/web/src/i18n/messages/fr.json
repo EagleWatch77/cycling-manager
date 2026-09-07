@@ -244,6 +244,8 @@
   "trainingPage.technicalWeeksUsedLabel": "Semaines techniques cette saison",
   "trainingPage.focusRequired": "Choisis un objectif d'entraînement.",
 "trainingPage.windowTitle": "Fenêtre d'entraînement",  "trainingPage.appliesTo": "S'applique à",  "trainingPage.type": "Type",  "trainingPage.planningNote": "Planification : une seule semaine à l'avance",  "trainingPage.expectedGains": "Gains attendus",  "trainingPage.cancelPlan": "Annuler le plan",  "trainingPage.cancelling": "Annulation…",  "trainingPage.cancelError": "Échec de l'annulation. Réessaie.",  "trainingPage.statusDone": "Terminé",  "trainingPage.statusPlanned": "Planifié",
+  "trainingPage.forWeek": "Entraînement pour la semaine",
+  "trainingPage.statusLabel": "Statut",
   "trainingPage.saveError": "Échec de l'enregistrement de l'entraînement. Réessaie.",
   "trainingPage.saveSuccess": "Entraînement enregistré.",
   "trainingPage.recentHistory": "Entraînements récents",
