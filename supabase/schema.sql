@@ -371,3 +371,71 @@ create policy "riders_select_admin"
   using (
     exists (select 1 from public.admin_users a where a.user_id = auth.uid())
   );
+
+-- ============================================================================
+-- Transfer Market V1 — a persistent pool of unowned, transferable riders,
+-- separate from public.riders on purpose: a market rider is not a player's
+-- rider and not an AI race filler, and folding it into `riders` would mean
+-- widening `riders_ai_or_player_check` (is_ai xor player_id) to a third
+-- state everywhere that constraint is relied on. Acquiring one (future work,
+-- not built by this migration) is expected to *copy* it into a real
+-- `riders` row and mark this row acquired — never to just flip player_id
+-- here — so this table can also keep permanent history of every rider a
+-- player has ever signed from the market, which `riders` alone cannot.
+--
+-- `status` is the idempotency/reset boundary: 'available' rows are the
+-- current, still-unsigned pool (safe to bulk-delete for a test reset);
+-- 'acquired' rows are permanent history (never deleted by the reset action —
+-- see lib/market/*). Generation is driven by lib/market/generateMarketPool.ts,
+-- called today only from an admin action; `source` records which trigger
+-- created a given batch ('admin' now, 'week6' once that season-tick job
+-- exists — see that file's own doc comment).
+-- ============================================================================
+
+create table if not exists public.market_riders (
+  id                 uuid primary key default gen_random_uuid(),
+  season_id          text not null,
+  tier               text not null check (tier in ('free', 'premium')),
+  status             text not null default 'available' check (status in ('available', 'acquired')),
+  first_name         text not null,
+  surname            text not null,
+  country_name       text not null,
+  country_iso2       text not null,
+  age                int  not null,
+  attributes         jsonb not null,
+  condition          jsonb not null,
+  inferred_archetype text not null,
+  potential          int  not null,
+  trainability       int  not null,
+  professionalism    int  not null,
+  recovery           int  not null,
+  generator_version  text not null default 'starter-v1',
+  source             text not null check (source in ('admin', 'week6')),
+  generated_at       timestamptz not null default now(),
+  -- Populated only once a future "acquire" action exists. Never written by
+  -- generation or by the reset action.
+  acquired_by_player_id uuid references auth.users (id),
+  acquired_at            timestamptz,
+  acquired_rider_id       uuid references public.riders (id)
+);
+
+alter table public.market_riders enable row level security;
+
+-- Any authenticated player may browse the currently-available pool (that's
+-- the point of a market) plus whatever they personally acquired; nothing
+-- else about another player's acquisition is exposed by this policy alone.
+drop policy if exists "market_riders_select_available" on public.market_riders;
+create policy "market_riders_select_available"
+  on public.market_riders for select
+  using (status = 'available' or acquired_by_player_id = auth.uid());
+
+-- Generation and the test-reset are admin-only for now — there is no
+-- player-facing "acquire" action yet, so no policy grants a normal player
+-- any write access to this table at all.
+drop policy if exists "market_riders_admin_all" on public.market_riders;
+create policy "market_riders_admin_all"
+  on public.market_riders for all
+  using (exists (select 1 from public.admin_users a where a.user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users a where a.user_id = auth.uid()));
+
+grant select, insert, update, delete on public.market_riders to authenticated;

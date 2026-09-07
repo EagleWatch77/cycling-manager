@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireAdmin } from '@/lib/admin/auth';
 import { getAdminRiderRawList } from '@/lib/rider/adminRepository';
 import { AdminRiderTable } from '@/components/admin/AdminRiderTable';
@@ -24,6 +25,9 @@ export default async function AdminRidersPage() {
         <p className="mt-1 text-sm text-navy-soft">
           Raw, unfiltered rider data — signed in as {admin.email ?? admin.id}. Internal tool, not part of the player-facing game.
         </p>
+        <Link href="/admin/market" className="mt-1 inline-block text-2xs font-semibold text-teal hover:underline">
+          → Market Tools
+        </Link>
       </div>
 
       <AdminRiderTable riders={riders} />
