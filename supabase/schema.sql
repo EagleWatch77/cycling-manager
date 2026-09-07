@@ -317,3 +317,57 @@ update public.riders set attributes = attributes || jsonb_build_object('wetHandl
 alter table public.riders add column if not exists condition_previous jsonb;
 update public.riders set condition_previous = condition where condition_previous is null;
 alter table public.riders alter column condition_previous set not null;
+
+-- ============================================================================
+-- Admin Rider Inspector V1 — internal/developer-only raw rider access.
+--
+-- admin_users is the ONLY source of admin identity in this app. Membership
+-- is a DB fact, not a frontend check: nothing about "is this user an admin"
+-- is ever decided by an email string compared in React or in a server
+-- action — every admin page/query re-derives it from this table via
+-- lib/admin/auth.ts, and the riders_select_admin policy below enforces the
+-- same rule independently at the database level, so even a bug in the app's
+-- own admin check could not leak another player's raw rider row.
+--
+-- Deliberately NOT auto-seeded with any email: this file has no way to know
+-- your Supabase auth user id, and hardcoding an address here would either be
+-- wrong for your project or (worse) silently grant admin to whoever signs up
+-- with that address later. Add yourself once, by hand, after creating your
+-- account:
+--
+--   insert into public.admin_users (user_id)
+--   select id from auth.users where email = 'you@example.com'
+--   on conflict (user_id) do nothing;
+--
+-- ============================================================================
+
+create table if not exists public.admin_users (
+  user_id    uuid primary key references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_users enable row level security;
+
+-- A user may only ever see their OWN membership row (enough for the
+-- riders_select_admin policy's subquery below to work — it checks the
+-- current user's own row — without exposing the admin list to anyone else).
+drop policy if exists "admin_users_select_own" on public.admin_users;
+create policy "admin_users_select_own"
+  on public.admin_users for select
+  using (user_id = auth.uid());
+
+grant select on public.admin_users to authenticated;
+
+-- Admin-only full read access to riders — additive, not a replacement: this
+-- is a second permissive SELECT policy alongside the existing
+-- "riders_select_own" (own rider + AI fillers). Postgres OR's permissive
+-- policies together, so this can only ever WIDEN access for rows where the
+-- current user is in admin_users; it can never narrow what a normal player
+-- already sees, and a non-admin's EXISTS subquery here always evaluates to
+-- false (they still fall back to riders_select_own).
+drop policy if exists "riders_select_admin" on public.riders;
+create policy "riders_select_admin"
+  on public.riders for select
+  using (
+    exists (select 1 from public.admin_users a where a.user_id = auth.uid())
+  );

@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin/auth';
 import { listAllRiders } from '@/lib/rider/repository';
 import { SKILL_ATTRIBUTES } from '@/lib/rider/config';
 import { MINIMUM_RACE_FIELD } from '@/lib/rider/aiConfig';
@@ -10,11 +9,14 @@ import { generatePelotonAction } from './actions';
  * Admin/development-only view: validate the AI Rookie Generator V1 output.
  * Not linked from any player-facing navigation. Deliberately unlocalized —
  * this is a dev tool, not game UI.
+ *
+ * SECURITY FIX (found during the Admin Rider Inspector audit): this page
+ * previously only checked `if (!user)` — any logged-in player, not just an
+ * admin, could open it and see every AI rider plus their own rider's raw
+ * attributes via listAllRiders(). Now gated the same way as /admin/riders.
  */
 export default async function TestPelotonPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  await requireAdmin();
 
   const riders = await listAllRiders();
   const realCount = riders.filter((r) => !r.isAi).length;
