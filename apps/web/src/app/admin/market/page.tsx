@@ -4,6 +4,8 @@ import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getMarketPoolSummary, getAdminMarketRiders } from '@/lib/market/repository';
 import { MARKET_AUTO_GENERATION_WEEK } from '@/lib/market/config';
 import { MarketToolsPanel } from '@/components/admin/MarketToolsPanel';
+import { RiderAvatar } from '@/components/rider/RiderAvatar';
+import { resolveAvatarSrc } from '@/lib/rider/avatarPool';
 
 /**
  * Admin-only Transfer Market test tooling. Generation/reset are gated by
@@ -45,6 +47,7 @@ export default async function AdminMarketPage() {
           <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-line text-left text-2xs font-semibold uppercase tracking-wide text-navy-muted">
+                <th className="px-3 py-2">Avatar</th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Tier</th>
                 <th className="px-3 py-2">Status</th>
@@ -56,8 +59,13 @@ export default async function AdminMarketPage() {
               </tr>
             </thead>
             <tbody>
-              {riders.map((r) => (
+              {riders.map((r) => {
+                const avatarSrc = resolveAvatarSrc(r.id);
+                return (
                 <tr key={r.id} className="border-b border-line last:border-0">
+                  <td className="px-3 py-2" title={avatarSrc ? `seed=${r.id} → ${avatarSrc}` : `seed=${r.id} → fallback (empty portrait pool)`}>
+                    <RiderAvatar seed={r.id} size="sm" />
+                  </td>
                   <td className="px-3 py-2 font-medium text-navy">{r.firstName} {r.surname}</td>
                   <td className="px-3 py-2 text-navy-soft uppercase">{r.tier}</td>
                   <td className="px-3 py-2 text-navy-soft">{r.status}</td>
@@ -67,7 +75,8 @@ export default async function AdminMarketPage() {
                   <td className="px-3 py-2 text-navy-soft">{r.source}</td>
                   <td className="px-3 py-2 text-navy-soft">{new Date(r.generatedAt).toISOString().slice(0, 16).replace('T', ' ')}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

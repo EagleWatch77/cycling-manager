@@ -3,6 +3,7 @@ import type { T } from '@/i18n/config';
 import type { MarketRiderView } from '@/lib/market/playerRepository';
 import { Icon } from '@/components/ui/Icon';
 import { archetypeIcon } from '@/lib/rider/archetypeIcon';
+import { RiderAvatar } from '@/components/rider/RiderAvatar';
 
 /**
  * A real <table>, not a div/CSS "display:table" trick (an earlier version
@@ -36,7 +37,12 @@ export function MarketTable({ t, riders, rankOffset }: { t: T; riders: MarketRid
             return (
               <tr key={r.id} className="border-b border-line text-navy transition-colors last:border-0 hover:bg-surface">
                 <td className="p-0 text-navy-muted"><Link href={href} className="block px-3.5 py-2">{rankOffset + i + 1}</Link></td>
-                <td className="p-0 font-semibold text-navy"><Link href={href} className="block px-3.5 py-2">{r.firstName} {r.surname}</Link></td>
+                <td className="p-0 font-semibold text-navy">
+                  <Link href={href} className="flex items-center gap-2 px-3.5 py-1.5">
+                    <RiderAvatar seed={r.id} size="sm" />
+                    <span>{r.firstName} {r.surname}</span>
+                  </Link>
+                </td>
                 <td className="p-0 text-navy-soft">
                   <Link href={href} className="block px-3.5 py-2">
                     <span className="mr-1.5">{flagEmoji(r.countryIso2)}</span>{r.countryIso2}

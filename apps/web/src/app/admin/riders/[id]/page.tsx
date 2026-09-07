@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin/auth';
 import { getAdminRiderRawById } from '@/lib/rider/adminRepository';
 import type { SkillAttribute } from '@/lib/rider/config';
+import { RiderAvatar } from '@/components/rider/RiderAvatar';
+import { resolveAvatarSrc } from '@/lib/rider/avatarPool';
 
 const PERFORMANCE: SkillAttribute[] = ['climbing', 'hills', 'flat', 'sprint', 'timeTrial', 'endurance', 'acceleration'];
 const TACTICS: SkillAttribute[] = ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'];
@@ -38,6 +40,7 @@ export default async function AdminRiderDetailPage({ params }: { params: Promise
   const { id } = await params;
   const rider = await getAdminRiderRawById(id);
   if (!rider) notFound();
+  const avatarSrc = resolveAvatarSrc(rider.id);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
@@ -92,6 +95,17 @@ export default async function AdminRiderDetailPage({ params }: { params: Promise
           <Row label="form" value={rider.conditionPrevious.form} />
           <Row label="fitness" value={rider.conditionPrevious.fitness} />
           <Row label="morale" value={rider.conditionPrevious.morale} />
+        </Section>
+
+        <Section title="Avatar">
+          <div className="flex items-center gap-3 border-b border-line px-3.5 py-2 last:border-0">
+            <RiderAvatar seed={rider.id} size="lg" />
+            <div className="min-w-0 text-2xs text-navy-soft">
+              <p><span className="font-semibold text-navy">status:</span> {avatarSrc ? 'ready' : 'fallback (empty portrait pool)'}</p>
+              <p className="truncate"><span className="font-semibold text-navy">seed:</span> {rider.id}</p>
+              <p className="truncate"><span className="font-semibold text-navy">src:</span> {avatarSrc ?? '—'}</p>
+            </div>
+          </div>
         </Section>
 
         <Section title="Generator / ownership metadata">
