@@ -3,10 +3,13 @@ import type { SkillAttribute } from './config';
 /** Rider condition fields, mirrors STARTER_CONDITION in ./config. */
 export type ConditionKey = 'energy' | 'fatigue' | 'form' | 'fitness' | 'morale';
 
+/** The four hidden "development rating" fields on a rider (0-100 scale, see ./config). */
+export type DevRatingKey = 'potential' | 'trainability' | 'professionalism' | 'recovery';
+
 /**
- * Single source of truth for the glossy /ride-icon PNG assets (see
- * apps/web/public/ride-icon). Keyed by the real SkillAttribute / condition
- * ids used throughout the app — never invent new keys here.
+ * Single source of truth for the /ride-icon PNG assets (see
+ * apps/web/public/ride-icon). Keyed by the real SkillAttribute / condition /
+ * dev-rating ids used throughout the app — never invent new keys here.
  *
  * Attributes with no dedicated asset are intentionally absent from the map.
  * Callers must fall back to a neutral placeholder (RiderStatIcon does this
@@ -14,8 +17,7 @@ export type ConditionKey = 'energy' | 'fatigue' | 'form' | 'fitness' | 'morale';
  *
  * Confirmed missing as of this mapping (no file in public/ride-icon for):
  * acceleration, positioning, attackTiming, energyManagement, descending,
- * bikeHandling, cornering, packRiding, roughSurface, experience, and the
- * development ratings (potential/trainability/professionalism/recovery).
+ * bikeHandling, cornering, packRiding, roughSurface.
  *
  * Note: casovka.png (time trial) exists as an asset but `timeTrial` is not a
  * real SkillAttribute in this codebase — it's only used as an i18n key /
@@ -27,6 +29,7 @@ const SKILL_ICON: Partial<Record<SkillAttribute, string>> = {
   flat: '/ride-icon/rovina.png',
   sprint: '/ride-icon/sprint.png',
   endurance: '/ride-icon/vytrvalost.png',
+  experience: '/ride-icon/skusenosti.png',
 };
 
 const CONDITION_ICON: Record<ConditionKey, string> = {
@@ -37,12 +40,24 @@ const CONDITION_ICON: Record<ConditionKey, string> = {
   morale: '/ride-icon/moralka.png',
 };
 
-/** Glossy icon for a skill attribute, or null if no dedicated asset exists yet. */
+const DEV_ICON: Record<DevRatingKey, string> = {
+  potential: '/ride-icon/potencial.png',
+  trainability: '/ride-icon/trenovatelnost.png',
+  professionalism: '/ride-icon/profesionalita.png',
+  recovery: '/ride-icon/regeneracia.png',
+};
+
+/** Icon for a skill attribute, or null if no dedicated asset exists yet. */
 export function getSkillStatIcon(attr: SkillAttribute): string | null {
   return SKILL_ICON[attr] ?? null;
 }
 
-/** Glossy icon for a rider-condition field. Every condition field has one. */
+/** Icon for a rider-condition field. Every condition field has one. */
 export function getConditionStatIcon(key: ConditionKey): string {
   return CONDITION_ICON[key];
+}
+
+/** Icon for a development-rating field. Every dev-rating field has one. */
+export function getDevStatIcon(key: DevRatingKey): string {
+  return DEV_ICON[key];
 }

@@ -187,7 +187,7 @@ export function TrainingConfigForm({
 
     return (
       <div className="space-y-3">
-        <p className="text-sm font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.heading}</p>
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
           <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.savedTitle}</p>
           <p className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
@@ -210,7 +210,7 @@ export function TrainingConfigForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.heading}</p>
 
       {/* Week type */}
       <div>

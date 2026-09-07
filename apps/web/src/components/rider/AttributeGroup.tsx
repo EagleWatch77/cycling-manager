@@ -9,15 +9,18 @@ import { RiderStatIcon } from './RiderStatIcon';
 /**
  * One themed attribute panel, e.g. Performance or Technique.
  *
- * `showStatIcons` opts a group into the glossy per-row /ride-icon treatment
- * (bigger label/value type, ~28px icon before each label) used for
- * Performance on both the Rider and Training pages. Groups that don't have
- * dedicated icon assets yet (Tactics, Technique, Other) simply omit the prop
- * and keep the original compact text+bar rows — no icon, glossy or outline,
- * is introduced for those so nothing gets mixed within a single row list.
+ * `showStatIcons` opts a group into the per-row /ride-icon treatment used
+ * for Performance on both the Rider and Training pages. Groups that don't
+ * have dedicated icon assets yet (Tactics, Technique, Other) simply omit the
+ * prop — no icon, glossy or outline, is introduced for those so nothing gets
+ * mixed within a single row list.
+ *
+ * `showBars` defaults to on (the Rider page keeps the teal progress rail).
+ * The Training page turns it off for a quieter label/value list — see the
+ * training page for the reasoning.
  */
 export function AttributeGroup({
-  t, titleKey, icon, keys, attributes, className = '', showStatIcons = false,
+  t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28,
 }: {
   t: T;
   titleKey: string;
@@ -26,25 +29,29 @@ export function AttributeGroup({
   attributes: Record<SkillAttribute, number>;
   className?: string;
   showStatIcons?: boolean;
+  showBars?: boolean;
+  statIconSize?: number;
 }) {
   return (
     <Card dense className={className}
       title={
-        <span className="flex items-center gap-1.5 text-sm">
+        <span className="flex items-center gap-1.5 text-sm text-teal-dark">
           <Icon name={icon} className="h-3.5 w-3.5 text-teal" />
           {t(titleKey)}
         </span>
       }>
-      <ul className="space-y-2.5 p-3.5">
+      <ul className="p-3.5">
         {keys.map((k) => (
-          <li key={k} className="flex items-center gap-2.5">
+          <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
             {showStatIcons && (
-              <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={28} />
+              <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
             )}
-            <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(`attr.${k}`)}>
+            <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
               {t(`attr.${k}`)}
             </span>
-            <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+            {showBars && (
+              <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+            )}
             <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">
               {attributes[k]}
             </span>

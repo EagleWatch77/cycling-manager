@@ -1,6 +1,6 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX, POTENTIAL_MIN, POTENTIAL_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX, type SkillAttribute } from '@/lib/rider/config';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
@@ -8,11 +8,10 @@ import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON, pot
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
-import { getConditionStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
+import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
 
@@ -20,15 +19,6 @@ const FLAGS: Record<string, string> = {
   SK: '🇸🇰', CZ: '🇨🇿', PL: '🇵🇱', FR: '🇫🇷', IT: '🇮🇹', ES: '🇪🇸', BE: '🇧🇪', NL: '🇳🇱',
   DE: '🇩🇪', GB: '🇬🇧', US: '🇺🇸', AU: '🇦🇺', CO: '🇨🇴', DK: '🇩🇰', NO: '🇳🇴', SI: '🇸🇮',
 };
-
-/** 55–95 "development rating" scale (trainability/professionalism/recovery) -> 0–100 bar. */
-function pctDev(v: number) {
-  return Math.max(0, Math.min(100, ((v - POTENTIAL_MIN) / (POTENTIAL_MAX - POTENTIAL_MIN)) * 100));
-}
-/** Same normalisation AttributeGroup uses for the 100–160 skill scale. */
-function pctAttr(v: number) {
-  return Math.max(0, Math.min(100, ((v - 90) / (ATTR_MAX - 90)) * 100));
-}
 
 const TECHNIQUE_PREVIEW: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding'];
 const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyManagement'];
@@ -135,7 +125,8 @@ export default async function TrainingPage() {
               </div>
             </Card>
 
-            <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes} showStatIcons />
+            <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
+              showStatIcons statIconSize={20} showBars={false} />
           </div>
 
           {/* CENTER — training configuration */}
@@ -183,71 +174,60 @@ export default async function TrainingPage() {
 
           {/* RIGHT — development, condition, tactics/technique */}
           <div className="col-span-12 space-y-3 lg:col-span-3">
-            <Card title={<span className="text-sm">{t('group.development')}</span>} dense>
-              <ul className="space-y-2.5 p-3.5">
-                <li>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-navy-muted">{t('dev.potential')}</span>
-                    <span className="text-base font-bold text-navy">{potentialLow}–{potentialHigh}</span>
-                  </div>
+            <Card title={<span className="text-sm text-teal-dark">{t('group.development')}</span>} dense>
+              <ul className="p-3.5">
+                <li className="flex items-center gap-2.5 border-b border-line py-2">
+                  <RiderStatIcon src={getDevStatIcon('potential')} alt={t('dev.potential')} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.potential')}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{potentialLow}–{potentialHigh}</span>
                 </li>
-                <li>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-navy-muted">{t('dev.trainability')}</span>
-                    <span className="text-base font-bold text-navy">{rider.trainability}</span>
-                  </div>
-                  <ProgressBar value={pctDev(rider.trainability)} className="mt-1" />
+                <li className="flex items-center gap-2.5 border-b border-line py-2">
+                  <RiderStatIcon src={getDevStatIcon('trainability')} alt={t('dev.trainability')} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.trainability')}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.trainability}</span>
                 </li>
-                <li>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-navy-muted">{t('dev.professionalism')}</span>
-                    <span className="text-base font-bold text-navy">{rider.professionalism}</span>
-                  </div>
-                  <ProgressBar value={pctDev(rider.professionalism)} className="mt-1" />
+                <li className="flex items-center gap-2.5 border-b border-line py-2">
+                  <RiderStatIcon src={getDevStatIcon('professionalism')} alt={t('dev.professionalism')} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.professionalism')}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.professionalism}</span>
                 </li>
-                <li>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-navy-muted">{t('dev.recovery')}</span>
-                    <span className="text-base font-bold text-navy">{rider.recovery}</span>
-                  </div>
-                  <ProgressBar value={pctDev(rider.recovery)} className="mt-1" />
+                <li className="flex items-center gap-2.5 border-b border-line py-2">
+                  <RiderStatIcon src={getDevStatIcon('recovery')} alt={t('dev.recovery')} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.recovery')}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.recovery}</span>
                 </li>
-                <li>
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-sm text-navy-muted">{t('attr.experience')}</span>
-                    <span className="text-base font-bold text-navy">{rider.attributes.experience}</span>
-                  </div>
-                  <ProgressBar value={pctAttr(rider.attributes.experience)} className="mt-1" />
+                <li className="flex items-center gap-2.5 py-2">
+                  <RiderStatIcon src={getSkillStatIcon('experience')} alt={t('attr.experience')} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('attr.experience')}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.attributes.experience}</span>
                 </li>
               </ul>
             </Card>
 
-            <Card title={<span className="text-sm">{t('group.condition')}</span>} dense>
-              <ul className="space-y-2.5 p-3.5">
+            <Card title={<span className="text-sm text-teal-dark">{t('group.condition')}</span>} dense>
+              <ul className="p-3.5">
                 {condition.map((c) => (
-                  <li key={c.key} className="flex items-center gap-2.5">
-                    <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={28} />
-                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(c.key)}>
+                  <li key={c.key} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
+                    <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={20} />
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(c.key)}>
                       {t(c.key)}
                     </span>
-                    <ProgressBar value={c.value} tone={c.value < 40 ? 'warn' : 'teal'} className="w-12 shrink-0 sm:w-16 lg:w-20" />
-                    <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">{c.value}</span>
+                    <span className="shrink-0 text-base font-bold tabular-nums text-navy">{c.value}</span>
                   </li>
                 ))}
               </ul>
             </Card>
 
-            <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes} />
+            <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes} showBars={false} />
 
-            <Card title={<span className="text-sm">{t('group.technique')}</span>} dense>
-              <ul className="space-y-2.5 p-3.5">
+            <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense>
+              <ul className="p-3.5">
                 {TECHNIQUE_PREVIEW.map((k) => (
-                  <li key={k} className="flex items-center gap-2.5">
-                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(`attr.${k}`)}>
+                  <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
                       {t(`attr.${k}`)}
                     </span>
-                    <ProgressBar value={pctAttr(rider.attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
-                    <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
+                    <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
                   </li>
                 ))}
               </ul>
