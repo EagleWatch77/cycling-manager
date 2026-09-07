@@ -151,10 +151,6 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     </div>
                   </div>
                   <div className="flex-1">
-                    <div className="mb-1 flex justify-between text-2xs text-navy-muted">
-                      <span>{s.from} · {s.startM} m</span>
-                      <span>{s.to} · {s.endM} m</span>
-                    </div>
                     <StageProfile stage={s} />
                     <StageScoring t={t} stage={s} />
                   </div>
