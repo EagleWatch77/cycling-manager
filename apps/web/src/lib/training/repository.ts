@@ -1,12 +1,26 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import {
   MAX_TECHNICAL_WEEKS_PER_SEASON, PERFORMANCE_FOCUS, TECHNICAL_FOCUS,
   type TrainingIntensity, type WeekType,
 } from './config';
 
 const VALID_INTENSITIES: readonly TrainingIntensity[] = ['light', 'normal', 'hard'];
+
+/**
+ * The only week a plan may ever target: exactly one week ahead of whatever
+ * week the real server clock says we're in right now (clamped at the last
+ * week of the season, where there is no "next" week left). Computed fresh
+ * from lib/calendar/season.ts — never trust a client-supplied week number as
+ * proof it's plannable, since nothing stops a direct call to the server
+ * action with an arbitrary value.
+ */
+function plannableWeekNumber(): { seasonId: string; weekNumber: number } {
+  const season = getCurrentSeasonInfo();
+  return { seasonId: season.seasonId, weekNumber: Math.min(season.currentWeek + 1, season.totalWeeks) };
+}
 
 /**
  * Training V1 persistence — one row per Rider per season week
@@ -110,11 +124,13 @@ export type SaveTrainingResult =
   | { ok: false; reason: 'no-rider' | 'race-week' | 'locked' | 'technical-limit' | 'invalid-focus' | 'already-processed' | 'error' };
 
 /**
- * Saves (creates or edits) the current player's training plan for the given
- * season week. Refuses to schedule training in a race week, refuses to edit
- * a week other than the current one, rejects a focus that isn't one of the
- * real attributes for the chosen week type, refuses to touch a plan that
- * was already processed (its result would go stale — see engine.ts), and
+ * Saves (creates or edits) the current player's training plan. Always
+ * targets exactly one week ahead of the real current week — see
+ * plannableWeekNumber() — so a plan can never be scheduled for the week
+ * already underway, nor for anything further out. Refuses to schedule
+ * training in a race week, rejects a focus that isn't one of the real
+ * attributes for the chosen week type, refuses to touch a plan that was
+ * already processed (its result would go stale — see engine.ts), and
  * enforces the Technical-week season cap. The unique constraint on
  * (rider_id, season_id, week_number) is the final backstop against a
  * duplicate plan for the same week — this function upserts on that key, so
@@ -134,6 +150,14 @@ export async function saveTrainingPlan(input: {
   if (!rider) return { ok: false, reason: 'no-rider' };
   if (input.isRaceWeek) return { ok: false, reason: 'race-week' };
   if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
+
+  // Authoritative "only 1 week ahead" rule — recomputed here, not trusted
+  // from the client, so a direct call can't schedule further out or into
+  // the past/current week.
+  const plannable = plannableWeekNumber();
+  if (input.seasonId !== plannable.seasonId || input.weekNumber !== plannable.weekNumber) {
+    return { ok: false, reason: 'locked' };
+  }
 
   const validFocusList = input.weekType === 'technical' ? TECHNICAL_FOCUS : PERFORMANCE_FOCUS;
   if (!VALID_INTENSITIES.includes(input.intensity) || !validFocusList.includes(input.focus as never)) {
@@ -193,6 +217,11 @@ export async function cancelTrainingPlan(input: {
   const rider = await getMyRider();
   if (!rider) return { ok: false, reason: 'no-rider' };
   if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
+
+  const plannable = plannableWeekNumber();
+  if (input.seasonId !== plannable.seasonId || input.weekNumber !== plannable.weekNumber) {
+    return { ok: false, reason: 'locked' };
+  }
 
   const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
   if (!existing) return { ok: false, reason: 'not-found' };

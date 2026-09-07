@@ -71,10 +71,16 @@ export default async function TrainingPage() {
   const rider = (await getMyRider()) ?? riderBeforeProcessing;
 
   const scheduled = getSeasonSchedule(season);
-  const isRaceWeek = scheduled.some((v) => v.isCurrentWeek);
+  const currentWeekHasRace = scheduled.some((v) => v.isCurrentWeek);
+
+  // Training can only ever be scheduled one week ahead of right now — see
+  // plannableWeekNumber() in lib/training/repository.ts, which enforces this
+  // server-side too. Clamped at the season's last week (no week beyond it).
+  const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
+  const plannableWeekHasRace = scheduled.some((v) => v.schedule.weekNumber === plannableWeek);
 
   const [plan, technicalUsed, recent] = await Promise.all([
-    getTrainingPlan(season.seasonId, season.currentWeek),
+    getTrainingPlan(season.seasonId, plannableWeek),
     countTechnicalWeeksUsed(season.seasonId),
     listRecentCompletedTrainings(3),
   ]);
@@ -167,9 +173,9 @@ export default async function TrainingPage() {
               {t('races.season')} {season.seasonNumber} · {t('races.week')} {season.currentWeek} / {season.totalWeeks}
             </span>
             <span className={`ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
-              isRaceWeek ? 'bg-warn/10 text-warn' : 'bg-teal-rail text-teal-dark'
+              currentWeekHasRace ? 'bg-warn/10 text-warn' : 'bg-teal-rail text-teal-dark'
             }`}>
-              {isRaceWeek ? t('trainingPage.raceWeek') : t('trainingPage.freeWeek')}
+              {currentWeekHasRace ? t('trainingPage.raceWeek') : t('trainingPage.freeWeek')}
             </span>
           </div>
         </div>
@@ -205,9 +211,11 @@ export default async function TrainingPage() {
               <div className="p-4">
                 <TrainingConfigForm
                   seasonId={season.seasonId}
-                  weekNumber={season.currentWeek}
+                  weekNumber={plannableWeek}
                   totalWeeks={season.totalWeeks}
-                  isRaceWeek={isRaceWeek}
+                  isRaceWeek={plannableWeekHasRace}
+                  // Always true: this form only ever targets `plannableWeek`
+                  // (the one editable week), never a past or later one.
                   isCurrentWeek
                   initialPlan={plan}
                   performanceFocus={performanceOptions}
