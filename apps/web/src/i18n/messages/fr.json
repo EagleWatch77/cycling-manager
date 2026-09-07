@@ -180,6 +180,7 @@
   "attr.cornering": "Virages",
   "attr.attackTiming": "Timing d’attaque",
   "attr.roughSurface": "Surface difficile",
+"attr.reaction": "Réaction",  "attr.breakawaySkill": "Aptitude à l'échappée",  "attr.wetHandling": "Conduite sous la pluie",
   "radar.mountains": "Montagne",
   "radar.flat": "Plat",
   "radar.sprint": "Sprint",

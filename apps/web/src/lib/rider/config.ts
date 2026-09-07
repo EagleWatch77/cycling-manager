@@ -2,25 +2,39 @@
  * Starter Rider Generator V1 — all tunable numbers live here so a new Rookie
  * rider can be rebalanced without touching the generator logic.
  *
- * The 15 skills are exactly the ones the Race Engine reads. Nothing is added
- * that the engine does not know about. They are declared locally (not imported
- * from the engine) so the web app keeps its build independent of that package.
+ * These 19 skills are the canonical game-design attribute set (Performance 7
+ * + Tactics 5 + Technique 6 + experience). They are declared locally (not
+ * imported from the engine) so the web app keeps its build independent of
+ * that package.
+ *
+ * `timeTrial` and `reaction` also exist in packages/race-engine's own
+ * `AttributeKey` type (17 members there) — this union now includes both, so
+ * a rider generated here carries real values for every key the engine's
+ * type already expects. `breakawaySkill` and `wetHandling` are new canonical
+ * rider skills that do NOT exist in the engine's `AttributeKey` yet; wiring
+ * them into the engine's actual simulation math (segment/pace/attack weight
+ * tables) is a separate, engine-side change this migration does not make —
+ * see the chat report. `breakawaySkill` is a persisted rider ability and is
+ * unrelated to `BreakawayEffort` (an in-race tactical command enum defined
+ * in the engine's balance config) — the two must never be confused.
  */
 
 export const GENERATOR_VERSION = 'starter-v1';
 
 export type SkillAttribute =
-  | 'climbing' | 'hills' | 'flat' | 'sprint' | 'endurance'
+  | 'climbing' | 'hills' | 'flat' | 'sprint' | 'timeTrial' | 'endurance'
   | 'descending' | 'acceleration' | 'energyManagement' | 'positioning'
+  | 'reaction' | 'breakawaySkill'
   | 'packRiding' | 'experience' | 'bikeHandling' | 'cornering'
-  | 'attackTiming' | 'roughSurface';
+  | 'attackTiming' | 'roughSurface' | 'wetHandling';
 
-/** The 15 engine skill attributes we generate, in display order. */
+/** The 19 canonical skill attributes we generate, in display order. */
 export const SKILL_ATTRIBUTES: readonly SkillAttribute[] = [
-  'climbing', 'hills', 'flat', 'sprint', 'endurance',
+  'climbing', 'hills', 'flat', 'sprint', 'timeTrial', 'endurance',
   'descending', 'acceleration', 'energyManagement', 'positioning',
+  'reaction', 'breakawaySkill',
   'packRiding', 'experience', 'bikeHandling', 'cornering',
-  'attackTiming', 'roughSurface',
+  'attackTiming', 'roughSurface', 'wetHandling',
 ];
 
 /** Rookie starter quality (decision: 130 ± 5, per-attribute noise ± 3). */
@@ -74,12 +88,22 @@ export interface Shape {
   weak: SkillAttribute[];
 }
 
+/**
+ * The 4 newly-introduced attributes (timeTrial, reaction, breakawaySkill,
+ * wetHandling) are each given a bonus on exactly one thematically-fitting
+ * existing shape, following the same strong-list convention already used
+ * for every other attribute here — no new shapes, no invented penalties:
+ *  - timeTrial      -> the 'timeTrial' shape itself (obvious fit)
+ *  - reaction        -> 'puncheur' (attack/counter-attack oriented rider)
+ *  - breakawaySkill -> 'rouleur' (classic breakaway-specialist archetype)
+ *  - wetHandling    -> 'classics' (cobbles/bad-weather specialist)
+ */
 export const SHAPES: readonly Shape[] = [
   { id: 'allrounder', strong: ['endurance', 'positioning', 'experience'], weak: [] },
-  { id: 'rouleur', strong: ['flat', 'endurance', 'positioning'], weak: ['climbing', 'hills'] },
+  { id: 'rouleur', strong: ['flat', 'endurance', 'positioning', 'breakawaySkill'], weak: ['climbing', 'hills'] },
   { id: 'climber', strong: ['climbing', 'hills', 'acceleration'], weak: ['flat', 'sprint'] },
-  { id: 'puncheur', strong: ['hills', 'acceleration', 'attackTiming'], weak: ['flat', 'endurance'] },
+  { id: 'puncheur', strong: ['hills', 'acceleration', 'attackTiming', 'reaction'], weak: ['flat', 'endurance'] },
   { id: 'sprinter', strong: ['sprint', 'flat', 'acceleration'], weak: ['climbing', 'hills'] },
-  { id: 'timeTrial', strong: ['flat', 'endurance', 'energyManagement'], weak: ['climbing', 'sprint'] },
-  { id: 'classics', strong: ['roughSurface', 'packRiding', 'bikeHandling', 'positioning'], weak: ['climbing', 'sprint'] },
+  { id: 'timeTrial', strong: ['flat', 'endurance', 'energyManagement', 'timeTrial'], weak: ['climbing', 'sprint'] },
+  { id: 'classics', strong: ['roughSurface', 'packRiding', 'bikeHandling', 'positioning', 'wetHandling'], weak: ['climbing', 'sprint'] },
 ];

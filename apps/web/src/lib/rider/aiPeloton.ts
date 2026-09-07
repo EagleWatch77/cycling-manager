@@ -49,6 +49,7 @@ export async function generateTestPeloton(): Promise<GenerateTestPelotonResult> 
       age: rider.age,
       attributes: rider.attributes,
       condition: rider.condition,
+      condition_previous: rider.condition,
       inferred_archetype: rider.archetype,
       potential: rider.potential,
       trainability: rider.trainability,

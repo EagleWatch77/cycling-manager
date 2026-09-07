@@ -8,14 +8,11 @@ import { POTENTIAL_MIN, POTENTIAL_MAX, ATTR_MIN, ATTR_MAX, type SkillAttribute }
  * IMPORTANT — data model gaps discovered while implementing this (see the
  * PR/report): the requested formula references a `professionalism` rider
  * stat that did not exist before this feature (added in lib/rider/config.ts,
- * same convention as potential/trainability). The requested Performance
- * focus list included "Časovka" (time trial), but there is no `timeTrial`
- * entry in `SkillAttribute` — only 15 real engine skills exist, and time
- * trial is not one of them (it only appears as a Tour-level difficulty and
- * as a rider archetype id elsewhere). Per the instruction not to invent
- * attributes the data model doesn't have, the Performance focus list here is
- * the 6 real attributes that exist — the same six the Rider page already
- * calls "Performance" (group.performance).
+ * same convention as potential/trainability).
+ *
+ * `timeTrial` is now a real `SkillAttribute` (see lib/rider/config.ts —
+ * added in the canonical-attribute migration) and is included below as the
+ * 7th Performance focus.
  */
 
 export type TrainingIntensity = 'light' | 'normal' | 'hard';
@@ -30,9 +27,9 @@ export type TrainingIntensity = 'light' | 'normal' | 'hard';
  */
 export type WeekType = 'performance' | 'technical';
 
-/** The 6 real Performance-group skills a Rider can pick as a training focus. The only focus family plannable from the Training page. */
+/** The 7 canonical Performance skills a Rider can pick as a training focus. The only focus family plannable from the Training page. */
 export const PERFORMANCE_FOCUS: readonly SkillAttribute[] = [
-  'climbing', 'hills', 'flat', 'sprint', 'endurance', 'acceleration',
+  'climbing', 'hills', 'flat', 'sprint', 'timeTrial', 'endurance', 'acceleration',
 ];
 
 export const INTENSITY_MULTIPLIER: Record<TrainingIntensity, number> = {
@@ -49,17 +46,22 @@ export const SECONDARY_ATTRIBUTE: Partial<Record<SkillAttribute, SkillAttribute>
   // Same reasoning applied to the rest of the Performance set.
   hills: 'climbing',
   flat: 'endurance',
+  timeTrial: 'energyManagement',
   endurance: 'energyManagement',
   acceleration: 'sprint',
-  // Technical set: paired within the same tactics/technique family.
+  // Tactics/Technique: not currently trainable directly (see WeekType above),
+  // but the pairing is kept ready for when race-processing growth exists.
   positioning: 'packRiding',
-  attackTiming: 'acceleration',
+  attackTiming: 'reaction',
+  reaction: 'attackTiming',
   energyManagement: 'endurance',
+  breakawaySkill: 'energyManagement',
   descending: 'cornering',
   bikeHandling: 'cornering',
   cornering: 'bikeHandling',
   packRiding: 'positioning',
   roughSurface: 'bikeHandling',
+  wetHandling: 'descending',
 };
 
 export const SECONDARY_GAIN_SHARE = 0.35;

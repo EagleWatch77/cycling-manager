@@ -33,6 +33,9 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 
   let attributes: Record<SkillAttribute, number> = rider.attributes;
   let condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number> = rider.condition;
+  // Snapshot of condition as it stood before this run — written back as
+  // condition_previous so the UI can compute a real trend, not a guess.
+  const previousCondition = rider.condition;
 
   for (const plan of pending) {
     const focus = plan.focus as SkillAttribute;
@@ -67,7 +70,7 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
     });
   }
 
-  await applyTrainingResult(rider.id, attributes, condition);
+  await applyTrainingResult(rider.id, attributes, condition, previousCondition);
 }
 
 /** A plan's week has ended once its season is behind the current one, or it's an earlier week of the current season. */

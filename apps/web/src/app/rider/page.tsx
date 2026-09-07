@@ -1,6 +1,7 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
 import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
@@ -28,10 +29,10 @@ const TABS = [
  * attributes the engine actually has. Performance / Tactics / Technique split
  * the 15 skills into readable families; Experience sits on its own.
  */
-const GROUPS: { titleKey: string; icon: string; keys: SkillAttribute[] }[] = [
-  { titleKey: 'group.performance', icon: 'chart', keys: ['climbing', 'hills', 'flat', 'sprint', 'endurance', 'acceleration'] },
-  { titleKey: 'group.tactics', icon: 'bolt', keys: ['positioning', 'attackTiming', 'energyManagement'] },
-  { titleKey: 'group.technique', icon: 'wheel', keys: ['descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface'] },
+const GROUPS: { titleKey: string; icon: string; keys: readonly SkillAttribute[] }[] = [
+  { titleKey: 'group.performance', icon: 'chart', keys: PERFORMANCE_FOCUS },
+  { titleKey: 'group.tactics', icon: 'bolt', keys: ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'] },
+  { titleKey: 'group.technique', icon: 'wheel', keys: ['descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface'] },
   { titleKey: 'group.other', icon: 'trophy', keys: ['experience'] },
 ];
 

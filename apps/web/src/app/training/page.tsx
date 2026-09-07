@@ -29,16 +29,14 @@ const FLAGS: Record<string, string> = {
 };
 
 /**
- * Tactics/Technique attribute sets shown for reference on this page. Kept to
- * exactly the real SkillAttribute ids the rider data model has (see
- * lib/rider/config.ts) — the race engine's own AttributeKey type additionally
- * has `reaction` and `timeTrial`, which the web app's rider generator never
- * produces yet, and a `breakawayEffort` which is an in-race tactical choice
- * enum, not a persistent rider skill — none of the three are invented here.
- * See the chat report for the full architecture note.
+ * Tactics/Technique attribute sets shown for reference on this page — the
+ * canonical 5 Tactics / 6 Technique attributes (see lib/rider/config.ts).
+ * `reaction` and `breakawaySkill` are real persisted rider skills, distinct
+ * from the engine's `BreakawayEffort` (an in-race tactical command enum) —
+ * see the SkillAttribute doc comment for the full note.
  */
-const TECHNIQUE_KEYS: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'roughSurface'];
-const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyManagement'];
+const TECHNIQUE_KEYS: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface'];
+const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'];
 
 /**
  * Training decision page — separate top-level nav item (unchanged, see
@@ -128,20 +126,23 @@ export default async function TrainingPage() {
     bonuses[lastCompleted.secondaryAttr as SkillAttribute] = lastCompleted.secondaryGain;
   }
 
-  // Stav jazdca trends: a direction, never a fabricated number. The engine
-  // (lib/training/engine.ts) is the only thing that ever changes condition,
-  // and it always costs energy and adds fatigue when a plan is processed —
-  // form/fitness/morale have no driver of change yet, so their trend is
-  // honestly flat until the game design gives them one. `hasProcessedTraining`
-  // is a real persisted fact (at least one applied training exists), not a
-  // guess about "now".
-  const hasProcessedTraining = recent.length > 0;
+  // Stav jazdca trends: a real before/after diff, never inferred from "a
+  // training happened recently". rider.conditionPrevious is a snapshot
+  // written by the engine (lib/training/engine.ts) every time it changes
+  // condition — see lib/rider/repository.ts. Equal to `condition` until the
+  // rider's first processed training, so trend reads flat until then.
+  const trendOf = (key: ConditionKey): Trend => {
+    const now = rider.condition[key];
+    const before = rider.conditionPrevious[key];
+    if (now === before) return 'flat';
+    return now > before ? 'up' : 'down';
+  };
   const conditionRows: { key: string; conditionKey: ConditionKey; value: number; trend: Trend; goodDirection: 'up' | 'down' }[] = [
-    { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy, trend: hasProcessedTraining ? 'down' : 'flat', goodDirection: 'up' },
-    { key: 'rider.fatigue', conditionKey: 'fatigue', value: rider.condition.fatigue, trend: hasProcessedTraining ? 'up' : 'flat', goodDirection: 'down' },
-    { key: 'rider.form', conditionKey: 'form', value: rider.condition.form, trend: 'flat', goodDirection: 'up' },
-    { key: 'rider.fitness', conditionKey: 'fitness', value: rider.condition.fitness, trend: 'flat', goodDirection: 'up' },
-    { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale, trend: 'flat', goodDirection: 'up' },
+    { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy, trend: trendOf('energy'), goodDirection: 'up' },
+    { key: 'rider.fatigue', conditionKey: 'fatigue', value: rider.condition.fatigue, trend: trendOf('fatigue'), goodDirection: 'down' },
+    { key: 'rider.form', conditionKey: 'form', value: rider.condition.form, trend: trendOf('form'), goodDirection: 'up' },
+    { key: 'rider.fitness', conditionKey: 'fitness', value: rider.condition.fitness, trend: trendOf('fitness'), goodDirection: 'up' },
+    { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale, trend: trendOf('morale'), goodDirection: 'up' },
   ];
 
   // "Posledné tréningy": completed weeks plus the currently scheduled one

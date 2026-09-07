@@ -16,19 +16,17 @@ export type DevRatingKey = 'potential' | 'trainability' | 'professionalism' | 'r
  * automatically) and must never reuse another attribute's icon.
  *
  * Confirmed missing as of this mapping (no file in public/ride-icon for):
- * acceleration, positioning, attackTiming, energyManagement, descending,
- * bikeHandling, cornering, packRiding, roughSurface.
- *
- * Note: casovka.png (time trial) exists as an asset but `timeTrial` is not a
- * real SkillAttribute in this codebase — it's only used as an i18n key /
- * archetype id / Tour difficulty tag — so it is deliberately not mapped here.
+ * positioning, attackTiming, reaction, energyManagement, breakawaySkill,
+ * descending, bikeHandling, cornering, packRiding, roughSurface, wetHandling.
  */
 const SKILL_ICON: Partial<Record<SkillAttribute, string>> = {
   climbing: '/ride-icon/stupanie.png',
   hills: '/ride-icon/kopce.png',
   flat: '/ride-icon/rovina.png',
   sprint: '/ride-icon/sprint.png',
+  timeTrial: '/ride-icon/casovka.png',
   endurance: '/ride-icon/vytrvalost.png',
+  acceleration: '/ride-icon/akceleracia.png',
   experience: '/ride-icon/skusenosti.png',
 };
 

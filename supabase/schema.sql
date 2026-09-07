@@ -276,3 +276,44 @@ create policy "training_plans_delete_own"
   );
 
 grant delete on public.training_plans to authenticated;
+
+-- ============================================================================
+-- Canonical attribute set migration — adds timeTrial, reaction,
+-- breakawaySkill, wetHandling to the rider skill model (Performance 6->7,
+-- Tactics 3->5, Technique 5->6; see apps/web/src/lib/rider/config.ts).
+--
+-- riders.attributes is jsonb with no fixed shape (see its own comment
+-- above), so no ALTER TABLE is needed to store these — only a one-time
+-- backfill for riders generated before this migration, so old rows don't
+-- come back with the new keys silently missing. Idempotent: each UPDATE
+-- only touches rows that don't already have that key, and never rewrites an
+-- existing key's value. 130 is the generator's neutral base value
+-- (ROOKIE_BASE, before any shape bonus/penalty) — there is no bonus/penalty
+-- to replay after the fact for a rider whose shape was picked before these
+-- attributes existed, so every backfilled rider gets the plain base number.
+-- ============================================================================
+
+update public.riders set attributes = attributes || jsonb_build_object('timeTrial', 130)
+  where not (attributes ? 'timeTrial');
+update public.riders set attributes = attributes || jsonb_build_object('reaction', 130)
+  where not (attributes ? 'reaction');
+update public.riders set attributes = attributes || jsonb_build_object('breakawaySkill', 130)
+  where not (attributes ? 'breakawaySkill');
+update public.riders set attributes = attributes || jsonb_build_object('wetHandling', 130)
+  where not (attributes ? 'wetHandling');
+
+-- ============================================================================
+-- Condition trend tracking — Stav jazdca UI must show a real up/down/flat
+-- arrow, never a guess. That requires knowing the condition *before* the
+-- most recent change, which nothing persisted until now (riders.condition
+-- was overwritten in place with no history). condition_previous is a
+-- snapshot of `condition` as it was immediately before the last write;
+-- lib/training/engine.ts now sets it alongside `condition` every time it
+-- applies a processed training. Backfilled to each rider's own current
+-- condition so a rider with no processed training yet reads as a flat trend
+-- ("—" everywhere) rather than null/undefined.
+-- ============================================================================
+
+alter table public.riders add column if not exists condition_previous jsonb;
+update public.riders set condition_previous = condition where condition_previous is null;
+alter table public.riders alter column condition_previous set not null;
