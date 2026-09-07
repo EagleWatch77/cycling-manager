@@ -1,4 +1,5 @@
-import type { DanubeStage } from '@/data/danube';
+import type { T } from '@/i18n/config';
+import type { DanubeStage, KomCategory } from '@/data/danube';
 
 /**
  * Simplified, game-UI take on a classic cycling stage profile: elevation
@@ -6,9 +7,13 @@ import type { DanubeStage } from '@/data/danube';
  * real race-organizer graphic — no altitude axis, no distance grid, no km
  * ticks along the route — just enough to read a stage at a glance.
  *
- * Colour comes from the app's own teal/navy palette (never the raw
- * green/blue/purple/red a generic chart library would default to), so a
- * stage profile still looks unmistakably like the rest of Cycling Manager.
+ * Marker colour follows the classification it feeds, the same association
+ * players already know from the jersey icons elsewhere in the UI: green for
+ * the points/sprint classification, red for the mountains classification.
+ * The category (or HC) sits directly on the marker; km and elevation sit in
+ * a hover tooltip rather than as permanent labels, so a stage with several
+ * markers close together stays readable instead of turning into a dense
+ * infographic.
  */
 
 const TONE: Record<DanubeStage['difficulty'], { line: string; area: string }> = {
@@ -18,12 +23,9 @@ const TONE: Record<DanubeStage['difficulty'], { line: string; area: string }> = 
   mountain: { line: '#12283d', area: 'rgba(18,40,61,.20)' }, // navy
 };
 
-/** Harder categories read as more prominent (darker), not just differently coloured. */
-const KOM_TONE: Record<1 | 2 | 3, string> = {
-  1: '#12283d',
-  2: '#33506a',
-  3: '#6b8195',
-};
+/** Matches the points (green) and mountains (red) classification jerseys. */
+const SPRINT_COLOR = '#16a34a';
+const KOM_COLOR = '#dc2626';
 
 /** Smooth quadratic curve through the sample points (midpoints as anchors) — a route profile, not a jagged ruler. */
 function smoothPath(pts: readonly (readonly [number, number])[]): string {
@@ -40,7 +42,15 @@ function smoothPath(pts: readonly (readonly [number, number])[]): string {
   return d;
 }
 
-export function StageProfile({ stage, height = 100 }: { stage: DanubeStage; height?: number }) {
+function formatKm(km: number): string {
+  return Number.isInteger(km) ? `${km} km` : `${km.toFixed(1)} km`;
+}
+
+function categoryLabel(category: KomCategory | undefined): string {
+  return category === undefined ? '' : String(category);
+}
+
+export function StageProfile({ t, stage, height = 100 }: { t: T; stage: DanubeStage; height?: number }) {
   const w = 100;
   const tone = TONE[stage.difficulty];
   const top = 14; // headroom so climb/sprint badges never clip
@@ -55,8 +65,8 @@ export function StageProfile({ stage, height = 100 }: { stage: DanubeStage; heig
   const areaPath = `${linePath} L ${w},${bottom} L 0,${bottom} Z`;
 
   const yAt = (km: number) => {
-    const t = km / stage.km;
-    const i = Math.min(pts.length - 1, Math.max(0, Math.round(t * (pts.length - 1))));
+    const t2 = km / stage.km;
+    const i = Math.min(pts.length - 1, Math.max(0, Math.round(t2 * (pts.length - 1))));
     return pts[i][1];
   };
 
@@ -92,35 +102,40 @@ export function StageProfile({ stage, height = 100 }: { stage: DanubeStage; heig
           />
         </svg>
 
-        {/* Sprint: round teal badge — a fast, "friendly" checkpoint. */}
+        {/* Sprint: green — same colour language as the points-jersey icon. Hover for km/elevation. */}
         {sprints.map((m, i) => (
           <span
             key={`s-${i}`}
-            className="absolute flex -translate-x-1/2 -translate-y-full flex-col items-center"
+            className="group absolute flex -translate-x-1/2 -translate-y-full cursor-default flex-col items-center"
             style={{ left: `${(m.km / stage.km) * 100}%`, top: `${(yAt(m.km) / height) * 100}%` }}
           >
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-teal text-[9px] font-bold text-white shadow-sm">
+            <Tooltip title={t('score.sprint')} km={m.km} elevationM={m.elevationM} />
+            <span
+              className="flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white shadow-sm ring-2 ring-card"
+              style={{ background: SPRINT_COLOR }}
+            >
               S
             </span>
-            <span className="h-1.5 w-px bg-teal/50" />
+            <span className="h-1.5 w-px" style={{ background: `${SPRINT_COLOR}80` }} />
           </span>
         ))}
 
-        {/* Climb (KOM): diamond badge, shape alone tells it apart from a sprint;
-            shade tells the category apart without adding a legend. */}
+        {/* Climb (KOM): red — same colour language as the mountains-jersey icon.
+            Category/HC sits on the badge itself; km/elevation on hover. */}
         {koms.map((m, i) => (
           <span
             key={`k-${i}`}
-            className="absolute flex -translate-x-1/2 -translate-y-full flex-col items-center"
+            className="group absolute flex -translate-x-1/2 -translate-y-full cursor-default flex-col items-center"
             style={{ left: `${(m.km / stage.km) * 100}%`, top: `${(yAt(m.km) / height) * 100}%` }}
           >
+            <Tooltip title={`${t('score.kom')} ${m.category === 'HC' ? 'HC' : `${t('score.cat')} ${categoryLabel(m.category)}`}`} km={m.km} elevationM={m.elevationM} />
             <span
-              className="flex h-3.5 w-3.5 rotate-45 items-center justify-center rounded-[3px] shadow-sm"
-              style={{ background: KOM_TONE[m.category ?? 3] }}
+              className="flex h-4 w-4 rotate-45 items-center justify-center rounded-[3px] shadow-sm ring-2 ring-card"
+              style={{ background: KOM_COLOR }}
             >
-              <span className="-rotate-45 text-[8px] font-bold text-white">{m.category}</span>
+              <span className="-rotate-45 text-[7px] font-bold text-white">{categoryLabel(m.category)}</span>
             </span>
-            <span className="h-1.5 w-px" style={{ background: KOM_TONE[m.category ?? 3] }} />
+            <span className="h-1.5 w-px" style={{ background: `${KOM_COLOR}80` }} />
           </span>
         ))}
 
@@ -128,5 +143,20 @@ export function StageProfile({ stage, height = 100 }: { stage: DanubeStage; heig
         <span className="absolute bottom-0 right-0 text-[9px] text-navy-muted">{stage.km} km</span>
       </div>
     </div>
+  );
+}
+
+/** Compact hover card: type + km, elevation only when the data has it. Hidden until the marker is hovered/focused. */
+function Tooltip({ title, km, elevationM }: { title: string; km: number; elevationM?: number }) {
+  return (
+    <span
+      className="pointer-events-none absolute bottom-full z-10 mb-1.5 whitespace-nowrap rounded-md bg-navy px-2 py-1 text-center opacity-0 shadow-lg transition-opacity duration-100 group-hover:opacity-100"
+    >
+      <span className="block text-[9px] font-semibold text-white">{title}</span>
+      <span className="block text-[9px] text-white/70">
+        {formatKm(km)}
+        {elevationM !== undefined && <> · {elevationM} m</>}
+      </span>
+    </span>
   );
 }

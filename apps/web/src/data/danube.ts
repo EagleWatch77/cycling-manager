@@ -10,11 +10,14 @@
  * property of the Tour.
  */
 export type StageDifficulty = 'flat' | 'hilly' | 'itt' | 'mountain';
+export type KomCategory = 1 | 2 | 3 | 'HC';
 
 export interface StageMarker {
   km: number;
   kind: 'sprint' | 'kom';
-  category?: 1 | 2 | 3;
+  category?: KomCategory;
+  /** Approximate elevation at this point, computed from the same curve as the drawn profile. */
+  elevationM?: number;
 }
 
 export interface DanubeStage {
@@ -31,41 +34,44 @@ export interface DanubeStage {
   profile: number[];
 }
 
-/** Build a plausible profile that trends start→end and bumps up at each KOM. */
-function makeProfile(s: {
-  km: number; startM: number; endM: number; difficulty: StageDifficulty; koms: [number, 1 | 2 | 3][]; number: number;
-}): number[] {
+type RawStage = {
+  number: number; from: string; to: string; km: number; difficulty: StageDifficulty;
+  startM: number; endM: number; sprints: number[]; koms: [number, KomCategory][];
+};
+
+/** Real metres at a point x∈[0,1] along the stage — the same curve the profile line is drawn from. */
+function heightAt(x: number, s: RawStage): number {
+  let m = s.startM + (s.endM - s.startM) * x;
+  for (const [km, cat] of s.koms) {
+    const kx = km / s.km;
+    const width = 0.1;
+    const catNum = cat === 'HC' ? 0 : cat; // HC humps bigger than Cat.1
+    const peak = (4 - catNum) * 220;
+    m += peak * Math.exp(-((x - kx) ** 2) / (2 * width * width));
+  }
+  // gentle texture for flat/hilly so the line is not a ruler
+  const jitter = s.difficulty === 'flat' ? 6 : 14;
+  m += Math.sin(x * 18 + s.number) * jitter;
+  return m;
+}
+
+/** Build a plausible normalised (0–1) profile that trends start→end and bumps up at each KOM. */
+function makeProfile(s: RawStage): number[] {
   const N = 24;
   const allM = [s.startM, s.endM, ...s.koms.map(() => Math.max(s.startM, s.endM) + 250)];
   const lo = Math.min(...allM, s.startM, s.endM);
   const hi = Math.max(...allM) + 40;
   const span = Math.max(1, hi - lo);
-  const base = (m: number) => (m - lo) / span;
 
   const out: number[] = [];
   for (let i = 0; i < N; i++) {
     const x = i / (N - 1);
-    // linear trend from start to finish height
-    let m = s.startM + (s.endM - s.startM) * x;
-    // add a hump near each KOM
-    for (const [km, cat] of s.koms) {
-      const kx = km / s.km;
-      const width = 0.1;
-      const peak = (4 - cat) * 220; // C1 biggest, C3 smallest
-      m += peak * Math.exp(-((x - kx) ** 2) / (2 * width * width));
-    }
-    // gentle texture for flat/hilly so the line is not a ruler
-    const jitter = s.difficulty === 'flat' ? 6 : 14;
-    m += Math.sin(x * 18 + s.number) * jitter;
-    out.push(Math.max(0, Math.min(1, base(m))));
+    out.push(Math.max(0, Math.min(1, (heightAt(x, s) - lo) / span)));
   }
   return out;
 }
 
-const RAW: {
-  number: number; from: string; to: string; km: number; difficulty: StageDifficulty;
-  startM: number; endM: number; sprints: number[]; koms: [number, 1 | 2 | 3][];
-}[] = [
+const RAW: RawStage[] = [
   { number: 1, from: 'Lunava', to: 'Merovin', km: 152, difficulty: 'flat', startM: 132, endM: 128, sprints: [58, 111], koms: [] },
   { number: 2, from: 'Karsen', to: 'Veldra', km: 164, difficulty: 'hilly', startM: 146, endM: 212, sprints: [67], koms: [[55, 3], [101, 2], [158, 3]] },
   { number: 3, from: 'Torvyn', to: 'Drevana', km: 126, difficulty: 'hilly', startM: 158, endM: 612, sprints: [68], koms: [[47, 3], [99, 2], [126, 2]] },
@@ -82,8 +88,12 @@ export const DANUBE_STAGES: DanubeStage[] = RAW.map((s) => ({
   startM: s.startM,
   endM: s.endM,
   markers: [
-    ...s.sprints.map((km) => ({ km, kind: 'sprint' as const })),
-    ...s.koms.map(([km, category]) => ({ km, kind: 'kom' as const, category })),
+    ...s.sprints.map((km) => ({
+      km, kind: 'sprint' as const, elevationM: Math.round(heightAt(km / s.km, s)),
+    })),
+    ...s.koms.map(([km, category]) => ({
+      km, kind: 'kom' as const, category, elevationM: Math.round(heightAt(km / s.km, s)),
+    })),
   ],
   profile: makeProfile(s),
 }));

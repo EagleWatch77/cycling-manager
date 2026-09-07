@@ -151,7 +151,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     </div>
                   </div>
                   <div className="flex-1">
-                    <StageProfile stage={s} />
+                    <StageProfile t={t} stage={s} />
                     <StageScoring t={t} stage={s} />
                   </div>
                 </div>
