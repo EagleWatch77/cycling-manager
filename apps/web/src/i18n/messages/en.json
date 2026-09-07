@@ -242,6 +242,7 @@
   "trainingPage.raceWeekLocked": "Training cannot be scheduled during a race week.",
   "trainingPage.technicalLimitReached": "Technical week limit reached for this season.",
   "trainingPage.technicalWeeksUsedLabel": "Technical weeks this season",
+  "trainingPage.focusRequired": "Choose a training focus.",
   "trainingPage.saveError": "Saving the training failed. Please try again.",
   "trainingPage.saveSuccess": "Training saved.",
   "trainingPage.recentHistory": "Recent training",

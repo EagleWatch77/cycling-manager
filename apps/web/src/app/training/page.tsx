@@ -5,6 +5,7 @@ import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON, potentialCeiling } from '@/lib/training/config';
+import { processCompletedTrainings } from '@/lib/training/engine';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -34,9 +35,9 @@ const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'energyMa
  */
 export default async function TrainingPage() {
   const { t, locale } = await getServerDictionary();
-  const rider = await getMyRider();
+  const riderBeforeProcessing = await getMyRider();
 
-  if (!rider) {
+  if (!riderBeforeProcessing) {
     return (
       <AppShell activeId="training" locale={locale}>
         <Card className="col-span-12">
@@ -57,6 +58,13 @@ export default async function TrainingPage() {
   }
 
   const season = getCurrentSeasonInfo();
+
+  // Resolves any past-week training the calendar has already moved on from —
+  // see lib/training/engine.ts for why this is where that step lives. Must
+  // run before the rider is re-read below, since it may update attributes.
+  await processCompletedTrainings(season);
+  const rider = (await getMyRider()) ?? riderBeforeProcessing;
+
   const scheduled = getSeasonSchedule(season);
   const isRaceWeek = scheduled.some((v) => v.isCurrentWeek);
 
@@ -163,6 +171,7 @@ export default async function TrainingPage() {
                     raceWeekLocked: t('trainingPage.raceWeekLocked'),
                     technicalLimitReached: t('trainingPage.technicalLimitReached'),
                     technicalWeeksUsedLabel: t('trainingPage.technicalWeeksUsedLabel'),
+                    focusRequired: t('trainingPage.focusRequired'),
                     saveError: t('trainingPage.saveError'),
                     saveSuccess: t('trainingPage.saveSuccess'),
                   }}

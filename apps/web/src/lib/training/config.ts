@@ -67,6 +67,17 @@ export const SECONDARY_GAIN_SHARE = 0.35;
 /** Baseline weekly growth before any multiplier. Not specified by the brief; smallest clean assumption. */
 export const BASE_TRAINING = 3;
 
+/**
+ * Condition cost of a training week, by intensity. Not specified anywhere in
+ * the codebase before Training V1 (no formula existed); smallest clean
+ * assumption, kept here — the one place to rebalance — rather than inline in
+ * the processing engine. energy/fatigue are the two condition fields a
+ * week of training plausibly touches; form/fitness/morale are left alone
+ * since nothing in the brief relates them to training.
+ */
+export const ENERGY_COST: Record<TrainingIntensity, number> = { light: 5, normal: 10, hard: 15 };
+export const FATIGUE_GAIN: Record<TrainingIntensity, number> = { light: 5, normal: 10, hard: 18 };
+
 export function trainabilityFactor(trainability: number): number {
   return 0.5 + trainability / 200;
 }

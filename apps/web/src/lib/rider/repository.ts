@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { generateStarterRider, type GeneratedRider } from './generate';
+import type { SkillAttribute } from './config';
 
 /**
  * Server-side rider persistence. Everything here runs with the logged-in
@@ -108,4 +109,22 @@ export async function listAllRiders(): Promise<StoredRider[]> {
 
   if (error || !data) return [];
   return data.map(fromRow);
+}
+
+/**
+ * Persists the outcome of processed training onto the rider: new attribute
+ * values and the condition cost of that training. Called only by the
+ * training engine (lib/training/engine.ts) — it computes the numbers, this
+ * just writes them, so growth logic stays out of the persistence layer.
+ */
+export async function applyTrainingResult(
+  riderId: string,
+  attributes: Record<SkillAttribute, number>,
+  condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number>,
+): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from('riders')
+    .update({ attributes, condition })
+    .eq('id', riderId);
 }

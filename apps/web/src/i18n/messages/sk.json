@@ -242,6 +242,7 @@
   "trainingPage.raceWeekLocked": "V týždni s pretekmi nie je možné plánovať tréning.",
   "trainingPage.technicalLimitReached": "Dosiahnutý limit technických týždňov na túto sezónu.",
   "trainingPage.technicalWeeksUsedLabel": "Technický týždeň túto sezónu",
+  "trainingPage.focusRequired": "Chýba zameranie tréningu.",
   "trainingPage.saveError": "Uloženie tréningu zlyhalo. Skús to prosím znova.",
   "trainingPage.saveSuccess": "Tréning bol uložený.",
   "trainingPage.recentHistory": "Posledné tréningy",

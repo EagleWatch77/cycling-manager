@@ -12,10 +12,8 @@ import {
  * exist anywhere before this feature (no training/growth code of any kind
  * was found). Pure function: no I/O, nothing here writes to the database.
  *
- * NOT currently invoked by anything. Applying a gain requires a season/week
- * "process training" step — analogous to race simulation — which does not
- * exist yet and is out of scope here (see report). This function exists so
- * that future step can call it without inventing the formula again.
+ * Invoked by lib/training/engine.ts — the "process training" step that
+ * applies a plan's gain once its week has passed.
  */
 export interface GrowthResult {
   primaryAttr: SkillAttribute;

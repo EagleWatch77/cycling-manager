@@ -1,15 +1,20 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { MAX_TECHNICAL_WEEKS_PER_SEASON, type TrainingIntensity, type WeekType } from './config';
+import {
+  MAX_TECHNICAL_WEEKS_PER_SEASON, PERFORMANCE_FOCUS, TECHNICAL_FOCUS,
+  type TrainingIntensity, type WeekType,
+} from './config';
+
+const VALID_INTENSITIES: readonly TrainingIntensity[] = ['light', 'normal', 'hard'];
 
 /**
  * Training V1 persistence — one row per Rider per season week
  * (public.training_plans, see supabase/schema.sql). A row with
- * `appliedAt: null` is scheduled but not yet processed: no season/week
- * rollover job exists yet to fill in gains, so every plan stays in that
- * state today. UNIQUE(rider_id, season_id, week_number) is what prevents
- * a duplicate training block for a week that already has one.
+ * `appliedAt: null` is scheduled but not yet processed; lib/training/engine.ts
+ * fills in the gain columns and stamps `applied_at` once the plan's week has
+ * passed. UNIQUE(rider_id, season_id, week_number) is what prevents a
+ * duplicate training block for a week that already has one.
  */
 
 export interface TrainingPlan {
@@ -102,14 +107,19 @@ export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingP
 
 export type SaveTrainingResult =
   | { ok: true; plan: TrainingPlan }
-  | { ok: false; reason: 'no-rider' | 'race-week' | 'locked' | 'technical-limit' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'race-week' | 'locked' | 'technical-limit' | 'invalid-focus' | 'already-processed' | 'error' };
 
 /**
  * Saves (creates or edits) the current player's training plan for the given
  * season week. Refuses to schedule training in a race week, refuses to edit
- * a week other than the current one, and enforces the Technical-week season
- * cap. The unique constraint on (rider_id, season_id, week_number) is the
- * final backstop against a duplicate — this function upserts on that key.
+ * a week other than the current one, rejects a focus that isn't one of the
+ * real attributes for the chosen week type, refuses to touch a plan that
+ * was already processed (its result would go stale — see engine.ts), and
+ * enforces the Technical-week season cap. The unique constraint on
+ * (rider_id, season_id, week_number) is the final backstop against a
+ * duplicate plan for the same week — this function upserts on that key, so
+ * a second submit for the same week edits the existing row instead of
+ * creating a second one.
  */
 export async function saveTrainingPlan(input: {
   seasonId: string;
@@ -125,11 +135,16 @@ export async function saveTrainingPlan(input: {
   if (input.isRaceWeek) return { ok: false, reason: 'race-week' };
   if (!input.isCurrentWeek) return { ok: false, reason: 'locked' };
 
+  const validFocusList = input.weekType === 'technical' ? TECHNICAL_FOCUS : PERFORMANCE_FOCUS;
+  if (!VALID_INTENSITIES.includes(input.intensity) || !validFocusList.includes(input.focus as never)) {
+    return { ok: false, reason: 'invalid-focus' };
+  }
+
+  const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
+  if (existing?.appliedAt) return { ok: false, reason: 'already-processed' };
+
   if (input.weekType === 'technical') {
-    const [used, existing] = await Promise.all([
-      countTechnicalWeeksUsed(input.seasonId),
-      getTrainingPlan(input.seasonId, input.weekNumber),
-    ]);
+    const used = await countTechnicalWeeksUsed(input.seasonId);
     const alreadyCountedThisWeek = existing?.weekType === 'technical';
     if (used >= MAX_TECHNICAL_WEEKS_PER_SEASON && !alreadyCountedThisWeek) {
       return { ok: false, reason: 'technical-limit' };
@@ -156,4 +171,44 @@ export async function saveTrainingPlan(input: {
 
   if (error || !data) return { ok: false, reason: 'error' };
   return { ok: true, plan: fromRow(data) };
+}
+
+/** Every scheduled-but-not-yet-processed plan for a rider, oldest week first. Used only by the training engine. */
+export async function listUnprocessedTrainingPlans(riderId: string): Promise<TrainingPlan[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('training_plans')
+    .select('*')
+    .eq('rider_id', riderId)
+    .is('applied_at', null)
+    .order('week_number', { ascending: true });
+
+  if (error || !data) return [];
+  return data.map(fromRow);
+}
+
+/**
+ * Stamps a plan with its real, computed result. Only ever called by the
+ * training engine, once per plan. The `applied_at IS NULL` filter is a
+ * second, DB-level guard against double-processing on top of the engine's
+ * own check — two concurrent runs can't both apply the same plan twice.
+ */
+export async function applyTrainingPlanResult(planId: string, result: {
+  primaryAttr: string;
+  primaryGain: number;
+  secondaryAttr: string | null;
+  secondaryGain: number | null;
+}): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from('training_plans')
+    .update({
+      primary_attr: result.primaryAttr,
+      primary_gain: result.primaryGain,
+      secondary_attr: result.secondaryAttr,
+      secondary_gain: result.secondaryGain,
+      applied_at: new Date().toISOString(),
+    })
+    .eq('id', planId)
+    .is('applied_at', null);
 }

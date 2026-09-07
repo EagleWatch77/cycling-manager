@@ -242,6 +242,7 @@
   "trainingPage.raceWeekLocked": "In einer Rennwoche kann kein Training geplant werden.",
   "trainingPage.technicalLimitReached": "Limit für technische Wochen in dieser Saison erreicht.",
   "trainingPage.technicalWeeksUsedLabel": "Technische Wochen diese Saison",
+  "trainingPage.focusRequired": "Bitte wähle einen Trainingsschwerpunkt.",
   "trainingPage.saveError": "Speichern des Trainings fehlgeschlagen. Bitte erneut versuchen.",
   "trainingPage.saveSuccess": "Training gespeichert.",
   "trainingPage.recentHistory": "Letzte Trainings",

@@ -119,6 +119,7 @@ export function TrainingConfigForm({
     raceWeekLocked: string;
     technicalLimitReached: string;
     technicalWeeksUsedLabel: string;
+    focusRequired: string;
     saveError: string;
     saveSuccess: string;
   };
@@ -136,6 +137,7 @@ export function TrainingConfigForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, startTransition] = useTransition();
+  const submittingRef = useRef(false);
 
   if (isRaceWeek) {
     return (
@@ -157,24 +159,35 @@ export function TrainingConfigForm({
   }
 
   function handleSave() {
-    if (pending || technicalLocked) return;
+    // submittingRef closes the gap between a click and React re-rendering the
+    // button as disabled=true — pending only flips once startTransition's
+    // callback actually starts, so a fast double-click could otherwise fire
+    // the server action twice before that happens.
+    if (submittingRef.current || pending || technicalLocked || !focus) return;
+    submittingRef.current = true;
     setError(null);
     setSuccess(false);
     startTransition(async () => {
-      const result = await saveAction({
-        seasonId, weekNumber, weekType, focus, intensity, isRaceWeek, isCurrentWeek,
-      });
-      if (result.ok) {
-        setPlan(result.plan);
-        setEditing(false);
-        setSuccess(true);
-        router.refresh();
-      } else if (result.reason === 'technical-limit') {
-        setError(labels.technicalLimitReached);
-      } else if (result.reason === 'locked') {
-        setError(labels.raceWeekLocked);
-      } else {
-        setError(labels.saveError);
+      try {
+        const result = await saveAction({
+          seasonId, weekNumber, weekType, focus, intensity, isRaceWeek, isCurrentWeek,
+        });
+        if (result.ok) {
+          setPlan(result.plan);
+          setEditing(false);
+          setSuccess(true);
+          router.refresh();
+        } else if (result.reason === 'technical-limit') {
+          setError(labels.technicalLimitReached);
+        } else if (result.reason === 'locked' || result.reason === 'race-week') {
+          setError(labels.raceWeekLocked);
+        } else if (result.reason === 'invalid-focus') {
+          setError(labels.focusRequired);
+        } else {
+          setError(labels.saveError);
+        }
+      } finally {
+        submittingRef.current = false;
       }
     });
   }
