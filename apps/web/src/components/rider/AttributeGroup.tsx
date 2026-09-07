@@ -30,26 +30,22 @@ export function AttributeGroup({
   return (
     <Card dense className={className}
       title={
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-center gap-1.5 text-sm">
           <Icon name={icon} className="h-3.5 w-3.5 text-teal" />
           {t(titleKey)}
         </span>
       }>
-      <ul className={showStatIcons ? 'space-y-2 p-3.5' : 'space-y-1.5 p-3.5'}>
+      <ul className="space-y-2.5 p-3.5">
         {keys.map((k) => (
-          <li key={k} className="flex items-center gap-2">
+          <li key={k} className="flex items-center gap-2.5">
             {showStatIcons && (
               <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={28} />
             )}
-            <span className={showStatIcons
-              ? 'w-24 shrink-0 text-[15px] text-navy-soft'
-              : 'w-32 shrink-0 text-2xs text-navy-soft'}>
+            <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(`attr.${k}`)}>
               {t(`attr.${k}`)}
             </span>
-            <ProgressBar value={pct(attributes[k])} className="flex-1" />
-            <span className={showStatIcons
-              ? 'w-9 text-right text-base font-bold tabular-nums text-navy'
-              : 'w-7 text-right text-2xs font-bold tabular-nums text-navy'}>
+            <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+            <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">
               {attributes[k]}
             </span>
           </li>

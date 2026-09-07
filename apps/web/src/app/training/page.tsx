@@ -183,57 +183,55 @@ export default async function TrainingPage() {
 
           {/* RIGHT — development, condition, tactics/technique */}
           <div className="col-span-12 space-y-3 lg:col-span-3">
-            <Card title={t('group.development')} dense>
+            <Card title={<span className="text-sm">{t('group.development')}</span>} dense>
               <ul className="space-y-2.5 p-3.5">
                 <li>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xs text-navy-muted">{t('dev.potential')}</span>
-                    <span className="text-xs font-bold text-navy">{potentialLow}–{potentialHigh}</span>
+                    <span className="text-sm text-navy-muted">{t('dev.potential')}</span>
+                    <span className="text-base font-bold text-navy">{potentialLow}–{potentialHigh}</span>
                   </div>
                 </li>
                 <li>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xs text-navy-muted">{t('dev.trainability')}</span>
-                    <span className="text-xs font-bold text-navy">{rider.trainability}</span>
+                    <span className="text-sm text-navy-muted">{t('dev.trainability')}</span>
+                    <span className="text-base font-bold text-navy">{rider.trainability}</span>
                   </div>
                   <ProgressBar value={pctDev(rider.trainability)} className="mt-1" />
                 </li>
                 <li>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xs text-navy-muted">{t('dev.professionalism')}</span>
-                    <span className="text-xs font-bold text-navy">{rider.professionalism}</span>
+                    <span className="text-sm text-navy-muted">{t('dev.professionalism')}</span>
+                    <span className="text-base font-bold text-navy">{rider.professionalism}</span>
                   </div>
                   <ProgressBar value={pctDev(rider.professionalism)} className="mt-1" />
                 </li>
                 <li>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xs text-navy-muted">{t('dev.recovery')}</span>
-                    <span className="text-xs font-bold text-navy">{rider.recovery}</span>
+                    <span className="text-sm text-navy-muted">{t('dev.recovery')}</span>
+                    <span className="text-base font-bold text-navy">{rider.recovery}</span>
                   </div>
                   <ProgressBar value={pctDev(rider.recovery)} className="mt-1" />
                 </li>
                 <li>
                   <div className="flex items-baseline justify-between">
-                    <span className="text-2xs text-navy-muted">{t('attr.experience')}</span>
-                    <span className="text-xs font-bold text-navy">{rider.attributes.experience}</span>
+                    <span className="text-sm text-navy-muted">{t('attr.experience')}</span>
+                    <span className="text-base font-bold text-navy">{rider.attributes.experience}</span>
                   </div>
                   <ProgressBar value={pctAttr(rider.attributes.experience)} className="mt-1" />
                 </li>
               </ul>
             </Card>
 
-            <Card title={t('group.condition')} dense>
+            <Card title={<span className="text-sm">{t('group.condition')}</span>} dense>
               <ul className="space-y-2.5 p-3.5">
                 {condition.map((c) => (
-                  <li key={c.key}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={28} />
-                        <span className="truncate text-[15px] text-navy-soft">{t(c.key)}</span>
-                      </span>
-                      <span className="shrink-0 text-base font-bold text-navy">{c.value}</span>
-                    </div>
-                    <ProgressBar value={c.value} tone={c.value < 40 ? 'warn' : 'teal'} className="mt-1" />
+                  <li key={c.key} className="flex items-center gap-2.5">
+                    <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={28} />
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(c.key)}>
+                      {t(c.key)}
+                    </span>
+                    <ProgressBar value={c.value} tone={c.value < 40 ? 'warn' : 'teal'} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+                    <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">{c.value}</span>
                   </li>
                 ))}
               </ul>
@@ -241,13 +239,15 @@ export default async function TrainingPage() {
 
             <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes} />
 
-            <Card title={t('group.technique')} dense>
-              <ul className="space-y-1.5 p-3.5">
+            <Card title={<span className="text-sm">{t('group.technique')}</span>} dense>
+              <ul className="space-y-2.5 p-3.5">
                 {TECHNIQUE_PREVIEW.map((k) => (
-                  <li key={k} className="flex items-center gap-2">
-                    <span className="w-24 shrink-0 text-2xs text-navy-soft">{t(`attr.${k}`)}</span>
-                    <ProgressBar value={pctAttr(rider.attributes[k])} className="flex-1" />
-                    <span className="w-7 text-right text-2xs font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
+                  <li key={k} className="flex items-center gap-2.5">
+                    <span className="min-w-0 flex-1 truncate text-[15px] text-navy-soft" title={t(`attr.${k}`)}>
+                      {t(`attr.${k}`)}
+                    </span>
+                    <ProgressBar value={pctAttr(rider.attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+                    <span className="w-9 shrink-0 text-right text-base font-bold tabular-nums text-navy">{rider.attributes[k]}</span>
                   </li>
                 ))}
               </ul>

@@ -144,37 +144,37 @@ export default async function RiderPage() {
             <AttributeGroup key={g.titleKey} t={t} titleKey={g.titleKey} icon={g.icon}
               keys={g.keys} attributes={rider.attributes}
               showStatIcons={g.titleKey === 'group.performance'}
-              className="col-span-12 sm:col-span-6 lg:col-span-3" />
+              className="col-span-12 sm:col-span-6 xl:col-span-3" />
           ))}
         </div>
 
         <div className="grid grid-cols-12 gap-3">
-          <Card title={t('profile.strengths')} dense className="col-span-12 lg:col-span-6">
+          <Card title={<span className="text-sm">{t('profile.strengths')}</span>} dense className="col-span-12 lg:col-span-6">
             <ul className="p-3.5">
               {strengths.map((s) => (
-                <li key={s.key} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
-                  <span className="flex items-center gap-2 text-sm text-navy-soft">
-                    <RiderStatIcon src={getSkillStatIcon(s.key)} alt={t(`attr.${s.key}`)} size={24} />
-                    {t(`attr.${s.key}`)}
+                <li key={s.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
+                  <span className="flex min-w-0 items-center gap-2.5 text-[15px] text-navy-soft">
+                    <RiderStatIcon src={getSkillStatIcon(s.key)} alt={t(`attr.${s.key}`)} size={26} />
+                    <span className="truncate" title={t(`attr.${s.key}`)}>{t(`attr.${s.key}`)}</span>
                   </span>
-                  <span className="text-sm font-bold tabular-nums text-navy">{s.value}</span>
+                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{s.value}</span>
                 </li>
               ))}
             </ul>
           </Card>
 
-          <Card title={t('group.development')} dense className="col-span-12 lg:col-span-6">
+          <Card title={<span className="text-sm">{t('group.development')}</span>} dense className="col-span-12 lg:col-span-6">
             <div className="flex items-center gap-4 p-3.5">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
                 style={{ background: `conic-gradient(#0e9384 ${rider.potential * 3.6}deg, #e8f4f2 0deg)` }}>
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-sm font-bold text-navy">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-base font-bold text-navy">
                   {rider.potential}
                 </span>
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-navy">{t('dev.potential')}</p>
-                <p className="text-2xs leading-snug text-navy-soft">{t('profile.potentialNote')}</p>
-                <p className="mt-1.5 flex items-center gap-2 text-2xs text-navy-muted">
+                <p className="text-[15px] font-bold text-navy">{t('dev.potential')}</p>
+                <p className="text-sm leading-snug text-navy-soft">{t('profile.potentialNote')}</p>
+                <p className="mt-1.5 flex items-center gap-2 text-sm text-navy-muted">
                   {t('dev.trainability')}
                   <span className="font-bold text-navy">{rider.trainability}</span>
                 </p>

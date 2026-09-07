@@ -45,8 +45,8 @@ function FocusSelect({ options, value, onChange }: {
   return (
     <div ref={rootRef} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
-        className="flex w-full items-center gap-2 rounded-lg border border-line bg-card px-3 py-2 text-left text-sm font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
-        <RiderStatIcon src={selected ? getSkillStatIcon(selected.id as SkillAttribute) : null} alt="" size={24} />
+        className="flex w-full items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-2 text-left text-base font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+        <RiderStatIcon src={selected ? getSkillStatIcon(selected.id as SkillAttribute) : null} alt="" size={32} />
         <span className="min-w-0 flex-1 truncate">{selected?.label}</span>
         <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 shrink-0 text-navy-muted transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -58,10 +58,10 @@ function FocusSelect({ options, value, onChange }: {
           {options.map((o) => (
             <li key={o.id} role="option" aria-selected={o.id === value}>
               <button type="button" onClick={() => { onChange(o.id); setOpen(false); }}
-                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors ${
+                className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors ${
                   o.id === value ? 'bg-teal-rail text-navy' : 'text-navy-soft hover:bg-surface'
                 }`}>
-                <RiderStatIcon src={getSkillStatIcon(o.id as SkillAttribute)} alt="" size={24} />
+                <RiderStatIcon src={getSkillStatIcon(o.id as SkillAttribute)} alt="" size={26} />
                 <span className="min-w-0 flex-1 truncate">{o.label}</span>
               </button>
             </li>
@@ -187,20 +187,20 @@ export function TrainingConfigForm({
 
     return (
       <div className="space-y-3">
-        <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-teal-dark">{labels.savedTitle}</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.savedTitle}</p>
           <p className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
-            <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={28} />
+            <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={32} />
             {focusLabel}
           </p>
-          <p className="text-xs text-navy-soft">
+          <p className="text-sm text-navy-soft">
             {intensityLabel} · {plan.weekType === 'technical' ? labels.savedWeekType : labels.weekTypePerformance}
           </p>
         </div>
         {isCurrentWeek && (
           <button type="button" onClick={() => setEditing(true)}
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-xs font-semibold text-navy-soft transition-colors hover:bg-teal-rail hover:text-navy">
+            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-semibold text-navy-soft transition-colors hover:bg-teal-rail hover:text-navy">
             {labels.edit}
           </button>
         )}
@@ -210,27 +210,27 @@ export function TrainingConfigForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
+      <p className="text-sm font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
 
       {/* Week type */}
       <div>
-        <span className="mb-1.5 block text-2xs font-semibold text-navy-muted">{labels.weekTypeLabel}</span>
+        <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.weekTypeLabel}</span>
         <div className="grid grid-cols-2 gap-1.5">
           <button type="button" onClick={() => switchWeekType('performance')}
-            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               weekType === 'performance' ? 'bg-teal text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
             }`}>
             {labels.weekTypePerformance}
           </button>
           <button type="button" onClick={() => switchWeekType('technical')}
-            className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               weekType === 'technical' ? 'bg-teal text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
             }`}>
             {labels.weekTypeTechnical}
           </button>
         </div>
         {weekType === 'technical' && (
-          <p className="mt-1.5 text-2xs text-navy-muted">
+          <p className="mt-1.5 text-sm text-navy-muted">
             {labels.technicalWeeksUsedLabel}: {technicalWeeksUsed} / {maxTechnicalWeeks}
           </p>
         )}
@@ -238,13 +238,13 @@ export function TrainingConfigForm({
 
       {/* Focus */}
       <div>
-        <span className="mb-1.5 block text-2xs font-semibold text-navy-muted">{labels.focusLabel}</span>
+        <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.focusLabel}</span>
         <FocusSelect options={focusOptions} value={focus} onChange={setFocus} />
       </div>
 
       {/* Intensity */}
       <div>
-        <span className="mb-1.5 block text-2xs font-semibold text-navy-muted">{labels.intensityLabel}</span>
+        <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.intensityLabel}</span>
         <div className="grid grid-cols-3 gap-1.5">
           {([
             ['light', labels.intensityLight],
@@ -252,7 +252,7 @@ export function TrainingConfigForm({
             ['hard', labels.intensityHard],
           ] as const).map(([value, label]) => (
             <button key={value} type="button" onClick={() => setIntensity(value)}
-              className={`rounded-lg px-2 py-2 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
                 intensity === value ? 'bg-navy text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
               }`}>
               {label}
@@ -262,17 +262,17 @@ export function TrainingConfigForm({
       </div>
 
       {technicalLocked && (
-        <p className="rounded-lg border border-warn/30 bg-warn/5 px-2.5 py-1.5 text-2xs text-warn">
+        <p className="rounded-lg border border-warn/30 bg-warn/5 px-2.5 py-1.5 text-sm text-warn">
           {labels.technicalLimitReached}
         </p>
       )}
       {error && (
-        <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-2.5 py-1.5 text-2xs text-danger">
+        <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-2.5 py-1.5 text-sm text-danger">
           {error}
         </p>
       )}
       {success && !error && (
-        <p role="status" className="rounded-lg border border-teal/30 bg-teal-rail px-2.5 py-1.5 text-2xs text-teal-dark">
+        <p role="status" className="rounded-lg border border-teal/30 bg-teal-rail px-2.5 py-1.5 text-sm text-teal-dark">
           {labels.saveSuccess}
         </p>
       )}
@@ -280,12 +280,12 @@ export function TrainingConfigForm({
       <div className="flex gap-2">
         {plan && (
           <button type="button" onClick={() => setEditing(false)} disabled={pending}
-            className="flex-1 rounded-lg border border-line bg-card px-3 py-2 text-xs font-semibold text-navy-soft transition-colors hover:bg-teal-rail disabled:opacity-60">
+            className="flex-1 rounded-lg border border-line bg-card px-3 py-2 text-sm font-semibold text-navy-soft transition-colors hover:bg-teal-rail disabled:opacity-60">
             {labels.cancelEdit}
           </button>
         )}
         <button type="button" onClick={handleSave} disabled={pending || technicalLocked || !focus} aria-busy={pending}
-          className="flex-1 rounded-lg bg-teal px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-teal-dark disabled:cursor-not-allowed disabled:opacity-70">
+          className="flex-1 rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark disabled:cursor-not-allowed disabled:opacity-70">
           {pending ? labels.saving : plan ? labels.saveEdit : labels.save}
         </button>
       </div>
