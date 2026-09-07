@@ -26,6 +26,8 @@ function fromRow(row: Record<string, unknown>): StoredRider {
     inferredArchetype: row.inferred_archetype as string,
     potential: row.potential as number,
     trainability: row.trainability as number,
+    professionalism: row.professionalism as number,
+    recovery: row.recovery as number,
     generatorVersion: row.generator_version as string,
     isAi: Boolean(row.is_ai),
   };
@@ -80,6 +82,8 @@ export async function ensureStarterRider(): Promise<StoredRider | null> {
       inferred_archetype: rider.inferredArchetype,
       potential: rider.potential,
       trainability: rider.trainability,
+      professionalism: rider.professionalism,
+      recovery: rider.recovery,
       generator_version: rider.generatorVersion,
     })
     .select('*')

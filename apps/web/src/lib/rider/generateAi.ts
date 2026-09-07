@@ -3,6 +3,7 @@ import {
   ROOKIE_BASE, ROOKIE_BASE_SPREAD, ATTR_NOISE, ATTR_MIN, ATTR_MAX,
   AGE_MIN, AGE_MAX, STRONG_BONUS, WEAK_PENALTY, STARTER_CONDITION,
   POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
+  PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
   type SkillAttribute,
 } from './config';
 import { AI_GENERATOR_VERSION } from './aiConfig';
@@ -33,6 +34,8 @@ export interface GeneratedAiRider {
   /** Hidden, persisted, no race effect yet — same convention as Starter Rider V1. */
   potential: number;
   trainability: number;
+  professionalism: number;
+  recovery: number;
   generatorVersion: string;
 }
 
@@ -69,6 +72,8 @@ export function generateAiRider(rng: Rng, shapeId: string): GeneratedAiRider {
     archetype: shape.id,
     potential: intBetween(rng, POTENTIAL_MIN, POTENTIAL_MAX),
     trainability: intBetween(rng, TRAINABILITY_MIN, TRAINABILITY_MAX),
+    professionalism: intBetween(rng, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX),
+    recovery: intBetween(rng, RECOVERY_MIN, RECOVERY_MAX),
     generatorVersion: AI_GENERATOR_VERSION,
   };
 }

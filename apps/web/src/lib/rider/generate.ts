@@ -3,6 +3,7 @@ import {
   ROOKIE_BASE, ROOKIE_BASE_SPREAD, ATTR_NOISE, ATTR_MIN, ATTR_MAX,
   AGE_MIN, AGE_MAX, STRONG_BONUS, WEAK_PENALTY, STARTER_CONDITION,
   POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
+  PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
   type SkillAttribute,
 } from './config';
 import {
@@ -30,6 +31,9 @@ export interface GeneratedRider {
   /** Hidden, persisted, no race effect yet. */
   potential: number;
   trainability: number;
+  /** Training V1: how much a Rider's own discipline vs. natural recovery help training gains. */
+  professionalism: number;
+  recovery: number;
   generatorVersion: string;
 }
 
@@ -86,6 +90,8 @@ export function generateStarterRider(rng: Rng): GeneratedRider {
     inferredArchetype: inferArchetype(attributes),
     potential: intBetween(rng, POTENTIAL_MIN, POTENTIAL_MAX),
     trainability: intBetween(rng, TRAINABILITY_MIN, TRAINABILITY_MAX),
+    professionalism: intBetween(rng, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX),
+    recovery: intBetween(rng, RECOVERY_MIN, RECOVERY_MAX),
     generatorVersion: GENERATOR_VERSION,
   };
 }

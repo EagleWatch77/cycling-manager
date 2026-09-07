@@ -44,6 +44,15 @@ export const POTENTIAL_MIN = 55;
 export const POTENTIAL_MAX = 95;
 export const TRAINABILITY_MIN = 55;
 export const TRAINABILITY_MAX = 95;
+/**
+ * Added for Training V1 (previously did not exist on the rider model at
+ * all). Same convention as potential/trainability: hidden dev-facing
+ * rating, same 55–95 scale, generated once with the rider.
+ */
+export const PROFESSIONALISM_MIN = 55;
+export const PROFESSIONALISM_MAX = 95;
+export const RECOVERY_MIN = 55;
+export const RECOVERY_MAX = 95;
 
 export const STARTER_CONDITION = {
   energy: 100,

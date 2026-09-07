@@ -52,6 +52,8 @@ export async function generateTestPeloton(): Promise<GenerateTestPelotonResult> 
       inferred_archetype: rider.archetype,
       potential: rider.potential,
       trainability: rider.trainability,
+      professionalism: rider.professionalism,
+      recovery: rider.recovery,
       generator_version: rider.generatorVersion,
     };
   });
