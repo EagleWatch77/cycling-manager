@@ -195,7 +195,7 @@
   "profile.training": "Tréning",
   "profile.calendar": "Kalendár",
   "profile.development": "Vývoj",
-  "profile.contract": "Zmluva",
+  "profile.contract": "Kontrakt",
   "profile.history": "História",
   "profile.condition": "Aktuálny stav",
   "profile.allAttributes": "Všetky atribúty",
@@ -373,5 +373,7 @@
   "market.backToMarket": "Späť na trh",
   "market.premiumLockedTitle": "Premium trh",
   "market.premiumLockedText": "Odomkni si Premium prístup pre širší výber jazdcov a pokročilé filtre.",
-  "market.applyFilters": "Filtrovať"
+  "market.applyFilters": "Filtrovať",
+  "profile.contractEmpty": "Jazdec zatiaľ nemá evidovanú zmluvu.",
+  "profile.historyEmpty": "Zatiaľ nie sú zaznamenané žiadne udalosti kariéry."
 }

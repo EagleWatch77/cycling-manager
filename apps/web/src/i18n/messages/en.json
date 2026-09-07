@@ -373,5 +373,7 @@
   "market.backToMarket": "Back to market",
   "market.premiumLockedTitle": "Premium market",
   "market.premiumLockedText": "Unlock Premium access for a wider rider pool and advanced filters.",
-  "market.applyFilters": "Apply filters"
+  "market.applyFilters": "Apply filters",
+  "profile.contractEmpty": "This rider has no recorded contract yet.",
+  "profile.historyEmpty": "No career events have been recorded yet."
 }

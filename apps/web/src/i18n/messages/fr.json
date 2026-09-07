@@ -373,5 +373,7 @@
   "market.backToMarket": "Retour au marché",
   "market.premiumLockedTitle": "Marché Premium",
   "market.premiumLockedText": "Débloque l'accès Premium pour un plus grand choix de coureurs et des filtres avancés.",
-  "market.applyFilters": "Filtrer"
+  "market.applyFilters": "Filtrer",
+  "profile.contractEmpty": "Ce coureur n'a pas encore de contrat enregistré.",
+  "profile.historyEmpty": "Aucun événement de carrière n'a encore été enregistré."
 }

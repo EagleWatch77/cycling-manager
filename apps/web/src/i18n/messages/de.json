@@ -373,5 +373,7 @@
   "market.backToMarket": "Zurück zum Markt",
   "market.premiumLockedTitle": "Premium-Markt",
   "market.premiumLockedText": "Schalte Premium frei für eine größere Fahrerauswahl und erweiterte Filter.",
-  "market.applyFilters": "Filtern"
+  "market.applyFilters": "Filtern",
+  "profile.contractEmpty": "Für diesen Fahrer ist noch kein Vertrag erfasst.",
+  "profile.historyEmpty": "Es wurden noch keine Karriereereignisse erfasst."
 }

@@ -1,7 +1,7 @@
 import type { LeagueId } from './leagues';
 
 export type NavItemId =
-  | 'home' | 'rider' | 'races' | 'calendar' | 'training' | 'rankings'
+  | 'home' | 'rider' | 'races' | 'calendar' | 'rankings'
   | 'team' | 'scouting' | 'transfers' | 'staff' | 'finance' | 'facilities' | 'settings';
 
 export interface NavItem {
@@ -26,7 +26,6 @@ export const PRIMARY_NAV: readonly NavItem[] = [
   { id: 'rider', href: '/rider', labelKey: 'nav.rider', icon: 'rider' },
   { id: 'races', href: '/races', labelKey: 'nav.races', icon: 'flag' },
   { id: 'calendar', href: '/calendar', labelKey: 'nav.calendar', icon: 'calendar' },
-  { id: 'training', href: '/training', labelKey: 'nav.training', icon: 'chart' },
   { id: 'rankings', href: '/rankings', labelKey: 'nav.rankings', icon: 'trophy' },
 ];
 

@@ -373,5 +373,7 @@
   "market.backToMarket": "Zpět na trh",
   "market.premiumLockedTitle": "Premium trh",
   "market.premiumLockedText": "Odemkni si Premium přístup pro širší výběr jezdců a pokročilé filtry.",
-  "market.applyFilters": "Filtrovat"
+  "market.applyFilters": "Filtrovat",
+  "profile.contractEmpty": "Jezdec zatím nemá evidovanou smlouvu.",
+  "profile.historyEmpty": "Zatím nejsou zaznamenány žádné události kariéry."
 }

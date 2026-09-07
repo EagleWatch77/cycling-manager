@@ -373,5 +373,7 @@
   "market.backToMarket": "Powrót do rynku",
   "market.premiumLockedTitle": "Rynek Premium",
   "market.premiumLockedText": "Odblokuj dostęp Premium dla szerszego wyboru zawodników i zaawansowanych filtrów.",
-  "market.applyFilters": "Filtruj"
+  "market.applyFilters": "Filtruj",
+  "profile.contractEmpty": "Zawodnik nie ma jeszcze zarejestrowanego kontraktu.",
+  "profile.historyEmpty": "Nie odnotowano jeszcze żadnych wydarzeń kariery."
 }

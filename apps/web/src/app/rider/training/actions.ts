@@ -11,6 +11,6 @@ export async function saveTrainingAction(input: {
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {
   const result = await saveTrainingPlan(input);
-  if (result.ok) revalidatePath('/training');
+  if (result.ok) revalidatePath('/rider/training');
   return result;
 }
