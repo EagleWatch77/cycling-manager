@@ -1,6 +1,7 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
+import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -9,7 +10,8 @@ import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
-import { getSkillStatIcon } from '@/lib/rider/statIcons';
+import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
+import { getSkillStatIcon, getDevStatIcon } from '@/lib/rider/statIcons';
 
 const FLAGS: Record<string, string> = {
   SK:'🇸🇰',CZ:'🇨🇿',PL:'🇵🇱',FR:'🇫🇷',IT:'🇮🇹',ES:'🇪🇸',BE:'🇧🇪',NL:'🇳🇱',
@@ -164,22 +166,13 @@ export default async function RiderPage() {
           </Card>
 
           <Card title={<span className="text-sm">{t('group.development')}</span>} dense className="col-span-12 lg:col-span-6">
-            <div className="flex items-center gap-4 p-3.5">
-              <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
-                style={{ background: `conic-gradient(#0e9384 ${rider.potential * 3.6}deg, #e8f4f2 0deg)` }}>
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-card text-base font-bold text-navy">
-                  {rider.potential}
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[15px] font-bold text-navy">{t('dev.potential')}</p>
-                <p className="text-sm leading-snug text-navy-soft">{t('profile.potentialNote')}</p>
-                <p className="mt-1.5 flex items-center gap-2 text-sm text-navy-muted">
-                  {t('dev.trainability')}
-                  <span className="font-bold text-navy">{rider.trainability}</span>
-                </p>
-              </div>
-            </div>
+            <p className="px-3.5 pt-3.5 text-sm leading-snug text-navy-soft">{t('profile.potentialNote')}</p>
+            <ul className="p-3.5 pt-2">
+              <DevAttributeRow variant="stars" icon={getDevStatIcon('potential')} label={t('dev.potential')}
+                level={potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX)} />
+              <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')}
+                level={scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX)} accentClass="bg-purple-500" />
+            </ul>
           </Card>
         </div>
       </div>

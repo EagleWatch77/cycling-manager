@@ -17,6 +17,9 @@ const config: Config = {
         warn: '#d97706',
         danger: '#dc2626',
       },
+      fontFamily: {
+        sans: ['var(--font-manrope)', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '0.9rem' }],
       },

@@ -1,10 +1,16 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX, type SkillAttribute } from '@/lib/rider/config';
+import {
+  SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX,
+  POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
+  PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
+  type SkillAttribute,
+} from '@/lib/rider/config';
+import { scoreToLevel, potentialToStars } from '@/lib/rider/development';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, countTechnicalWeeksUsed, listRecentCompletedTrainings } from '@/lib/training/repository';
-import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON, potentialCeiling } from '@/lib/training/config';
+import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, MAX_TECHNICAL_WEEKS_PER_SEASON } from '@/lib/training/config';
 import { processCompletedTrainings } from '@/lib/training/engine';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
@@ -12,6 +18,7 @@ import { Icon } from '@/components/ui/Icon';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
+import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
@@ -89,10 +96,13 @@ export default async function TrainingPage() {
   const performanceOptions = PERFORMANCE_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
   const technicalOptions = TECHNICAL_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
 
-  // Potential stays hidden: only a rescaled range around the true value, never the exact number.
-  const ceiling = potentialCeiling(rider.potential);
-  const potentialLow = Math.round(Math.max(ATTR_MIN, ceiling - 15));
-  const potentialHigh = Math.round(Math.min(ATTR_MAX, ceiling + 15));
+  // Rozvoj never shows exact development numbers — only a 1-5 visual read.
+  // See lib/rider/development.ts for the centralized value->level mapping.
+  const potentialStars = potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX);
+  const trainabilityLevel = scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX);
+  const professionalismLevel = scoreToLevel(rider.professionalism, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX);
+  const recoveryLevel = scoreToLevel(rider.recovery, RECOVERY_MIN, RECOVERY_MAX);
+  const experienceLevel = scoreToLevel(rider.attributes.experience, ATTR_MIN, ATTR_MAX);
 
   const condition: { key: string; conditionKey: ConditionKey; value: number }[] = [
     { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy },
@@ -225,36 +235,11 @@ export default async function TrainingPage() {
           <div className="col-span-12 space-y-3 lg:col-span-3">
             <Card title={<span className="text-sm text-teal-dark">{t('group.development')}</span>} dense>
               <ul className="p-3.5">
-                <li className="flex items-center gap-2.5 border-b border-line py-2">
-                  <RiderStatIcon src={getDevStatIcon('potential')} alt={t('dev.potential')} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.potential')}</span>
-                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{potentialLow}–{potentialHigh}</span>
-                </li>
-                <li className="flex items-center gap-2.5 border-b border-line py-2">
-                  <RiderStatIcon src={getDevStatIcon('trainability')} alt={t('dev.trainability')} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.trainability')}</span>
-                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.trainability}</span>
-                </li>
-                <li className="flex items-center gap-2.5 border-b border-line py-2">
-                  <RiderStatIcon src={getDevStatIcon('professionalism')} alt={t('dev.professionalism')} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.professionalism')}</span>
-                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.professionalism}</span>
-                </li>
-                <li className="flex items-center gap-2.5 border-b border-line py-2">
-                  <RiderStatIcon src={getDevStatIcon('recovery')} alt={t('dev.recovery')} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('dev.recovery')}</span>
-                  <span className="shrink-0 text-base font-bold tabular-nums text-navy">{rider.recovery}</span>
-                </li>
-                <li className="flex items-center gap-2.5 py-2">
-                  <RiderStatIcon src={getSkillStatIcon('experience')} alt={t('attr.experience')} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{t('attr.experience')}</span>
-                  <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
-                    <span className="text-base font-bold tabular-nums text-navy">{rider.attributes.experience}</span>
-                    {bonuses.experience != null && (
-                      <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses.experience}</span>
-                    )}
-                  </span>
-                </li>
+                <DevAttributeRow variant="stars" icon={getDevStatIcon('potential')} label={t('dev.potential')} level={potentialStars} />
+                <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')} level={trainabilityLevel} accentClass="bg-purple-500" />
+                <DevAttributeRow variant="segments" icon={getDevStatIcon('professionalism')} label={t('dev.professionalism')} level={professionalismLevel} accentClass="bg-blue-500" />
+                <DevAttributeRow variant="segments" icon={getDevStatIcon('recovery')} label={t('dev.recovery')} level={recoveryLevel} accentClass="bg-green-500" />
+                <DevAttributeRow variant="segments" icon={getSkillStatIcon('experience')} label={t('attr.experience')} level={experienceLevel} accentClass="bg-orange-500" />
               </ul>
             </Card>
 
