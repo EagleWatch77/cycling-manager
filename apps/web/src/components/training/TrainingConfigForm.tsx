@@ -1,11 +1,76 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TrainingPlan, SaveTrainingResult } from '@/lib/training/repository';
 import type { TrainingIntensity, WeekType } from '@/lib/training/config';
+import type { SkillAttribute } from '@/lib/rider/config';
+import { getSkillStatIcon } from '@/lib/rider/statIcons';
+import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 
 type FocusOption = { id: string; label: string };
+
+/**
+ * Custom listbox (not a native <select>) so the currently selected Focus,
+ * and every option in the open list, can show its glossy /ride-icon —
+ * native <option> elements cannot render images. Technical-focus options
+ * simply have no dedicated icon yet, so RiderStatIcon renders its neutral
+ * placeholder for them instead of an unrelated icon.
+ */
+function FocusSelect({ options, value, onChange }: {
+  options: FocusOption[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.id === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
+        className="flex w-full items-center gap-2 rounded-lg border border-line bg-card px-3 py-2 text-left text-sm font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+        <RiderStatIcon src={selected ? getSkillStatIcon(selected.id as SkillAttribute) : null} alt="" size={24} />
+        <span className="min-w-0 flex-1 truncate">{selected?.label}</span>
+        <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 shrink-0 text-navy-muted transition-transform ${open ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <ul role="listbox" className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-line bg-card p-1 shadow-lg">
+          {options.map((o) => (
+            <li key={o.id} role="option" aria-selected={o.id === value}>
+              <button type="button" onClick={() => { onChange(o.id); setOpen(false); }}
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm font-medium transition-colors ${
+                  o.id === value ? 'bg-teal-rail text-navy' : 'text-navy-soft hover:bg-surface'
+                }`}>
+                <RiderStatIcon src={getSkillStatIcon(o.id as SkillAttribute)} alt="" size={24} />
+                <span className="min-w-0 flex-1 truncate">{o.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /**
  * Training configuration + save flow. Mirrors the established pattern from
@@ -125,7 +190,10 @@ export function TrainingConfigForm({
         <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.heading}</p>
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
           <p className="text-2xs font-semibold uppercase tracking-wide text-teal-dark">{labels.savedTitle}</p>
-          <p className="mt-1 text-lg font-bold text-navy">{focusLabel}</p>
+          <p className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
+            <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={28} />
+            {focusLabel}
+          </p>
           <p className="text-xs text-navy-soft">
             {intensityLabel} · {plan.weekType === 'technical' ? labels.savedWeekType : labels.weekTypePerformance}
           </p>
@@ -169,13 +237,10 @@ export function TrainingConfigForm({
       </div>
 
       {/* Focus */}
-      <label className="block">
+      <div>
         <span className="mb-1.5 block text-2xs font-semibold text-navy-muted">{labels.focusLabel}</span>
-        <select value={focus} onChange={(e) => setFocus(e.target.value)}
-          className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
-          {focusOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-        </select>
-      </label>
+        <FocusSelect options={focusOptions} value={focus} onChange={setFocus} />
+      </div>
 
       {/* Intensity */}
       <div>

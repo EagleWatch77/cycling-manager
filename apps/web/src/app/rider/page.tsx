@@ -8,6 +8,8 @@ import { Icon } from '@/components/ui/Icon';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
+import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
+import { getSkillStatIcon } from '@/lib/rider/statIcons';
 
 const FLAGS: Record<string, string> = {
   SK:'🇸🇰',CZ:'🇨🇿',PL:'🇵🇱',FR:'🇫🇷',IT:'🇮🇹',ES:'🇪🇸',BE:'🇧🇪',NL:'🇳🇱',
@@ -141,6 +143,7 @@ export default async function RiderPage() {
           {GROUPS.map((g) => (
             <AttributeGroup key={g.titleKey} t={t} titleKey={g.titleKey} icon={g.icon}
               keys={g.keys} attributes={rider.attributes}
+              showStatIcons={g.titleKey === 'group.performance'}
               className="col-span-12 sm:col-span-6 lg:col-span-3" />
           ))}
         </div>
@@ -151,7 +154,7 @@ export default async function RiderPage() {
               {strengths.map((s) => (
                 <li key={s.key} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
                   <span className="flex items-center gap-2 text-sm text-navy-soft">
-                    <Icon name="chart" className="h-3.5 w-3.5 text-teal" />
+                    <RiderStatIcon src={getSkillStatIcon(s.key)} alt={t(`attr.${s.key}`)} size={24} />
                     {t(`attr.${s.key}`)}
                   </span>
                   <span className="text-sm font-bold tabular-nums text-navy">{s.value}</span>

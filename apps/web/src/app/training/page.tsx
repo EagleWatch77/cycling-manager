@@ -11,6 +11,8 @@ import { Icon } from '@/components/ui/Icon';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
+import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
+import { getConditionStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
 
@@ -82,12 +84,12 @@ export default async function TrainingPage() {
   const potentialLow = Math.round(Math.max(ATTR_MIN, ceiling - 15));
   const potentialHigh = Math.round(Math.min(ATTR_MAX, ceiling + 15));
 
-  const condition = [
-    { key: 'rider.energy', value: rider.condition.energy },
-    { key: 'rider.fatigue', value: rider.condition.fatigue },
-    { key: 'rider.form', value: rider.condition.form },
-    { key: 'rider.fitness', value: rider.condition.fitness },
-    { key: 'rider.morale', value: rider.condition.morale },
+  const condition: { key: string; conditionKey: ConditionKey; value: number }[] = [
+    { key: 'rider.energy', conditionKey: 'energy', value: rider.condition.energy },
+    { key: 'rider.fatigue', conditionKey: 'fatigue', value: rider.condition.fatigue },
+    { key: 'rider.form', conditionKey: 'form', value: rider.condition.form },
+    { key: 'rider.fitness', conditionKey: 'fitness', value: rider.condition.fitness },
+    { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale },
   ];
 
   return (
@@ -133,7 +135,7 @@ export default async function TrainingPage() {
               </div>
             </Card>
 
-            <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes} />
+            <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes} showStatIcons />
           </div>
 
           {/* CENTER — training configuration */}
@@ -224,9 +226,12 @@ export default async function TrainingPage() {
               <ul className="space-y-2.5 p-3.5">
                 {condition.map((c) => (
                   <li key={c.key}>
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-2xs text-navy-muted">{t(c.key)}</span>
-                      <span className="text-xs font-bold text-navy">{c.value}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <RiderStatIcon src={getConditionStatIcon(c.conditionKey)} alt={t(c.key)} size={28} />
+                        <span className="truncate text-[15px] text-navy-soft">{t(c.key)}</span>
+                      </span>
+                      <span className="shrink-0 text-base font-bold text-navy">{c.value}</span>
                     </div>
                     <ProgressBar value={c.value} tone={c.value < 40 ? 'warn' : 'teal'} className="mt-1" />
                   </li>

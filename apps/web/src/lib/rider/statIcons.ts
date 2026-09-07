@@ -1,0 +1,48 @@
+import type { SkillAttribute } from './config';
+
+/** Rider condition fields, mirrors STARTER_CONDITION in ./config. */
+export type ConditionKey = 'energy' | 'fatigue' | 'form' | 'fitness' | 'morale';
+
+/**
+ * Single source of truth for the glossy /ride-icon PNG assets (see
+ * apps/web/public/ride-icon). Keyed by the real SkillAttribute / condition
+ * ids used throughout the app — never invent new keys here.
+ *
+ * Attributes with no dedicated asset are intentionally absent from the map.
+ * Callers must fall back to a neutral placeholder (RiderStatIcon does this
+ * automatically) and must never reuse another attribute's icon.
+ *
+ * Confirmed missing as of this mapping (no file in public/ride-icon for):
+ * acceleration, positioning, attackTiming, energyManagement, descending,
+ * bikeHandling, cornering, packRiding, roughSurface, experience, and the
+ * development ratings (potential/trainability/professionalism/recovery).
+ *
+ * Note: casovka.png (time trial) exists as an asset but `timeTrial` is not a
+ * real SkillAttribute in this codebase — it's only used as an i18n key /
+ * archetype id / Tour difficulty tag — so it is deliberately not mapped here.
+ */
+const SKILL_ICON: Partial<Record<SkillAttribute, string>> = {
+  climbing: '/ride-icon/stupanie.png',
+  hills: '/ride-icon/kopce.png',
+  flat: '/ride-icon/rovina.png',
+  sprint: '/ride-icon/sprint.png',
+  endurance: '/ride-icon/vytrvalost.png',
+};
+
+const CONDITION_ICON: Record<ConditionKey, string> = {
+  energy: '/ride-icon/energia.png',
+  fatigue: '/ride-icon/unava.png',
+  form: '/ride-icon/forma.png',
+  fitness: '/ride-icon/kondicia.png',
+  morale: '/ride-icon/moralka.png',
+};
+
+/** Glossy icon for a skill attribute, or null if no dedicated asset exists yet. */
+export function getSkillStatIcon(attr: SkillAttribute): string | null {
+  return SKILL_ICON[attr] ?? null;
+}
+
+/** Glossy icon for a rider-condition field. Every condition field has one. */
+export function getConditionStatIcon(key: ConditionKey): string {
+  return CONDITION_ICON[key];
+}
