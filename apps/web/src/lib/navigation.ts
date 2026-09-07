@@ -46,6 +46,19 @@ export const SECONDARY_NAV: readonly NavItem[] = [
 export const SETTINGS_NAV: NavItem =
   { id: 'settings', href: '/settings', labelKey: 'nav.settings', icon: 'cog' };
 
+/**
+ * Development-phase switch: while every Team & Career screen is being built
+ * out and aligned (see the chat report), all of them stay reachable
+ * regardless of league — no "čoskoro" badge, no page deleted or hidden.
+ * `availableIn` on each NavItem is left completely intact so real
+ * progression/unlock rules can be turned on later by flipping this one
+ * constant back to `false` (or removing it) — nothing else needs to change.
+ * This only affects sidebar *visibility*; it is not a security boundary; each
+ * page still enforces its own auth/RLS independently of nav state.
+ */
+const DEV_UNLOCK_ALL_SECTIONS = true;
+
 export function isAvailable(item: NavItem, league: LeagueId): boolean {
+  if (DEV_UNLOCK_ALL_SECTIONS) return true;
   return !item.availableIn || item.availableIn.includes(league);
 }
