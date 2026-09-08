@@ -51,3 +51,26 @@ export function visibleStages<S>(stages: readonly S[], league: LeagueId): S[] {
 export function hasHiddenStages(totalStages: number, league: LeagueId): boolean {
   return totalStages > visibleStageCount(league);
 }
+
+/**
+ * Zázemie (Team Facilities) V1 — the maximum facility level a league may
+ * reach (see lib/facilities/config.ts, which is the canonical place that
+ * actually combines this with the Team Center cap and any admin/dev
+ * override — this map only answers "what does league alone allow").
+ */
+const MAX_FACILITY_LEVEL: Record<LeagueId, number> = {
+  rookie: 2,
+  amateur: 3,
+  continental: 4,
+  pro: 5,
+  elite: 5,
+};
+
+export function maxFacilityLevel(league: LeagueId): number {
+  return MAX_FACILITY_LEVEL[league];
+}
+
+/** Index within LEAGUES — lower is earlier/weaker. Used only for ordering, never for gating on its own. */
+export function leagueRank(league: LeagueId): number {
+  return LEAGUES.indexOf(league);
+}

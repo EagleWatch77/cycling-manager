@@ -5,6 +5,8 @@ import type { SeasonInfo } from '@/lib/calendar/season';
 import { listUnprocessedTrainingPlans, applyTrainingPlanResult, type TrainingPlan } from './repository';
 import { calculateGrowth } from './growth';
 import { ENERGY_COST, FATIGUE_GAIN } from './config';
+import { getMyFacilities } from '@/lib/facilities/repository';
+import { TRAINING_BONUS, RECOVERY_BONUS } from '@/lib/facilities/config';
 
 /**
  * Training V1 processing engine.
@@ -31,6 +33,20 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
     .filter((plan) => isWeekOver(plan, season));
   if (pending.length === 0) return;
 
+  // Zázemie V1: Training Center raises effective training progress; Recovery
+  // Center reduces how much energy/fatigue a week of training actually
+  // costs. Read once per run, not per plan — a facility level can't change
+  // mid-loop. See lib/facilities/config.ts for both tables and the chat
+  // report for why Recovery Center is applied to the training cost/gain
+  // deltas rather than a separate "weekly passive recovery" tick: no such
+  // tick exists anywhere in this codebase today (energy/fatigue only ever
+  // change here, as a direct result of training), so reducing the training
+  // depletion is the smallest safe change that matches the spirit of
+  // "better recovery" without inventing a new mechanic.
+  const facilities = await getMyFacilities();
+  const trainingMultiplier = 1 + TRAINING_BONUS[facilities.training];
+  const recoveryFactor = 1 - RECOVERY_BONUS[facilities.recovery];
+
   let attributes: Record<SkillAttribute, number> = rider.attributes;
   let condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number> = rider.condition;
   // Snapshot of condition as it stood before this run — written back as
@@ -47,6 +63,7 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
       professionalism: rider.professionalism,
       age: rider.age,
       potential: rider.potential,
+      facilityMultiplier: trainingMultiplier,
     });
 
     const nextAttributes = { ...attributes };
@@ -58,8 +75,8 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 
     condition = {
       ...condition,
-      energy: clamp100(condition.energy - ENERGY_COST[plan.intensity]),
-      fatigue: clamp100(condition.fatigue + FATIGUE_GAIN[plan.intensity]),
+      energy: clamp100(condition.energy - ENERGY_COST[plan.intensity] * recoveryFactor),
+      fatigue: clamp100(condition.fatigue + FATIGUE_GAIN[plan.intensity] * recoveryFactor),
     };
 
     await applyTrainingPlanResult(plan.id, {

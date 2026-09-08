@@ -62,6 +62,12 @@ export async function generateTestPeloton(): Promise<GenerateTestPelotonResult> 
   const { data, error } = await supabase.from('riders').insert(rows).select('id');
   if (error) throw new Error(`Failed to generate AI test peloton: ${error.message}`);
 
+  // Bike Condition V1 — every AI filler also starts at a full bike, same
+  // as a real starter rider (see lib/rider/repository.ts's ensureStarterRider).
+  if (data && data.length > 0) {
+    await supabase.from('bike_condition').insert(data.map((r) => ({ rider_id: r.id })));
+  }
+
   const createdCount = data?.length ?? 0;
   return { created: createdCount, realRiders: real, aiRiders: existingAi + createdCount, skippedReason: null };
 }

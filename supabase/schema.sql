@@ -614,3 +614,206 @@ join public.riders r on r.id = rr.rider_id
 group by rr.season_id, rr.rider_id, r.first_name, r.surname, r.country_name, r.country_iso2, r.age;
 
 grant select on public.rider_rankings to authenticated;
+
+-- ============================================================================
+-- Zázemie (Team Facilities) V1.
+--
+-- One row per player, one level column per building — a normal player has
+-- exactly one rider today (see riders.player_id UNIQUE), so "team" facilities
+-- are keyed by player_id directly rather than a fictitious team_id; nothing
+-- in this project has a teams table to reference (see the chat report).
+--
+-- Levels are NOT client-writable through ordinary RLS. League caps and the
+-- admin/dev bypass must never be client-trusted (explicit requirement), and
+-- this project never uses a service-role key, so the only trustworthy place
+-- to enforce "at most +1, never above the computed cap" is a Postgres
+-- function that runs with elevated rights while still checking auth.uid()
+-- itself — the same `security definer` pattern already used by
+-- handle_new_user() above, just the second use of it in this file. A normal
+-- authenticated player has NO direct INSERT/UPDATE grant on this table at
+-- all; every upgrade goes through public.upgrade_facility() below.
+-- ============================================================================
+
+create table if not exists public.player_facilities (
+  player_id          uuid primary key references auth.users (id) on delete cascade,
+  training_level     int not null default 1 check (training_level between 1 and 5),
+  recovery_level     int not null default 1 check (recovery_level between 1 and 5),
+  scouting_level     int not null default 1 check (scouting_level between 1 and 5),
+  technical_level    int not null default 1 check (technical_level between 1 and 5),
+  team_center_level  int not null default 1 check (team_center_level between 1 and 5),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+alter table public.player_facilities enable row level security;
+
+drop policy if exists "player_facilities_select_own" on public.player_facilities;
+create policy "player_facilities_select_own"
+  on public.player_facilities for select
+  using (player_id = auth.uid());
+
+-- Existing players (rows already in profiles/riders before this migration
+-- ran) get an explicit L1-everywhere row here, so getMyFacilities() never
+-- has to guess a default for someone who signed up before Zázemie existed.
+-- New players get their row lazily, the same on-conflict-do-nothing way,
+-- the first time upgrade_facility() runs for them — see below.
+insert into public.player_facilities (player_id)
+select id from public.profiles
+on conflict (player_id) do nothing;
+
+-- League caps mirror lib/leagues.ts maxFacilityLevel() exactly — keep the
+-- two in sync by hand; this is intentionally simple SQL, not a foreign
+-- table, to match this project's existing all-inline-SQL style.
+create or replace function public.upgrade_facility(p_facility text)
+returns public.player_facilities
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_player_id  uuid := auth.uid();
+  v_is_admin   boolean;
+  v_league     text;
+  v_league_cap int;
+  v_row        public.player_facilities;
+  v_current    int;
+  v_cap        int;
+  v_new_row    public.player_facilities;
+begin
+  if v_player_id is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  if p_facility not in ('training', 'recovery', 'scouting', 'technical', 'team_center') then
+    raise exception 'invalid_facility';
+  end if;
+
+  select exists(select 1 from public.admin_users a where a.user_id = v_player_id) into v_is_admin;
+
+  select league into v_league from public.profiles where id = v_player_id;
+  v_league := coalesce(v_league, 'rookie');
+
+  v_league_cap := case v_league
+    when 'rookie' then 2
+    when 'amateur' then 3
+    when 'continental' then 4
+    when 'pro' then 5
+    when 'elite' then 5
+    else 2
+  end;
+  -- Dev/admin server-side override (item 2/18): only admin_users rows grant
+  -- this, checked here inside the function — never passed in by the caller.
+  if v_is_admin then
+    v_league_cap := 5;
+  end if;
+
+  insert into public.player_facilities (player_id)
+  values (v_player_id)
+  on conflict (player_id) do nothing;
+
+  -- Row lock: a second concurrent call for the same player (double-click)
+  -- blocks here until the first call's UPDATE commits, then re-reads the
+  -- already-incremented row and correctly re-evaluates the cap — never two
+  -- +1s landing on a stale read.
+  select * into v_row from public.player_facilities where player_id = v_player_id for update;
+
+  if p_facility = 'team_center' then
+    v_current := v_row.team_center_level;
+    v_cap := v_league_cap;
+  else
+    -- Other facilities may be at most one level above Team Center, and
+    -- never above the league cap either — always the lower of the two.
+    v_cap := least(v_league_cap, v_row.team_center_level + 1);
+    v_current := case p_facility
+      when 'training' then v_row.training_level
+      when 'recovery' then v_row.recovery_level
+      when 'scouting' then v_row.scouting_level
+      when 'technical' then v_row.technical_level
+    end;
+  end if;
+
+  if v_current >= 5 then
+    raise exception 'facility_max_level';
+  end if;
+  if v_current >= v_cap then
+    raise exception 'facility_cap_reached';
+  end if;
+
+  update public.player_facilities set
+    training_level    = case when p_facility = 'training'    then v_current + 1 else training_level end,
+    recovery_level    = case when p_facility = 'recovery'    then v_current + 1 else recovery_level end,
+    scouting_level    = case when p_facility = 'scouting'    then v_current + 1 else scouting_level end,
+    technical_level   = case when p_facility = 'technical'   then v_current + 1 else technical_level end,
+    team_center_level = case when p_facility = 'team_center' then v_current + 1 else team_center_level end,
+    updated_at = now()
+  where player_id = v_player_id
+  returning * into v_new_row;
+
+  return v_new_row;
+end;
+$$;
+
+grant execute on function public.upgrade_facility(text) to authenticated;
+
+-- ============================================================================
+-- Bike Condition V1 — tires/brakes/drivetrain per rider, 0-100. Overall
+-- condition is a derived/display value (min of the three), never its own
+-- persisted column, so it can't drift out of sync with the parts it
+-- summarizes (see lib/facilities/bike.ts).
+--
+-- Read/write follow riders_select_own's own ownership rule (own rider or
+-- AI filler) rather than duplicating a player_id column here — a rider's
+-- bike belongs to whoever owns that rider. Writable by the owning player
+-- directly (both wear-processing and service/repair currently run in the
+-- player's own session, same as training's condition updates already do
+-- on `riders` itself) — see the chat report for the one known gap this
+-- leaves until Finance exists: a player could set their own bike back to
+-- 100 without an enforced payment, since there is no ledger yet to debit.
+-- ============================================================================
+
+create table if not exists public.bike_condition (
+  rider_id    uuid primary key references public.riders (id) on delete cascade,
+  tires       int not null default 100 check (tires between 0 and 100),
+  brakes      int not null default 100 check (brakes between 0 and 100),
+  drivetrain  int not null default 100 check (drivetrain between 0 and 100),
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.bike_condition enable row level security;
+
+drop policy if exists "bike_condition_select_own" on public.bike_condition;
+create policy "bike_condition_select_own"
+  on public.bike_condition for select
+  using (exists (select 1 from public.riders r where r.id = bike_condition.rider_id and (r.player_id = auth.uid() or r.is_ai)));
+
+drop policy if exists "bike_condition_upsert_own" on public.bike_condition;
+create policy "bike_condition_upsert_own"
+  on public.bike_condition for insert
+  with check (exists (select 1 from public.riders r where r.id = bike_condition.rider_id and r.player_id = auth.uid()));
+
+drop policy if exists "bike_condition_update_own" on public.bike_condition;
+create policy "bike_condition_update_own"
+  on public.bike_condition for update
+  using (exists (select 1 from public.riders r where r.id = bike_condition.rider_id and r.player_id = auth.uid()));
+
+-- The AI test peloton (generateTestPeloton(), admin-gated) inserts riders
+-- with player_id null — the "own" insert policy above can never match
+-- those rows, so it needs its own admin-only path, same pattern as every
+-- other admin-bulk-insert in this file.
+drop policy if exists "bike_condition_admin_all" on public.bike_condition;
+create policy "bike_condition_admin_all"
+  on public.bike_condition for all
+  using (exists (select 1 from public.admin_users a where a.user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users a where a.user_id = auth.uid()));
+
+grant select, insert, update on public.bike_condition to authenticated;
+
+-- Backfill: every rider that exists before this migration ran starts at a
+-- full 100/100/100 bike, same as a freshly generated one would.
+insert into public.bike_condition (rider_id)
+select id from public.riders
+on conflict (rider_id) do nothing;
+
+-- Tour wear processing (lib/facilities/bike.ts) needs to know which
+-- registrations it has already applied wear for, the same
+-- applied_at-guards-idempotency idea training_plans already uses.
+alter table public.tour_registrations add column if not exists wear_processed_at timestamptz;

@@ -101,6 +101,13 @@ export async function ensureStarterRider(): Promise<StoredRider | null> {
 
   // A concurrent request won the race and inserted first: re-read that row.
   if (error) return getMyRider();
+
+  // Bike Condition V1 (see lib/facilities/bike.ts) starts every new rider at
+  // a full 100/100/100 — best-effort: a failure here must not fail rider
+  // creation itself, since getMyBikeCondition() already falls back to a
+  // full-condition default when no row exists yet.
+  await supabase.from('bike_condition').insert({ rider_id: data.id });
+
   return fromRow(data);
 }
 

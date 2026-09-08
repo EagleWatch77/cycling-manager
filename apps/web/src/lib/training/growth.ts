@@ -30,13 +30,23 @@ export function calculateGrowth(params: {
   professionalism: number;
   age: number;
   potential: number;
+  /**
+   * Training Center facility multiplier (1 + TRAINING_BONUS[level], see
+   * lib/facilities/config.ts) — applied here, once, to the SAME `raw`
+   * progress value both primaryGain and secondaryGain derive from, exactly
+   * per the brief's own example (effectiveProgress = baseProgress × 1.12).
+   * Defaults to 1 (no bonus) so every existing caller/test not passing it
+   * keeps behaving identically.
+   */
+  facilityMultiplier?: number;
 }): GrowthResult {
   const raw = BASE_TRAINING
     * INTENSITY_MULTIPLIER[params.intensity]
     * trainabilityFactor(params.trainability)
     * professionalismFactor(params.professionalism)
     * ageFactor(params.age)
-    * potentialRoomFactor(params.currentValue, params.potential);
+    * potentialRoomFactor(params.currentValue, params.potential)
+    * (params.facilityMultiplier ?? 1);
 
   const primaryGain = Math.max(0, Math.round(raw));
   const secondaryAttr = SECONDARY_ATTRIBUTE[params.focus];

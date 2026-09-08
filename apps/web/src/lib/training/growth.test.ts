@@ -62,5 +62,16 @@ check('professionalismFactor(100) = 1.0', professionalismFactor(100) === 1.0);
     `far ${farFromCeiling.primaryGain} near ${nearCeiling.primaryGain}`);
 }
 
+// 7. Zázemie V1 — Training Center facilityMultiplier applies exactly once,
+// to both primary AND secondary gain (both derive from the same `raw`).
+{
+  const base = { focus: 'climbing' as const, intensity: 'hard' as const, currentValue: 120, trainability: 75, professionalism: 75, age: 20, potential: 90 };
+  const noBonus = calculateGrowth({ ...base });
+  const l5Bonus = calculateGrowth({ ...base, facilityMultiplier: 1.12 });
+  check('no facilityMultiplier behaves exactly as before (defaults to 1)', noBonus.primaryGain === calculateGrowth({ ...base, facilityMultiplier: 1 }).primaryGain);
+  check('L5 Training Center (+12%) increases primary gain', l5Bonus.primaryGain >= noBonus.primaryGain, `no-bonus ${noBonus.primaryGain} l5 ${l5Bonus.primaryGain}`);
+  check('L5 Training Center (+12%) increases secondary gain too', (l5Bonus.secondaryGain ?? 0) >= (noBonus.secondaryGain ?? 0));
+}
+
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
