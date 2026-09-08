@@ -4,6 +4,7 @@ import { getLocale } from '@/i18n/server';
 import { PLAYER } from '@/mock/dashboard';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { fullDate } from '@/lib/format';
+import { ensureGameStateProcessed } from '@/lib/gameState';
 import { SidebarNavigation } from './SidebarNavigation';
 import { TopStatusBar } from './TopStatusBar';
 
@@ -25,6 +26,10 @@ export async function AppShell({
   const active = locale ?? (await getLocale());
   const t = getDictionary(active);
   const season = getCurrentSeasonInfo();
+  // Global lazy game-state processing (currently: season-end aging) — see
+  // lib/gameState.ts. Runs here, not in any one page/layout, so it fires
+  // regardless of which authenticated page a player opens first.
+  await ensureGameStateProcessed();
   return (
     <div className="flex min-h-screen">
       <SidebarNavigation

@@ -863,61 +863,93 @@ create policy "season_transition_processing_select_all"
 grant select on public.season_transition_processing to authenticated;
 
 /**
- * Ages EVERY persistent rider that existed by the end of season
- * `p_season_number` (real riders, AI fillers, and still-unsigned/available
- * market riders alike — see the chat report for why 'acquired' market_riders
- * rows are deliberately left untouched: they are permanent historical
- * snapshots of "age at time of signing", not a live rider record) by
- * exactly +1, but only the FIRST time this season number is ever claimed —
+ * Ages EVERY persistent rider that existed by the end of each fully-elapsed
+ * season (real riders, AI fillers, and still-unsigned/available market
+ * riders alike — 'acquired' market_riders rows are deliberately left
+ * untouched: permanent historical snapshots of "age at time of signing",
+ * not a live rider record), by exactly +1 per season, but only the FIRST
+ * time each season number is ever claimed.
+ *
+ * SECURITY (see the chat report's audit — this function used to accept
+ * p_season_id/p_season_number/p_cutoff as caller-supplied parameters,
+ * which was a real vulnerability: any authenticated client could call this
+ * RPC directly with a fabricated season_id and a far-future cutoff and age
+ * the entire peloton repeatedly, once per fake season_id). It now takes
+ * ZERO parameters and trusts NOTHING from the caller: "what season number
+ * are we really in" and "when did each past season really end" are both
+ * computed here, from now() and a hardcoded anchor/length (kept in sync by
+ * hand with SEASON_ONE_START/SEASON_LENGTH_DAYS in
+ * lib/calendar/season.ts — the same accepted duplication convention used
+ * elsewhere in this file). A caller can trigger this function running at
+ * all, but can never influence WHICH season it processes or WHAT cutoff it
+ * uses — there is nothing left to pass in.
+ *
  * `insert ... on conflict (season_id) do nothing returning` is the atomic
- * race-safe claim: if two requests call this concurrently for the same
- * season, only one gets a row back from the RETURNING clause and performs
- * the UPDATEs; the other returns false immediately having touched nothing.
+ * race-safe claim per season: if two requests race for the same season,
+ * only one gets a row back from RETURNING and performs the UPDATEs.
+ * Repeated/concurrent calls are cheap no-ops once caught up — no
+ * additional rate-limiting is needed given full idempotency.
+ *
  * This is the second security-definer function in this file (after
  * handle_new_user()) — needed because this project never uses a
  * service-role key, so a DB function is the only way to perform a
  * cross-player bulk update that no single player's own RLS would permit.
  */
-create or replace function public.process_season_aging(
-  p_season_id text,
-  p_season_number int,
-  p_cutoff timestamptz
-)
-returns boolean
+create or replace function public.process_season_aging()
+returns void
 language plpgsql
 security definer set search_path = public
 as $$
 declare
-  v_claimed_id text;
+  -- Kept in sync by hand with lib/calendar/season.ts.
+  v_anchor            date := date '2026-08-17'; -- SEASON_ONE_START
+  v_season_length_days int  := 70;                -- SEASON_LENGTH_DAYS (TOTAL_WEEKS=10 * WEEK_LENGTH_DAYS=7)
+  v_days_since_start  int;
+  v_current_season    int;
+  v_last_processed    int;
+  v_season_number     int;
+  v_season_id         text;
+  v_season_start      date;
+  v_next_season_start date;
+  v_claimed_id        text;
 begin
-  insert into public.season_transition_processing (season_id, season_number)
-  values (p_season_id, p_season_number)
-  on conflict (season_id) do nothing
-  returning season_id into v_claimed_id;
-
-  if v_claimed_id is null then
-    return false;
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
   end if;
 
-  -- Real player riders and AI fillers alike (no is_ai filter — see the
-  -- chat report: aging applies to every persistent rider record).
-  update public.riders set age = age + 1 where created_at <= p_cutoff;
+  v_days_since_start := greatest(0, current_date - v_anchor);
+  v_current_season := floor(v_days_since_start::numeric / v_season_length_days) + 1;
 
-  -- Still-unsold market riders age too (item 1 of the request: "Market
-  -- riders NESMÚ zostať navždy rovnakého veku") — but only 'available'
-  -- ones. 'acquired' rows are permanent history of "age at the moment they
-  -- were signed" (see market_riders' own schema comment above) and are
-  -- deliberately left untouched, same as they're excluded from the
-  -- test-reset action. market_riders has no created_at column; generated_at
-  -- is its equivalent "this row has existed since" timestamp.
-  update public.market_riders set age = age + 1
-  where generated_at <= p_cutoff and status = 'available';
+  select coalesce(max(season_number), 0) into v_last_processed from public.season_transition_processing;
 
-  return true;
+  for v_season_number in (v_last_processed + 1)..(v_current_season - 1) loop
+    v_season_id := 'season-' || v_season_number;
+    v_season_start := v_anchor + (v_season_number - 1) * v_season_length_days;
+    -- "Existed by the end of this season" = created before the NEXT
+    -- season's start — avoids any ambiguity about time-of-day on the
+    -- season's literal last calendar day.
+    v_next_season_start := v_season_start + v_season_length_days;
+
+    insert into public.season_transition_processing (season_id, season_number)
+    values (v_season_id, v_season_number)
+    on conflict (season_id) do nothing
+    returning season_id into v_claimed_id;
+
+    if v_claimed_id is not null then
+      -- Real player riders and AI fillers alike (no is_ai filter).
+      update public.riders set age = age + 1 where created_at < v_next_season_start;
+
+      -- Still-unsold market riders age too — only 'available' ones (see
+      -- this function's own doc comment for why 'acquired' rows don't).
+      update public.market_riders set age = age + 1
+      where generated_at < v_next_season_start and status = 'available';
+    end if;
+  end loop;
 end;
 $$;
 
-grant execute on function public.process_season_aging(text, int, timestamptz) to authenticated;
+revoke all on function public.process_season_aging() from public;
+grant execute on function public.process_season_aging() to authenticated;
 
 -- ============================================================================
 -- Training Progress Accumulator V1.
@@ -953,108 +985,304 @@ create policy "rider_training_progress_select_own"
 grant select on public.rider_training_progress to authenticated;
 
 /**
- * Processes ONE training plan atomically: accumulates raw progress for the
- * primary attribute (and the secondary, if any) via the exact
- * existingProgress + rawGrowth -> floor(total/threshold) rule (mirrors
- * lib/training/accumulator.ts's accumulateProgress() — kept in sync by
- * hand, same convention as upgrade_facility()'s league caps mirroring
- * lib/leagues.ts), applies the resulting whole-number gain(s) to
- * riders.attributes, and stamps training_plans.applied_at — all inside one
- * function invocation, so a crash or a concurrent duplicate call can never
- * leave attribute/progress/applied_at out of sync with each other.
+ * Processes ONE training plan atomically: computes the AUTHORITATIVE raw
+ * training growth entirely from trusted, persisted server-side data,
+ * accumulates it for the primary attribute (and its fixed secondary, if
+ * any) via existingProgress + rawGrowth -> floor(total/threshold), applies
+ * the resulting whole-number gain(s) to riders.attributes, and stamps
+ * training_plans.applied_at — all inside one function invocation, so a
+ * crash or a concurrent duplicate call can never leave
+ * attribute/progress/applied_at out of sync with each other.
+ *
+ * SECURITY (see the chat report's audit — TWO rounds of fixes):
+ *   Round 1 closed: no ownership check; primary_attr trusted as a
+ *   parameter; secondary_attr unrestricted.
+ *   Round 2 (this version) closes the remaining, more serious gap: raw
+ *   growth itself (p_primary_raw/p_secondary_raw) used to be caller-
+ *   supplied and merely clamped to a ceiling — clamping does NOT stop an
+ *   authenticated player from calling this RPC directly (bypassing the
+ *   Next.js app entirely — this project has no service-role key, so the
+ *   app's own server code has NO more trust than any other authenticated
+ *   caller hitting the same RPC via PostgREST) with e.g.
+ *   p_primary_raw = <the ceiling> on every training, always getting the
+ *   maximum legitimate-looking gain regardless of their rider's actual
+ *   trainability/professionalism/age/potential/facility level.
+ *
+ *   Fixed the only real way possible without a service role: this
+ *   function now takes ONLY p_plan_id. Every input the growth formula
+ *   needs — focus, intensity, rider age/attributes/trainability/
+ *   professionalism/potential, and the Training Center's EFFECTIVE level
+ *   (league cap + Team Center cap + admin override, exactly mirroring
+ *   lib/facilities/capMath.ts) — is read here from persisted rows the
+ *   caller cannot influence. The secondary attribute is derived from a
+ *   fixed CASE mapping, never accepted as input, so nothing about which
+ *   attributes get trained is client-controlled anymore.
+ *
+ *   This duplicates lib/training/growth.ts's formula into SQL — a real,
+ *   accepted tradeoff, not an oversight: keeping the two in sync by hand
+ *   is the SAME convention already used throughout this file for
+ *   ATTR_MIN/MAX, league caps, and the training-bonus percentages; the
+ *   difference here is only that the duplicated unit is a formula instead
+ *   of a constant. If you change BASE_TRAINING, INTENSITY_MULTIPLIER,
+ *   trainabilityFactor/professionalismFactor/ageFactor/
+ *   potentialRoomFactor, TRAINING_BONUS, or SECONDARY_ATTRIBUTE in the TS
+ *   layer, you MUST update the matching block below too — see
+ *   growth.test.ts's canary test that compares a handful of known inputs
+ *   against this function's expected output.
  *
  * Idempotency: the plan row is locked (`for update`) and its applied_at
  * checked FIRST; if already applied, this returns immediately with
  * already_processed = true and mutates nothing — a second concurrent call
  * (two tabs, a retry) can never double-consume progress or double-apply a
- * gain, which a naive "read progress, then separately write it back" flow
- * from the application layer could not have guaranteed.
- *
- * ATTR_MIN/ATTR_MAX (100/160) are duplicated here from
- * lib/rider/config.ts's own constants — the same "kept in sync by hand"
- * tradeoff already accepted elsewhere in this file for numbers that must
- * be enforced at the DB layer; see the chat report.
+ * gain.
  */
-create or replace function public.process_training_plan(
-  p_plan_id uuid,
-  p_primary_attr text,
-  p_primary_raw numeric,
-  p_secondary_attr text,
-  p_secondary_raw numeric,
-  p_threshold numeric
-)
+-- CRITICAL: `create or replace function` does NOT replace a function with
+-- a DIFFERENT parameter signature — Postgres overloads by signature, so
+-- without this explicit DROP, the OLD 5-parameter version (which trusted
+-- caller-supplied raw growth values — see this function's own doc comment
+-- for why that was a real vulnerability) would remain callable via RPC
+-- side-by-side with the new, hardened 1-parameter version forever.
+drop function if exists public.process_training_plan(uuid, numeric, text, numeric, numeric);
+
+create or replace function public.process_training_plan(p_plan_id uuid)
 returns table(primary_gain int, secondary_gain int, already_processed boolean)
 language plpgsql
 security definer set search_path = public
 as $$
 declare
+  -- ---- Kept in sync by hand with lib/rider/config.ts ----
+  v_attr_min constant int := 100;
+  v_attr_max constant int := 160;
+  v_potential_min constant numeric := 55;
+  v_potential_max constant numeric := 95;
+  -- ---- Kept in sync by hand with lib/training/config.ts ----
+  v_base_training constant numeric := 3;
+  v_secondary_gain_share constant numeric := 0.35;
+  v_threshold constant numeric := 1.0; -- TRAINING_GAIN_THRESHOLD
+  -- ---- Kept in sync by hand with lib/facilities/config.ts (TRAINING_BONUS) ----
+  -- ---- Kept in sync by hand with lib/leagues.ts (maxFacilityLevel) ----
+
   v_plan_applied_at timestamptz;
   v_rider_id uuid;
+  v_focus text;
+  v_intensity text;
+  v_primary_attr text;
+  v_secondary_attr text;
+
+  v_owner_id uuid;
+  v_age int;
+  v_trainability numeric;
+  v_professionalism numeric;
+  v_potential numeric;
   v_attrs jsonb;
+  v_current_value numeric;
+
+  v_league text;
+  v_is_admin boolean;
+  v_league_cap int;
+  v_team_center_level int;
+  v_team_center_cap int;
+  v_training_cap int;
+  v_training_level int;
+  v_effective_training_level int;
+  v_training_bonus numeric;
+
+  v_intensity_multiplier numeric;
+  v_trainability_factor numeric;
+  v_professionalism_factor numeric;
+  v_age_factor numeric;
+  v_potential_ceiling numeric;
+  v_room numeric;
+  v_potential_room_factor numeric;
+  v_facility_multiplier numeric;
+  v_raw numeric;
+
+  v_primary_raw numeric;
+  v_secondary_raw numeric;
   v_progress numeric;
   v_total numeric;
   v_primary_gain int := 0;
   v_secondary_gain int := 0;
 begin
-  select applied_at, rider_id into v_plan_applied_at, v_rider_id
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  select applied_at, rider_id, focus, intensity
+  into v_plan_applied_at, v_rider_id, v_focus, v_intensity
   from public.training_plans
   where id = p_plan_id
   for update;
+
+  if v_rider_id is null then
+    raise exception 'plan_not_found';
+  end if;
+
+  select player_id, age, attributes, trainability, professionalism, potential
+  into v_owner_id, v_age, v_attrs, v_trainability, v_professionalism, v_potential
+  from public.riders
+  where id = v_rider_id
+  for update;
+
+  if v_owner_id is null or v_owner_id <> auth.uid() then
+    raise exception 'not_owner';
+  end if;
 
   if v_plan_applied_at is not null then
     return query select 0, 0, true;
     return;
   end if;
 
-  select attributes into v_attrs from public.riders where id = v_rider_id for update;
+  -- Primary attribute comes ONLY from the plan's own persisted focus —
+  -- never a parameter. Defense-in-depth: reject if it's somehow not a
+  -- real attribute key (should be impossible — saveTrainingPlan() already
+  -- validates against PERFORMANCE_FOCUS at save time).
+  v_primary_attr := v_focus;
+  if not (v_attrs ? v_primary_attr) then
+    raise exception 'invalid_focus';
+  end if;
 
-  -- Primary attribute.
+  -- Fixed SECONDARY_ATTRIBUTE mapping — kept in sync by hand with
+  -- lib/training/config.ts. Never accepted as a parameter.
+  v_secondary_attr := case v_primary_attr
+    when 'climbing' then 'endurance'
+    when 'sprint' then 'acceleration'
+    when 'hills' then 'climbing'
+    when 'flat' then 'endurance'
+    when 'timeTrial' then 'energyManagement'
+    when 'endurance' then 'energyManagement'
+    when 'acceleration' then 'sprint'
+    when 'positioning' then 'packRiding'
+    when 'attackTiming' then 'reaction'
+    when 'reaction' then 'attackTiming'
+    when 'energyManagement' then 'endurance'
+    when 'breakawaySkill' then 'energyManagement'
+    when 'descending' then 'cornering'
+    when 'bikeHandling' then 'cornering'
+    when 'cornering' then 'bikeHandling'
+    when 'packRiding' then 'positioning'
+    when 'roughSurface' then 'bikeHandling'
+    when 'wetHandling' then 'descending'
+    else null
+  end;
+
+  -- ---- Effective Training Center level (mirrors lib/facilities/capMath.ts) ----
+  select coalesce(training_level, 1), coalesce(team_center_level, 1)
+  into v_training_level, v_team_center_level
+  from public.player_facilities
+  where player_id = auth.uid();
+  v_training_level := coalesce(v_training_level, 1);
+  v_team_center_level := coalesce(v_team_center_level, 1);
+
+  select exists(select 1 from public.admin_users a where a.user_id = auth.uid()) into v_is_admin;
+
+  select league into v_league from public.profiles where id = auth.uid();
+  v_league := coalesce(v_league, 'rookie');
+
+  v_league_cap := case v_league
+    when 'rookie' then 1
+    when 'amateur' then 2
+    when 'continental' then 3
+    when 'pro' then 4
+    when 'elite' then 5
+    else 1
+  end;
+  if v_is_admin then
+    v_league_cap := 5;
+  end if;
+
+  v_team_center_cap := least(5, v_team_center_level + 1);
+  v_training_cap := least(v_league_cap, v_team_center_cap);
+  v_effective_training_level := least(v_training_level, v_training_cap);
+
+  v_training_bonus := case v_effective_training_level
+    when 1 then 0
+    when 2 then 0.03
+    when 3 then 0.06
+    when 4 then 0.09
+    when 5 then 0.12
+    else 0
+  end;
+  v_facility_multiplier := 1 + v_training_bonus;
+
+  -- ---- Raw growth formula (mirrors lib/training/growth.ts + config.ts) ----
+  v_intensity_multiplier := case v_intensity
+    when 'light' then 1.0
+    when 'normal' then 1.5
+    when 'hard' then 2.0
+    else 1.0
+  end;
+  v_trainability_factor := 0.5 + v_trainability / 200;
+  v_professionalism_factor := 0.8 + v_professionalism / 500;
+  v_age_factor := case
+    when v_age <= 19 then 1.30
+    when v_age <= 22 then 1.20
+    when v_age <= 25 then 1.10
+    when v_age <= 28 then 1.00
+    when v_age <= 31 then 0.80
+    when v_age <= 34 then 0.55
+    else 0.30
+  end;
+
+  v_current_value := (v_attrs ->> v_primary_attr)::numeric;
+  v_potential_ceiling := v_attr_min + (v_potential - v_potential_min) / (v_potential_max - v_potential_min) * (v_attr_max - v_attr_min);
+  v_room := greatest(0, v_potential_ceiling - v_current_value);
+  v_potential_room_factor := greatest(0.1, least(1, v_room / 40));
+
+  v_raw := v_base_training * v_intensity_multiplier * v_trainability_factor * v_professionalism_factor
+    * v_age_factor * v_potential_room_factor * v_facility_multiplier;
+
+  v_primary_raw := greatest(0, v_raw);
+  v_secondary_raw := case when v_secondary_attr is not null then greatest(0, v_raw * v_secondary_gain_share) else null end;
+
+  -- Primary attribute — v_primary_attr came from training_plans.focus
+  -- itself, never from a caller-supplied parameter.
   insert into public.rider_training_progress (rider_id, attribute, progress)
-  values (v_rider_id, p_primary_attr, 0)
+  values (v_rider_id, v_primary_attr, 0)
   on conflict (rider_id, attribute) do nothing;
 
   select progress into v_progress
   from public.rider_training_progress
-  where rider_id = v_rider_id and attribute = p_primary_attr
+  where rider_id = v_rider_id and attribute = v_primary_attr
   for update;
 
   -- 0.000000001 epsilon before floor(): mirrors accumulateProgress()'s own
   -- (see lib/training/accumulator.ts) — guards the same threshold-crossing
   -- edge as there, kept in sync by hand.
-  v_total := v_progress + p_primary_raw;
-  v_primary_gain := floor((v_total + 0.000000001) / p_threshold)::int;
+  v_total := v_progress + v_primary_raw;
+  v_primary_gain := floor((v_total + 0.000000001) / v_threshold)::int;
 
   update public.rider_training_progress
-  set progress = greatest(0, v_total - v_primary_gain * p_threshold), updated_at = now()
-  where rider_id = v_rider_id and attribute = p_primary_attr;
+  set progress = greatest(0, v_total - v_primary_gain * v_threshold), updated_at = now()
+  where rider_id = v_rider_id and attribute = v_primary_attr;
 
   if v_primary_gain > 0 then
-    v_attrs := jsonb_set(v_attrs, array[p_primary_attr],
-      to_jsonb(least(160, greatest(100, (v_attrs ->> p_primary_attr)::int + v_primary_gain))));
+    v_attrs := jsonb_set(v_attrs, array[v_primary_attr],
+      to_jsonb(least(160, greatest(100, (v_attrs ->> v_primary_attr)::int + v_primary_gain))));
   end if;
 
   -- Secondary attribute (optional) — its own, separate progress row: never
   -- a shared pool with the primary attribute (item 5 of the request).
-  if p_secondary_attr is not null then
+  if v_secondary_attr is not null then
     insert into public.rider_training_progress (rider_id, attribute, progress)
-    values (v_rider_id, p_secondary_attr, 0)
+    values (v_rider_id, v_secondary_attr, 0)
     on conflict (rider_id, attribute) do nothing;
 
     select progress into v_progress
     from public.rider_training_progress
-    where rider_id = v_rider_id and attribute = p_secondary_attr
+    where rider_id = v_rider_id and attribute = v_secondary_attr
     for update;
 
-    v_total := v_progress + p_secondary_raw;
-    v_secondary_gain := floor((v_total + 0.000000001) / p_threshold)::int;
+    v_total := v_progress + v_secondary_raw;
+    v_secondary_gain := floor((v_total + 0.000000001) / v_threshold)::int;
 
     update public.rider_training_progress
-    set progress = greatest(0, v_total - v_secondary_gain * p_threshold), updated_at = now()
-    where rider_id = v_rider_id and attribute = p_secondary_attr;
+    set progress = greatest(0, v_total - v_secondary_gain * v_threshold), updated_at = now()
+    where rider_id = v_rider_id and attribute = v_secondary_attr;
 
     if v_secondary_gain > 0 then
-      v_attrs := jsonb_set(v_attrs, array[p_secondary_attr],
-        to_jsonb(least(160, greatest(100, (v_attrs ->> p_secondary_attr)::int + v_secondary_gain))));
+      v_attrs := jsonb_set(v_attrs, array[v_secondary_attr],
+        to_jsonb(least(160, greatest(100, (v_attrs ->> v_secondary_attr)::int + v_secondary_gain))));
     end if;
   end if;
 
@@ -1062,14 +1290,15 @@ begin
 
   update public.training_plans set
     applied_at = now(),
-    primary_attr = p_primary_attr,
+    primary_attr = v_primary_attr,
     primary_gain = v_primary_gain,
-    secondary_attr = p_secondary_attr,
-    secondary_gain = case when p_secondary_attr is not null then v_secondary_gain else null end
+    secondary_attr = v_secondary_attr,
+    secondary_gain = case when v_secondary_attr is not null then v_secondary_gain else null end
   where id = p_plan_id;
 
   return query select v_primary_gain, v_secondary_gain, false;
 end;
 $$;
 
-grant execute on function public.process_training_plan(uuid, text, numeric, text, numeric, numeric) to authenticated;
+revoke all on function public.process_training_plan(uuid) from public;
+grant execute on function public.process_training_plan(uuid) to authenticated;

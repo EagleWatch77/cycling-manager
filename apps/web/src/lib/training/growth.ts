@@ -21,8 +21,18 @@ import {
  * table — see supabase/schema.sql's process_training_plan()) is what turns
  * accumulated raw progress into a real whole-number attribute gain.
  *
- * Invoked by lib/training/engine.ts — the "process training" step that
- * applies a plan's gain once its week has passed.
+ * SECURITY HARDENING ROUND 2 (see the chat report): lib/training/engine.ts
+ * no longer calls this function — an earlier version computed raw growth
+ * here and sent it as a parameter to the process_training_plan() RPC,
+ * which meant an authenticated client could bypass this code entirely and
+ * call that RPC directly with a fabricated raw value. The authoritative
+ * computation now lives ONLY inside process_training_plan() itself (see
+ * supabase/schema.sql), reading trusted persisted data. This function
+ * remains as the pure, unit-tested REFERENCE copy of that same formula
+ * (see growth.test.ts) — kept in sync by hand with the SQL version, same
+ * convention already used elsewhere in this codebase (e.g.
+ * lib/facilities/capMath.ts vs. upgrade_facility()'s SQL cap math). If you
+ * change the formula here, you must update process_training_plan() too.
  */
 export interface RawGrowthResult {
   primaryAttr: SkillAttribute;

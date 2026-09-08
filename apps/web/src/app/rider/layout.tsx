@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { ensureSeasonTransitionsProcessed } from '@/lib/calendar/seasonAging';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { RiderProfileHeader } from '@/components/rider/RiderProfileHeader';
@@ -21,11 +20,8 @@ import { RiderProfileTabs } from '@/components/rider/RiderProfileTabs';
  */
 export default async function RiderLayout({ children }: { children: ReactNode }) {
   const { t, locale } = await getServerDictionary();
-  // Season Aging V1 (see lib/calendar/seasonAging.ts) — global, not scoped
-  // to this player's own rider, so it runs before the rider read below
-  // regardless of whether this player has a rider yet. Idempotent: a no-op
-  // on every request except the very first one after a season boundary.
-  await ensureSeasonTransitionsProcessed();
+  // Season aging now runs globally from AppShell (see lib/gameState.ts),
+  // not per-route — no longer called here directly.
   const rider = await getMyRider();
 
   if (!rider) {

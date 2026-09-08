@@ -4,10 +4,9 @@ import { getMyRider, applyConditionResult } from '@/lib/rider/repository';
 import { ATTR_MIN, ATTR_MAX, type SkillAttribute } from '@/lib/rider/config';
 import type { SeasonInfo } from '@/lib/calendar/season';
 import { listUnprocessedTrainingPlans, type TrainingPlan } from './repository';
-import { calculateRawGrowth } from './growth';
-import { ENERGY_COST, FATIGUE_GAIN, TRAINING_GAIN_THRESHOLD } from './config';
+import { ENERGY_COST, FATIGUE_GAIN, SECONDARY_ATTRIBUTE } from './config';
 import { getMyFacilities, getFacilityCaps, getEffectiveFacilities, getMyLeague } from '@/lib/facilities/repository';
-import { TRAINING_BONUS, RECOVERY_BONUS } from '@/lib/facilities/config';
+import { RECOVERY_BONUS } from '@/lib/facilities/config';
 
 /**
  * Training V1 processing engine.
@@ -21,18 +20,26 @@ import { TRAINING_BONUS, RECOVERY_BONUS } from '@/lib/facilities/config';
  * load — the natural equivalent of "when the game resolves the current
  * week" for a calendar with no separate tick step.
  *
- * Training Progress Accumulator V1 (see the chat report): each plan's
- * attribute gain(s) and its applied_at stamp are now written atomically,
- * per plan, inside process_training_plan() (a security-definer Postgres
- * function — see supabase/schema.sql). That function itself is the
- * idempotency boundary: it locks the plan row and checks applied_at FIRST,
- * so two concurrent runs (two tabs, a retry) can never both consume the
- * same plan's raw progress — the loser's call simply returns
- * already_processed = true and mutates nothing. This is a strict
- * improvement over the previous shape (attributes were accumulated in JS
- * across the whole loop and written ONCE at the very end), which had a
- * latent last-write-wins race between two concurrent runs; per-plan atomic
- * writes close that gap as a side effect.
+ * Training Progress Accumulator V1 + Security Hardening Round 2 (see the
+ * chat report): the ENTIRE raw growth calculation — focus, intensity,
+ * trainability/professionalism/age/potential, and the effective Training
+ * Center level — now happens INSIDE process_training_plan() (a
+ * security-definer Postgres function, see supabase/schema.sql), reading
+ * only trusted persisted data. This file no longer computes raw growth at
+ * all: an earlier version computed it here and sent it as an RPC
+ * parameter, which meant any authenticated client could bypass this
+ * Next.js code entirely and call the same RPC directly with a fabricated
+ * raw value (this project has no service-role key, so this server code
+ * has no more trust than any other authenticated caller hitting the RPC
+ * via PostgREST). The RPC is now the sole source of truth for gains; this
+ * loop only tracks the resulting attribute/condition deltas locally so
+ * the UI-facing `attributes`/`condition` objects stay consistent across
+ * multiple plans processed in the same run.
+ *
+ * Idempotency: the plan row is locked and its applied_at checked FIRST
+ * inside the RPC, so two concurrent runs (two tabs, a retry) can never
+ * both consume the same plan's progress — the loser's call simply returns
+ * already_processed = true and mutates nothing.
  */
 export async function processCompletedTrainings(season: SeasonInfo): Promise<void> {
   const rider = await getMyRider();
@@ -42,33 +49,22 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
     .filter((plan) => isWeekOver(plan, season));
   if (pending.length === 0) return;
 
-  // Zázemie V1: Training Center raises effective training progress; Recovery
-  // Center reduces how much energy/fatigue a week of training actually
-  // costs. Read once per run, not per plan — a facility level can't change
-  // mid-loop. See lib/facilities/config.ts for both tables and the chat
-  // report for why Recovery Center is applied to the training cost/gain
-  // deltas rather than a separate "weekly passive recovery" tick: no such
-  // tick exists anywhere in this codebase today (energy/fatigue only ever
-  // change here, as a direct result of training), so reducing the training
-  // depletion is the smallest safe change that matches the spirit of
-  // "better recovery" without inventing a new mechanic.
-  //
-  // Uses EFFECTIVE level, not raw stored level: a rider who built Training
-  // Center L3 in Amateur but is currently back in Rookie must train at the
-  // L1 rate, not the banked L3 rate — see lib/facilities/capMath.ts's
-  // effectiveFacilityLevel doc comment.
+  // Recovery Center still applies here (not part of the security fix's
+  // scope — see the chat report: only the training GAIN calculation moved
+  // into SQL; condition/energy/fatigue handling is unchanged). Uses
+  // EFFECTIVE level, not raw stored level — see
+  // lib/facilities/capMath.ts's effectiveFacilityLevel doc comment.
   const [facilities, league] = await Promise.all([getMyFacilities(), getMyLeague()]);
   const caps = await getFacilityCaps(league, facilities);
   const effective = getEffectiveFacilities(facilities, caps);
-  const trainingMultiplier = 1 + TRAINING_BONUS[effective.training];
   const recoveryFactor = 1 - RECOVERY_BONUS[effective.recovery];
 
   const supabase = await createClient();
 
-  // Local mirror of attributes/condition, updated after each plan so the
-  // NEXT plan's potentialRoomFactor() sees an up-to-date currentValue —
-  // the authoritative write for attributes happens inside the RPC per
-  // plan, this is only for computing subsequent inputs correctly.
+  // Local mirror of attributes/condition, updated after each plan purely
+  // for this loop's own bookkeeping (UI-facing condition write at the
+  // end) — the authoritative attribute write already happened inside the
+  // RPC per plan.
   let attributes: Record<SkillAttribute, number> = rider.attributes;
   let condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number> = rider.condition;
   // Snapshot of condition as it stood before this run — written back as
@@ -77,25 +73,14 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 
   for (const plan of pending) {
     const focus = plan.focus as SkillAttribute;
-    const growth = calculateRawGrowth({
-      focus,
-      intensity: plan.intensity,
-      currentValue: attributes[focus],
-      trainability: rider.trainability,
-      professionalism: rider.professionalism,
-      age: rider.age,
-      potential: rider.potential,
-      facilityMultiplier: trainingMultiplier,
-    });
+    const secondaryAttr = SECONDARY_ATTRIBUTE[focus];
 
-    const { data, error } = await supabase.rpc('process_training_plan', {
-      p_plan_id: plan.id,
-      p_primary_attr: growth.primaryAttr,
-      p_primary_raw: growth.primaryRaw,
-      p_secondary_attr: growth.secondaryAttr ?? null,
-      p_secondary_raw: growth.secondaryRaw ?? null,
-      p_threshold: TRAINING_GAIN_THRESHOLD,
-    });
+    // The only parameter this RPC takes is the plan id — see this
+    // function's own doc comment and process_training_plan()'s in
+    // supabase/schema.sql for why: nothing about the gain (focus,
+    // intensity, raw growth, secondary attribute) is client-controlled
+    // anymore.
+    const { data, error } = await supabase.rpc('process_training_plan', { p_plan_id: plan.id });
 
     if (error || !data || data.length === 0) continue; // Best-effort: a failed plan is retried on the next lazy run (still applied_at IS NULL).
 
@@ -103,9 +88,9 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
     if (result.already_processed) continue; // A concurrent run already handled this exact plan.
 
     const nextAttributes = { ...attributes };
-    nextAttributes[growth.primaryAttr] = clampAttr(nextAttributes[growth.primaryAttr] + result.primary_gain);
-    if (growth.secondaryAttr && result.secondary_gain) {
-      nextAttributes[growth.secondaryAttr] = clampAttr(nextAttributes[growth.secondaryAttr] + result.secondary_gain);
+    nextAttributes[focus] = clampAttr(nextAttributes[focus] + result.primary_gain);
+    if (secondaryAttr && result.secondary_gain) {
+      nextAttributes[secondaryAttr] = clampAttr(nextAttributes[secondaryAttr] + result.secondary_gain);
     }
     attributes = nextAttributes;
 

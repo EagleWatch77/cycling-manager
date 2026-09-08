@@ -78,5 +78,23 @@ check('professionalismFactor(100) = 1.0', professionalismFactor(100) === 1.0);
   check('L5 Training Center (+12%) increases secondary raw too, by the same 12%', Math.abs((l5Bonus.secondaryRaw ?? 0) - (noBonus.secondaryRaw ?? 0) * 1.12) < 1e-9);
 }
 
+// 8. Security audit canary (see the chat report): process_training_plan()'s
+// SQL-side sanity ceiling (v_max_raw = 100) must stay generously above the
+// real formula's own theoretical maximum, or a legitimate training would
+// get rejected as if it were an injection attempt. Even a deliberately
+// generous facilityMultiplier headroom (2.0, well past any level today)
+// should stay far below 100 — if this ever fails, both v_max_raw in
+// supabase/schema.sql's process_training_plan() AND this check need
+// revisiting together.
+{
+  const theoreticalMax = calculateRawGrowth({
+    focus: 'climbing', intensity: 'hard', currentValue: 100,
+    trainability: 95, professionalism: 95, age: 18, potential: 95,
+    facilityMultiplier: 2.0,
+  });
+  check('theoretical max raw growth stays well under the SQL sanity ceiling (100)', theoreticalMax.primaryRaw < 50,
+    `${theoreticalMax.primaryRaw}`);
+}
+
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
