@@ -692,13 +692,17 @@ begin
   select league into v_league from public.profiles where id = v_player_id;
   v_league := coalesce(v_league, 'rookie');
 
+  -- Rookie = 1 (upgrade disabled entirely — a stored level can never reach
+  -- 2 while in Rookie, so an upgrade attempt always finds current >= cap and
+  -- rejects). Mirrors lib/leagues.ts maxFacilityLevel() exactly — keep the
+  -- two in sync by hand, same as before.
   v_league_cap := case v_league
-    when 'rookie' then 2
-    when 'amateur' then 3
-    when 'continental' then 4
-    when 'pro' then 5
+    when 'rookie' then 1
+    when 'amateur' then 2
+    when 'continental' then 3
+    when 'pro' then 4
     when 'elite' then 5
-    else 2
+    else 1
   end;
   -- Dev/admin server-side override (item 2/18): only admin_users rows grant
   -- this, checked here inside the function — never passed in by the caller.

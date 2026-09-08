@@ -20,3 +20,17 @@ export function computeFacilityCaps(leagueCap: FacilityLevel, teamCenterLevel: F
     teamCenter: leagueCap,
   };
 }
+
+/**
+ * storedLevel vs. effectiveLevel: a player's real progression (storedLevel,
+ * the DB column — upgrade_facility() only ever increases it, never
+ * decreases it, see supabase/schema.sql) is never erased by a league drop.
+ * effectiveLevel is what actually applies right now — the lower of what
+ * was built and what the current cap allows. Building L3 in Amateur, then
+ * dropping to Rookie (cap 1), makes bonuses apply as L1 only; getting back
+ * to Amateur re-activates L2 (or whatever the cap allows) automatically,
+ * with nothing to re-purchase.
+ */
+export function effectiveFacilityLevel(storedLevel: FacilityLevel, cap: FacilityLevel): FacilityLevel {
+  return Math.min(storedLevel, cap) as FacilityLevel;
+}

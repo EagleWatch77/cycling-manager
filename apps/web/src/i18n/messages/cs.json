@@ -490,5 +490,14 @@
   "facilities.riskHigh": "Vysoké riziko",
   "facilities.riskVeryHigh": "Velmi vysoké riziko",
   "facilities.financeNote": "Servis a vylepšení zatím nezaznamenávají finanční transakci — systém Finance ještě neexistuje.",
-  "facilities.serviceError": "Servis se nepodařilo provést. Zkus to znovu."
+  "facilities.serviceError": "Servis se nepodařilo provést. Zkus to znovu.",
+  "facilities.rookieLocked": "Vylepšování zázemí se odemkne v Amateur lize.",
+  "facilities.storedLevelNote": "Uložená úroveň {stored} — v aktuální lize aktivní jako L{effective}.",
+  "facilities.infoPanelTitle": "Jak funguje Zázemí",
+  "facilities.infoPanelText": "V Rookie lize poznáváš hru — všech 5 budov je viditelných na úrovni 1, vylepšování je zatím zamčené. Trvalé budování začíná v Amateur lize. Postup do vyšší ligy zvýší maximální dostupnou úroveň; pokud později klesneš do nižší ligy, tvůj postup se neresetuje — bonusy se dočasně uplatní jen do stropu aktuální ligy.",
+  "facilities.trainingDesc": "Zrychluje progres klasického Performance tréninku.",
+  "facilities.recoveryDesc": "Zlepšuje regeneraci energie a snižuje únavu po tréninku.",
+  "facilities.scoutingDesc": "Zvyšuje přesnost odhadu potenciálu jezdců.",
+  "facilities.technicalDesc": "Snižuje riziko technických problémů a cenu servisu kola.",
+  "facilities.teamCenterDesc": "Určuje maximální kapacitu jezdců a personálu v týmu."
 }

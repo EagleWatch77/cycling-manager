@@ -490,5 +490,14 @@
   "facilities.riskHigh": "Riesgo alto",
   "facilities.riskVeryHigh": "Riesgo muy alto",
   "facilities.financeNote": "El servicio y las mejoras todavía no registran una transacción financiera — el sistema de Finanzas todavía no existe.",
-  "facilities.serviceError": "No se pudo realizar el servicio. Inténtalo de nuevo."
+  "facilities.serviceError": "No se pudo realizar el servicio. Inténtalo de nuevo.",
+  "facilities.rookieLocked": "Las mejoras de instalaciones se desbloquean en la liga Amateur.",
+  "facilities.storedLevelNote": "Nivel guardado {stored} — activo como L{effective} en tu liga actual.",
+  "facilities.infoPanelTitle": "Cómo funciona Zázemie",
+  "facilities.infoPanelText": "La liga Rookie es una introducción al juego — los 5 edificios son visibles en el nivel 1, las mejoras están bloqueadas por ahora. La construcción persistente comienza en la liga Amateur. Ascender aumenta el nivel máximo disponible; si luego desciendes, tu progreso no se reinicia — las bonificaciones se aplican temporalmente solo hasta el límite de la liga actual.",
+  "facilities.trainingDesc": "Acelera el progreso del entrenamiento clásico de Performance.",
+  "facilities.recoveryDesc": "Mejora la recuperación de energía y reduce la fatiga tras el entrenamiento.",
+  "facilities.scoutingDesc": "Aumenta la precisión de la estimación del potencial de un corredor.",
+  "facilities.technicalDesc": "Reduce el riesgo de problemas técnicos y el precio del servicio de bicicleta.",
+  "facilities.teamCenterDesc": "Determina la capacidad máxima de corredores y personal de tu equipo."
 }

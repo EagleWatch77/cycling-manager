@@ -6,7 +6,8 @@
  * shows matches what that function would also enforce.
  * Run with: npx tsx src/lib/facilities/capMath.test.ts
  */
-import { computeFacilityCaps } from './capMath';
+import { computeFacilityCaps, effectiveFacilityLevel } from './capMath';
+import { maxFacilityLevel } from '@/lib/leagues';
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail = '') {
@@ -14,11 +15,18 @@ function check(name: string, cond: boolean, detail = '') {
   else { fail++; console.log(`  FAIL  ${name}  ${detail}`); }
 }
 
-// 1. Rookie (league cap 2), Team Center L1 -> other facilities capped at min(2, 1+1) = 2.
+// 0. Real per-league caps exactly as specified: Rookie=1 (upgrade disabled), Amateur=2, Continental=3, Pro=4, Elite=5.
+check('rookie cap = 1', maxFacilityLevel('rookie') === 1);
+check('amateur cap = 2', maxFacilityLevel('amateur') === 2);
+check('continental cap = 3', maxFacilityLevel('continental') === 3);
+check('pro cap = 4', maxFacilityLevel('pro') === 4);
+check('elite cap = 5', maxFacilityLevel('elite') === 5);
+
+// 1. Generic cap arithmetic (league cap 2), Team Center L1 -> other facilities capped at min(2, 1+1) = 2.
 {
   const caps = computeFacilityCaps(2, 1);
-  check('Rookie + TC L1: training cap = 2', caps.training === 2, `${caps.training}`);
-  check('Rookie + TC L1: teamCenter cap = league cap (2)', caps.teamCenter === 2);
+  check('league cap 2 + TC L1: training cap = 2', caps.training === 2, `${caps.training}`);
+  check('league cap 2 + TC L1: teamCenter cap = league cap (2)', caps.teamCenter === 2);
 }
 
 // 2. Pro (league cap 5), Team Center L1 -> other facilities capped at min(5, 1+1) = 2 (Team Center is the binding constraint).
@@ -45,6 +53,30 @@ function check(name: string, cond: boolean, detail = '') {
   const caps = computeFacilityCaps(5, 5);
   check('TC L5 -> other facilities capped at 5, not 6', caps.training === 5, `${caps.training}`);
 }
+
+// 6. Rookie cap (1) disables upgrades entirely: a freshly-created rider
+// (storedLevel 1) is already at the cap, so `level >= cap` is immediately
+// true for every facility.
+{
+  const caps = computeFacilityCaps(maxFacilityLevel('rookie') as 1, 1);
+  check('Rookie: training cap = 1 (upgrade immediately locked at storedLevel 1)', caps.training === 1);
+  check('Rookie: teamCenter cap = 1', caps.teamCenter === 1);
+}
+
+// 7. storedLevel vs effectiveLevel — building L3 in Amateur, then relegated
+// to Rookie: bonuses apply as effective L1, nothing is erased.
+{
+  const storedLevel = 3 as const;
+  const amateurCap = computeFacilityCaps(maxFacilityLevel('amateur') as 2, 1).training; // = 2
+  const rookieCap = computeFacilityCaps(maxFacilityLevel('rookie') as 1, 1).training; // = 1
+  check('in Amateur, storedLevel 3 is clamped down to the cap (2), not shown as 3', effectiveFacilityLevel(storedLevel, amateurCap) === 2,
+    `${effectiveFacilityLevel(storedLevel, amateurCap)}`);
+  check('relegated to Rookie, the SAME storedLevel 3 is effectively L1', effectiveFacilityLevel(storedLevel, rookieCap) === 1,
+    `${effectiveFacilityLevel(storedLevel, rookieCap)}`);
+}
+
+// 8. Normal (non-relegated) case: effectiveLevel simply equals storedLevel when storedLevel <= cap.
+check('normal case: effectiveLevel === storedLevel when within cap', effectiveFacilityLevel(2, 4) === 2);
 
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

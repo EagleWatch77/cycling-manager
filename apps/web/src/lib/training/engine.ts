@@ -5,7 +5,7 @@ import type { SeasonInfo } from '@/lib/calendar/season';
 import { listUnprocessedTrainingPlans, applyTrainingPlanResult, type TrainingPlan } from './repository';
 import { calculateGrowth } from './growth';
 import { ENERGY_COST, FATIGUE_GAIN } from './config';
-import { getMyFacilities } from '@/lib/facilities/repository';
+import { getMyFacilities, getFacilityCaps, getEffectiveFacilities, getMyLeague } from '@/lib/facilities/repository';
 import { TRAINING_BONUS, RECOVERY_BONUS } from '@/lib/facilities/config';
 
 /**
@@ -43,9 +43,16 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
   // change here, as a direct result of training), so reducing the training
   // depletion is the smallest safe change that matches the spirit of
   // "better recovery" without inventing a new mechanic.
-  const facilities = await getMyFacilities();
-  const trainingMultiplier = 1 + TRAINING_BONUS[facilities.training];
-  const recoveryFactor = 1 - RECOVERY_BONUS[facilities.recovery];
+  //
+  // Uses EFFECTIVE level, not raw stored level: a rider who built Training
+  // Center L3 in Amateur but is currently back in Rookie must train at the
+  // L1 rate, not the banked L3 rate — see lib/facilities/capMath.ts's
+  // effectiveFacilityLevel doc comment.
+  const [facilities, league] = await Promise.all([getMyFacilities(), getMyLeague()]);
+  const caps = await getFacilityCaps(league, facilities);
+  const effective = getEffectiveFacilities(facilities, caps);
+  const trainingMultiplier = 1 + TRAINING_BONUS[effective.training];
+  const recoveryFactor = 1 - RECOVERY_BONUS[effective.recovery];
 
   let attributes: Record<SkillAttribute, number> = rider.attributes;
   let condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number> = rider.condition;

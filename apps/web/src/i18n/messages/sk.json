@@ -490,5 +490,14 @@
   "facilities.riskHigh": "Vysoké riziko",
   "facilities.riskVeryHigh": "Veľmi vysoké riziko",
   "facilities.financeNote": "Servis a vylepšenia zatiaľ nezaznamenávajú finančnú transakciu — systém Financie ešte neexistuje.",
-  "facilities.serviceError": "Servis sa nepodarilo vykonať. Skús to znova."
+  "facilities.serviceError": "Servis sa nepodarilo vykonať. Skús to znova.",
+  "facilities.rookieLocked": "Vylepšovanie zázemia sa odomkne v Amateur lige.",
+  "facilities.storedLevelNote": "Uložená úroveň {stored} — v aktuálnej lige aktívna ako L{effective}.",
+  "facilities.infoPanelTitle": "Ako funguje Zázemie",
+  "facilities.infoPanelText": "V Rookie lige spoznávaš hru — všetkých 5 budov je viditeľných na úrovni 1, vylepšovanie je zatiaľ zamknuté. Persistentné budovanie začína v Amateur lige. Postup do vyššej ligy zvýši maximálnu dostupnú úroveň; ak neskôr klesneš do nižšej ligy, tvoj postup sa neresetuje — bonusy sa dočasne uplatnia len do stropu aktuálnej ligy.",
+  "facilities.trainingDesc": "Zrýchľuje progres klasického Performance tréningu.",
+  "facilities.recoveryDesc": "Zlepšuje regeneráciu energie a znižuje únavu po tréningu.",
+  "facilities.scoutingDesc": "Zvyšuje presnosť odhadu potenciálu jazdcov.",
+  "facilities.technicalDesc": "Znižuje riziko technických problémov a cenu servisu bicykla.",
+  "facilities.teamCenterDesc": "Určuje maximálnu kapacitu jazdcov a personálu v tíme."
 }

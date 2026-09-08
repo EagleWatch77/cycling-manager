@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { isAdmin } from '@/lib/admin/auth';
 import { maxFacilityLevel, LEAGUES, type LeagueId } from '@/lib/leagues';
-import { computeFacilityCaps } from './capMath';
+import { computeFacilityCaps, effectiveFacilityLevel } from './capMath';
 import type { FacilityId, FacilityLevel } from './config';
 
 /**
@@ -81,6 +81,23 @@ export async function getFacilityCaps(league: LeagueId, facilities: PlayerFacili
   const admin = await isAdmin();
   const leagueCap = (admin ? 5 : maxFacilityLevel(league)) as FacilityLevel;
   return computeFacilityCaps(leagueCap, facilities.teamCenter);
+}
+
+/**
+ * The level each facility's bonus actually applies at RIGHT NOW —
+ * min(storedLevel, cap) per facility (see capMath.ts's
+ * effectiveFacilityLevel doc comment for the Rookie-relegation scenario
+ * this exists for). `facilities` itself (storedLevel) is never mutated by
+ * this — it stays the real, persisted progression.
+ */
+export function getEffectiveFacilities(facilities: PlayerFacilities, caps: Record<FacilityId, FacilityLevel>): PlayerFacilities {
+  return {
+    training: effectiveFacilityLevel(facilities.training, caps.training),
+    recovery: effectiveFacilityLevel(facilities.recovery, caps.recovery),
+    scouting: effectiveFacilityLevel(facilities.scouting, caps.scouting),
+    technical: effectiveFacilityLevel(facilities.technical, caps.technical),
+    teamCenter: effectiveFacilityLevel(facilities.teamCenter, caps.teamCenter),
+  };
 }
 
 export type UpgradeFacilityResult =

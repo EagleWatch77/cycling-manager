@@ -53,16 +53,23 @@ export function hasHiddenStages(totalStages: number, league: LeagueId): boolean 
 }
 
 /**
- * Zázemie (Team Facilities) V1 — the maximum facility level a league may
- * reach (see lib/facilities/config.ts, which is the canonical place that
+ * Zázemie (Team Facilities) — the maximum facility level a league may
+ * reach (see lib/facilities/capMath.ts, which is the canonical place that
  * actually combines this with the Team Center cap and any admin/dev
  * override — this map only answers "what does league alone allow").
+ *
+ * Rookie is intentionally capped at 1 — an onboarding league with facility
+ * progression locked entirely (upgrade CTAs show a "unlocks in Amateur"
+ * message instead), not merely a low ceiling. A player's own persisted
+ * (stored) facility levels are never erased if they later drop back to
+ * Rookie — only the EFFECTIVE level used for bonuses is clamped down to 1
+ * while there; see effectiveFacilityLevel() in lib/facilities/capMath.ts.
  */
 const MAX_FACILITY_LEVEL: Record<LeagueId, number> = {
-  rookie: 2,
-  amateur: 3,
-  continental: 4,
-  pro: 5,
+  rookie: 1,
+  amateur: 2,
+  continental: 3,
+  pro: 4,
   elite: 5,
 };
 

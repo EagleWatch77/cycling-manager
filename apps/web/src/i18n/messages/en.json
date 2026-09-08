@@ -490,5 +490,14 @@
   "facilities.riskHigh": "High risk",
   "facilities.riskVeryHigh": "Very high risk",
   "facilities.financeNote": "Service and upgrades do not record a financial transaction yet — the Finance system does not exist yet.",
-  "facilities.serviceError": "The service could not be performed. Please try again."
+  "facilities.serviceError": "The service could not be performed. Please try again.",
+  "facilities.rookieLocked": "Facility upgrades unlock in the Amateur league.",
+  "facilities.storedLevelNote": "Stored level {stored} — active as L{effective} in your current league.",
+  "facilities.infoPanelTitle": "How Zázemie works",
+  "facilities.infoPanelText": "The Rookie league is an introduction to the game — all 5 buildings are visible at level 1, upgrades are locked for now. Persistent building starts in the Amateur league. Promotion raises the maximum available level; if you later drop to a lower league, your progress is not reset — bonuses temporarily apply only up to the current league’s cap.",
+  "facilities.trainingDesc": "Speeds up progress in classic Performance training.",
+  "facilities.recoveryDesc": "Improves energy recovery and reduces fatigue after training.",
+  "facilities.scoutingDesc": "Increases the accuracy of a rider’s potential estimate.",
+  "facilities.technicalDesc": "Reduces the risk of technical problems and the price of bike service.",
+  "facilities.teamCenterDesc": "Determines the maximum rider and staff capacity of your team."
 }

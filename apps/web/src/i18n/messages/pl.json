@@ -490,5 +490,14 @@
   "facilities.riskHigh": "Wysokie ryzyko",
   "facilities.riskVeryHigh": "Bardzo wysokie ryzyko",
   "facilities.financeNote": "Serwis i ulepszenia nie rejestrują jeszcze transakcji finansowej — system Finanse jeszcze nie istnieje.",
-  "facilities.serviceError": "Nie udało się wykonać serwisu. Spróbuj ponownie."
+  "facilities.serviceError": "Nie udało się wykonać serwisu. Spróbuj ponownie.",
+  "facilities.rookieLocked": "Ulepszanie zaplecza odblokuje się w lidze Amateur.",
+  "facilities.storedLevelNote": "Zapisany poziom {stored} — w obecnej lidze aktywny jako L{effective}.",
+  "facilities.infoPanelTitle": "Jak działa Zaplecze",
+  "facilities.infoPanelText": "Liga Rookie to wprowadzenie do gry — wszystkie 5 budynków jest widocznych na poziomie 1, ulepszanie jest na razie zablokowane. Trwała rozbudowa zaczyna się w lidze Amateur. Awans zwiększa maksymalny dostępny poziom; jeśli później spadniesz do niższej ligi, twój postęp nie zostanie zresetowany — bonusy tymczasowo obowiązują tylko do limitu obecnej ligi.",
+  "facilities.trainingDesc": "Przyspiesza postęp klasycznego treningu Performance.",
+  "facilities.recoveryDesc": "Poprawia regenerację energii i zmniejsza zmęczenie po treningu.",
+  "facilities.scoutingDesc": "Zwiększa dokładność szacowania potencjału kolarzy.",
+  "facilities.technicalDesc": "Zmniejsza ryzyko problemów technicznych i cenę serwisu roweru.",
+  "facilities.teamCenterDesc": "Określa maksymalną pojemność kolarzy i personelu w drużynie."
 }
