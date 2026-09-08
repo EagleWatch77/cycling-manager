@@ -4,6 +4,7 @@ import {
   SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX,
   POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
   PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
+  TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES,
   type SkillAttribute,
 } from '@/lib/rider/config';
 import { scoreToLevel, potentialToStars } from '@/lib/rider/development';
@@ -21,15 +22,9 @@ import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionK
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
 
-/**
- * Tactics/Technique attribute sets shown for reference on this page — the
- * canonical 5 Tactics / 6 Technique attributes (see lib/rider/config.ts).
- * `reaction` and `breakawaySkill` are real persisted rider skills, distinct
- * from the engine's `BreakawayEffort` (an in-race tactical command enum) —
- * see the SkillAttribute doc comment for the full note.
- */
-const TECHNIQUE_KEYS: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface'];
-const TACTICS_KEYS: SkillAttribute[] = ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'];
+// Tactics/Technique attribute sets shown for reference on this page now come
+// from the centralized TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES (see
+// lib/rider/config.ts) — previously duplicated locally here.
 
 /**
  * Tréning tab of the rider profile (moved from the old top-level /training
@@ -248,12 +243,12 @@ export default async function RiderTrainingPage() {
           )}
         </Card>
 
-        <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_KEYS} attributes={rider.attributes}
+        <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_ATTRIBUTES} attributes={rider.attributes}
           showBars={false} bonuses={bonuses} />
 
         <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense>
           <ul className="p-3.5">
-            {TECHNIQUE_KEYS.map((k) => (
+            {TECHNIQUE_ATTRIBUTES.map((k) => (
               <li key={k} className="grid grid-cols-[minmax(0,1fr)_60px_42px] items-center gap-2 border-b border-line py-2 last:border-0">
                 <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
                   {t(`attr.${k}`)}

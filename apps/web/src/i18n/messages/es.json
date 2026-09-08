@@ -499,5 +499,7 @@
   "facilities.recoveryDesc": "Mejora la recuperación de energía y reduce la fatiga tras el entrenamiento.",
   "facilities.scoutingDesc": "Aumenta la precisión de la estimación del potencial de un corredor.",
   "facilities.technicalDesc": "Reduce el riesgo de problemas técnicos y el precio del servicio de bicicleta.",
-  "facilities.teamCenterDesc": "Determina la capacidad máxima de corredores y personal de tu equipo."
+  "facilities.teamCenterDesc": "Determina la capacidad máxima de corredores y personal de tu equipo.",
+  "score.overall": "Puntuación global",
+  "score.performance": "Rendimiento"
 }

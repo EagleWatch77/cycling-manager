@@ -499,5 +499,7 @@
   "facilities.recoveryDesc": "Zlepšuje regeneráciu energie a znižuje únavu po tréningu.",
   "facilities.scoutingDesc": "Zvyšuje presnosť odhadu potenciálu jazdcov.",
   "facilities.technicalDesc": "Znižuje riziko technických problémov a cenu servisu bicykla.",
-  "facilities.teamCenterDesc": "Určuje maximálnu kapacitu jazdcov a personálu v tíme."
+  "facilities.teamCenterDesc": "Určuje maximálnu kapacitu jazdcov a personálu v tíme.",
+  "score.overall": "Celkové skóre",
+  "score.performance": "Výkon"
 }

@@ -984,6 +984,123 @@ create policy "rider_training_progress_select_own"
 -- the only write path" pattern as player_facilities/upgrade_facility().
 grant select on public.rider_training_progress to authenticated;
 
+-- ============================================================================
+-- Development Model V2 — canonical SQL helpers (see the chat report).
+--
+-- REPLACES the old potentialCeiling()/potentialRoomFactor() model: Potential
+-- (55-95) is no longer converted into an implied per-attribute ceiling.
+-- These pure functions are the authoritative implementation
+-- process_training_plan() calls; lib/rider/score.ts is the unit-tested TS
+-- MIRROR, kept in sync by hand — see score.test.ts's canary tests. If you
+-- change any anchor point here, update lib/rider/score.ts's matching
+-- anchors too (and vice versa).
+--
+-- No security-definer needed — pure math, no table access, no privileged
+-- data, safe for any authenticated caller to invoke directly.
+-- ============================================================================
+
+/** The 7 canonical Performance attributes — kept in sync by hand with lib/training/config.ts's PERFORMANCE_FOCUS. */
+create or replace function public.is_performance_attribute(p_attr text)
+returns boolean
+language sql
+immutable
+as $$
+  select p_attr = any(array['climbing','hills','flat','sprint','timeTrial','endurance','acceleration']);
+$$;
+
+/** 200 for the 7 Performance attributes (career ceiling), 160 for everything else (Tactics/Technique/experience — unchanged canonical scale). */
+create or replace function public.attribute_clamp_max(p_attr text)
+returns int
+language sql
+immutable
+as $$
+  select case when public.is_performance_attribute(p_attr) then 200 else 160 end;
+$$;
+
+/** Local attribute difficulty — depends ONLY on the attribute's own current value, never on Potential. Mirrors lib/rider/score.ts's localAttributeFactor(). */
+create or replace function public.local_attribute_factor(p_current_value numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select case
+    when p_current_value >= 200 then 0
+    when p_current_value <= 140 then 1.00
+    when p_current_value <= 150 then 1.00 + (p_current_value - 140) / 10 * (0.90 - 1.00)
+    when p_current_value <= 160 then 0.90 + (p_current_value - 150) / 10 * (0.80 - 0.90)
+    when p_current_value <= 170 then 0.80 + (p_current_value - 160) / 10 * (0.65 - 0.80)
+    when p_current_value <= 180 then 0.65 + (p_current_value - 170) / 10 * (0.45 - 0.65)
+    when p_current_value <= 190 then 0.45 + (p_current_value - 180) / 10 * (0.25 - 0.45)
+    else 0.25 + (p_current_value - 190) / 10 * (0.00 - 0.25)
+  end;
+$$;
+
+/** Mean of exactly the 7 canonical Performance attributes. Never includes Potential/Tactics/Technique/experience/condition. Mirrors lib/rider/score.ts's overallPerformance(). */
+create or replace function public.overall_performance(p_attrs jsonb)
+returns numeric
+language sql
+immutable
+as $$
+  select (
+    (p_attrs ->> 'climbing')::numeric + (p_attrs ->> 'hills')::numeric + (p_attrs ->> 'flat')::numeric
+    + (p_attrs ->> 'sprint')::numeric + (p_attrs ->> 'timeTrial')::numeric + (p_attrs ->> 'endurance')::numeric
+    + (p_attrs ->> 'acceleration')::numeric
+  ) / 7;
+$$;
+
+/** Overall Potential factor — depends on overallPerformance + Potential, never a single attribute in isolation. Mirrors lib/rider/score.ts's overallPotentialFactor() exactly (same anchors, same 0.85 swing, same POTENTIAL_MIN/MAX=55/95). */
+create or replace function public.overall_potential_factor(p_overall numeric, p_potential numeric)
+returns numeric
+language plpgsql
+immutable
+as $$
+declare
+  v_base numeric;
+  v_weight numeric;
+  v_ease numeric;
+  v_delta numeric;
+begin
+  if p_overall <= 140 then
+    v_base := 1.00; v_weight := 0.00;
+  elsif p_overall <= 150 then
+    v_base := 1.00 + (p_overall - 140) / 10 * (0.85 - 1.00); v_weight := 0.00 + (p_overall - 140) / 10 * (0.30 - 0.00);
+  elsif p_overall <= 160 then
+    v_base := 0.85 + (p_overall - 150) / 10 * (0.75 - 0.85); v_weight := 0.30 + (p_overall - 150) / 10 * (0.45 - 0.30);
+  elsif p_overall <= 170 then
+    v_base := 0.75 + (p_overall - 160) / 10 * (0.60 - 0.75); v_weight := 0.45 + (p_overall - 160) / 10 * (0.65 - 0.45);
+  elsif p_overall <= 180 then
+    v_base := 0.60 + (p_overall - 170) / 10 * (0.45 - 0.60); v_weight := 0.65 + (p_overall - 170) / 10 * (0.80 - 0.65);
+  elsif p_overall <= 190 then
+    v_base := 0.45 + (p_overall - 180) / 10 * (0.32 - 0.45); v_weight := 0.80 + (p_overall - 180) / 10 * (0.90 - 0.80);
+  else
+    v_base := 0.32 + (least(p_overall, 200) - 190) / 10 * (0.22 - 0.32); v_weight := 0.90 + (least(p_overall, 200) - 190) / 10 * (1.00 - 0.90);
+  end if;
+
+  v_ease := greatest(0, least(1, (p_potential - 55) / 40)); -- POTENTIAL_MIN=55, POTENTIAL_MAX=95
+  v_delta := (v_ease - 0.5) * 2 * v_weight * v_base * 0.85;
+  return greatest(0.08, least(1, v_base + v_delta));
+end;
+$$;
+
+/** developmentRoomFactor — replaces the old potentialRoomFactor() slot in the training formula. Hard 0 at/above 200 (never a further accumulator gain); floor 0.05 below that. Mirrors lib/rider/score.ts's developmentRoomFactor(). */
+create or replace function public.development_room_factor(p_current_value numeric, p_overall numeric, p_potential numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select case
+    when p_current_value >= 200 then 0
+    else greatest(0.05, public.local_attribute_factor(p_current_value) * public.overall_potential_factor(p_overall, p_potential))
+  end;
+$$;
+
+grant execute on function public.is_performance_attribute(text) to authenticated;
+grant execute on function public.attribute_clamp_max(text) to authenticated;
+grant execute on function public.local_attribute_factor(numeric) to authenticated;
+grant execute on function public.overall_performance(jsonb) to authenticated;
+grant execute on function public.overall_potential_factor(numeric, numeric) to authenticated;
+grant execute on function public.development_room_factor(numeric, numeric, numeric) to authenticated;
+
 /**
  * Processes ONE training plan atomically: computes the AUTHORITATIVE raw
  * training growth entirely from trusted, persisted server-side data,
@@ -1024,10 +1141,13 @@ grant select on public.rider_training_progress to authenticated;
  *   ATTR_MIN/MAX, league caps, and the training-bonus percentages; the
  *   difference here is only that the duplicated unit is a formula instead
  *   of a constant. If you change BASE_TRAINING, INTENSITY_MULTIPLIER,
- *   trainabilityFactor/professionalismFactor/ageFactor/
- *   potentialRoomFactor, TRAINING_BONUS, or SECONDARY_ATTRIBUTE in the TS
- *   layer, you MUST update the matching block below too — see
- *   growth.test.ts's canary test that compares a handful of known inputs
+ *   trainabilityFactor/professionalismFactor/ageFactor, TRAINING_BONUS,
+ *   SECONDARY_ATTRIBUTE, or anything in lib/rider/score.ts (Development
+ *   Model V2 — localAttributeFactor/overallPerformance/
+ *   overallPotentialFactor/developmentRoomFactor) in the TS layer, you
+ *   MUST update the matching SQL helper functions above too — see
+ *   growth.test.ts's and score.test.ts's canary tests that compare a
+ *   handful of known inputs
  *   against this function's expected output.
  *
  * Idempotency: the plan row is locked (`for update`) and its applied_at
@@ -1050,11 +1170,6 @@ language plpgsql
 security definer set search_path = public
 as $$
 declare
-  -- ---- Kept in sync by hand with lib/rider/config.ts ----
-  v_attr_min constant int := 100;
-  v_attr_max constant int := 160;
-  v_potential_min constant numeric := 55;
-  v_potential_max constant numeric := 95;
   -- ---- Kept in sync by hand with lib/training/config.ts ----
   v_base_training constant numeric := 3;
   v_secondary_gain_share constant numeric := 0.35;
@@ -1091,11 +1206,14 @@ declare
   v_trainability_factor numeric;
   v_professionalism_factor numeric;
   v_age_factor numeric;
-  v_potential_ceiling numeric;
-  v_room numeric;
-  v_potential_room_factor numeric;
   v_facility_multiplier numeric;
-  v_raw numeric;
+  v_base numeric;
+
+  v_overall_performance numeric;
+  v_secondary_current_value numeric;
+  v_primary_dev_factor numeric;
+  v_secondary_dev_factor numeric;
+  v_primary_at_cap boolean;
 
   v_primary_raw numeric;
   v_secondary_raw numeric;
@@ -1224,46 +1342,86 @@ begin
     else 0.30
   end;
 
+  -- ---- Development Model V2 (see the chat report) ----
+  -- Replaces potentialCeiling()/potentialRoomFactor(): Potential no longer
+  -- implies a per-attribute ceiling. developmentRoomFactor is keyed to
+  -- overallPerformance (all 7 Performance attributes together) and the
+  -- attribute's own value — see public.development_room_factor() above.
   v_current_value := (v_attrs ->> v_primary_attr)::numeric;
-  v_potential_ceiling := v_attr_min + (v_potential - v_potential_min) / (v_potential_max - v_potential_min) * (v_attr_max - v_attr_min);
-  v_room := greatest(0, v_potential_ceiling - v_current_value);
-  v_potential_room_factor := greatest(0.1, least(1, v_room / 40));
+  v_overall_performance := public.overall_performance(v_attrs);
+  v_primary_at_cap := v_current_value >= 200;
 
-  v_raw := v_base_training * v_intensity_multiplier * v_trainability_factor * v_professionalism_factor
-    * v_age_factor * v_potential_room_factor * v_facility_multiplier;
+  -- base = everything EXCEPT the development-room factor — shared between
+  -- primary and secondary, exactly mirroring lib/training/growth.ts's `base`.
+  v_base := v_base_training * v_intensity_multiplier * v_trainability_factor
+    * v_professionalism_factor * v_age_factor * v_facility_multiplier;
 
-  v_primary_raw := greatest(0, v_raw);
-  v_secondary_raw := case when v_secondary_attr is not null then greatest(0, v_raw * v_secondary_gain_share) else null end;
+  if v_primary_at_cap then
+    -- Item 7 of the request: at/above the Performance ceiling, no further
+    -- accumulator progress at all for this attribute — not just raw=0.
+    v_primary_dev_factor := 0;
+    v_primary_raw := 0;
+  else
+    v_primary_dev_factor := public.development_room_factor(v_current_value, v_overall_performance, v_potential);
+    v_primary_raw := greatest(0, v_base * v_primary_dev_factor);
+  end if;
+
+  -- Secondary attribute: developmentRoomFactor only applies when it is
+  -- ALSO one of the 7 Performance attributes (e.g. climbing -> endurance).
+  -- A non-Performance secondary (e.g. timeTrial -> energyManagement, a
+  -- Tactics attribute) gets NO development-room throttling here — a known,
+  -- reported gap (see lib/training/growth.ts's own doc comment): nothing
+  -- in this task defined what should throttle non-Performance growth now
+  -- that potentialRoomFactor is gone.
+  if v_secondary_attr is not null then
+    v_secondary_current_value := (v_attrs ->> v_secondary_attr)::numeric;
+    if public.is_performance_attribute(v_secondary_attr) then
+      if v_secondary_current_value >= 200 then
+        v_secondary_dev_factor := 0;
+      else
+        v_secondary_dev_factor := public.development_room_factor(v_secondary_current_value, v_overall_performance, v_potential);
+      end if;
+    else
+      v_secondary_dev_factor := 1;
+    end if;
+    v_secondary_raw := greatest(0, v_base * v_secondary_dev_factor * v_secondary_gain_share);
+  end if;
 
   -- Primary attribute — v_primary_attr came from training_plans.focus
-  -- itself, never from a caller-supplied parameter.
-  insert into public.rider_training_progress (rider_id, attribute, progress)
-  values (v_rider_id, v_primary_attr, 0)
-  on conflict (rider_id, attribute) do nothing;
+  -- itself, never from a caller-supplied parameter. Item 7 of the request:
+  -- once at the Performance ceiling, skip progress accumulation entirely
+  -- (not merely add a raw=0 no-op) — there is nothing left to accumulate.
+  if not v_primary_at_cap then
+    insert into public.rider_training_progress (rider_id, attribute, progress)
+    values (v_rider_id, v_primary_attr, 0)
+    on conflict (rider_id, attribute) do nothing;
 
-  select progress into v_progress
-  from public.rider_training_progress
-  where rider_id = v_rider_id and attribute = v_primary_attr
-  for update;
+    select progress into v_progress
+    from public.rider_training_progress
+    where rider_id = v_rider_id and attribute = v_primary_attr
+    for update;
 
-  -- 0.000000001 epsilon before floor(): mirrors accumulateProgress()'s own
-  -- (see lib/training/accumulator.ts) — guards the same threshold-crossing
-  -- edge as there, kept in sync by hand.
-  v_total := v_progress + v_primary_raw;
-  v_primary_gain := floor((v_total + 0.000000001) / v_threshold)::int;
+    -- 0.000000001 epsilon before floor(): mirrors accumulateProgress()'s own
+    -- (see lib/training/accumulator.ts) — guards the same threshold-crossing
+    -- edge as there, kept in sync by hand.
+    v_total := v_progress + v_primary_raw;
+    v_primary_gain := floor((v_total + 0.000000001) / v_threshold)::int;
 
-  update public.rider_training_progress
-  set progress = greatest(0, v_total - v_primary_gain * v_threshold), updated_at = now()
-  where rider_id = v_rider_id and attribute = v_primary_attr;
+    update public.rider_training_progress
+    set progress = greatest(0, v_total - v_primary_gain * v_threshold), updated_at = now()
+    where rider_id = v_rider_id and attribute = v_primary_attr;
 
-  if v_primary_gain > 0 then
-    v_attrs := jsonb_set(v_attrs, array[v_primary_attr],
-      to_jsonb(least(160, greatest(100, (v_attrs ->> v_primary_attr)::int + v_primary_gain))));
+    if v_primary_gain > 0 then
+      v_attrs := jsonb_set(v_attrs, array[v_primary_attr],
+        to_jsonb(least(public.attribute_clamp_max(v_primary_attr), greatest(100, (v_attrs ->> v_primary_attr)::int + v_primary_gain))));
+    end if;
   end if;
 
   -- Secondary attribute (optional) — its own, separate progress row: never
-  -- a shared pool with the primary attribute (item 5 of the request).
-  if v_secondary_attr is not null then
+  -- a shared pool with the primary attribute (item 5 of the request). Same
+  -- ceiling-skip rule applies if the secondary itself is a Performance
+  -- attribute already at 200.
+  if v_secondary_attr is not null and v_secondary_dev_factor is distinct from 0 then
     insert into public.rider_training_progress (rider_id, attribute, progress)
     values (v_rider_id, v_secondary_attr, 0)
     on conflict (rider_id, attribute) do nothing;
@@ -1282,7 +1440,7 @@ begin
 
     if v_secondary_gain > 0 then
       v_attrs := jsonb_set(v_attrs, array[v_secondary_attr],
-        to_jsonb(least(160, greatest(100, (v_attrs ->> v_secondary_attr)::int + v_secondary_gain))));
+        to_jsonb(least(public.attribute_clamp_max(v_secondary_attr), greatest(100, (v_attrs ->> v_secondary_attr)::int + v_secondary_gain))));
     end if;
   end if;
 

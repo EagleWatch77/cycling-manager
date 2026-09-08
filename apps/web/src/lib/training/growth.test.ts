@@ -4,15 +4,34 @@
  * calculateRawGrowth() returns UNROUNDED progress — converting that into a
  * whole attribute gain is accumulator.ts's job (see accumulator.test.ts),
  * not this file's.
+ *
+ * Development Model V2 (see the chat report): calculateRawGrowth() now
+ * takes the FULL attribute set (not just one currentValue) so it can
+ * derive overallPerformance — see score.test.ts for the dedicated
+ * developmentRoomFactor()/overallPerformance() tests; this file only
+ * checks that growth.ts wires them in correctly.
  * Run with: npx tsx src/lib/training/growth.test.ts
  */
 import { calculateRawGrowth } from './growth';
 import { ageFactor, trainabilityFactor, professionalismFactor, INTENSITY_MULTIPLIER } from './config';
+import type { SkillAttribute } from '@/lib/rider/config';
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail = '') {
   if (cond) { pass++; console.log(`  PASS  ${name}`); }
   else { fail++; console.log(`  FAIL  ${name}  ${detail}`); }
+}
+
+/** A full 19-key attribute record, every key defaulted, with overrides for specific keys. */
+function makeAttrs(base: number, overrides: Partial<Record<SkillAttribute, number>> = {}): Record<SkillAttribute, number> {
+  const keys: SkillAttribute[] = [
+    'climbing', 'hills', 'flat', 'sprint', 'timeTrial', 'endurance', 'descending', 'acceleration',
+    'energyManagement', 'positioning', 'reaction', 'breakawaySkill', 'packRiding', 'experience',
+    'bikeHandling', 'cornering', 'attackTiming', 'roughSurface', 'wetHandling',
+  ];
+  const attrs = {} as Record<SkillAttribute, number>;
+  for (const k of keys) attrs[k] = overrides[k] ?? base;
+  return attrs;
 }
 
 // 1. Intensity multipliers exactly as specified.
@@ -35,41 +54,62 @@ check('trainabilityFactor(100) = 1.0', trainabilityFactor(100) === 1.0);
 check('professionalismFactor(0) = 0.8', professionalismFactor(0) === 0.8);
 check('professionalismFactor(100) = 1.0', professionalismFactor(100) === 1.0);
 
-// 4. Secondary raw is exactly 35% of primary raw (SECONDARY_GAIN_SHARE), not merely "close" — no rounding happens in this file anymore.
+// 4. Secondary raw is exactly 35% of primary raw when the secondary is ALSO a Performance attribute (climbing -> endurance, both Performance).
 {
   const r = calculateRawGrowth({
-    focus: 'climbing', intensity: 'hard', currentValue: 120,
+    focus: 'climbing', intensity: 'hard', attributes: makeAttrs(120),
     trainability: 75, professionalism: 75, age: 20, potential: 75,
   });
   check('climbing has an endurance secondary', r.secondaryAttr === 'endurance', r.secondaryAttr);
-  check('secondary raw is exactly 35% of primary raw', r.secondaryAttr !== undefined
+  check('secondary raw is exactly 35% of primary raw (endurance is also Performance, same devFactor)', r.secondaryAttr !== undefined
     && Math.abs((r.secondaryRaw ?? 0) - r.primaryRaw * 0.35) < 1e-9,
     `primary ${r.primaryRaw} secondary ${r.secondaryRaw}`);
   check('primary raw is a positive number', r.primaryRaw > 0, `${r.primaryRaw}`);
   check('primary raw is NOT rounded to an integer (this is the whole point of the accumulator)', !Number.isInteger(r.primaryRaw) || r.primaryRaw === 0, `${r.primaryRaw}`);
 }
 
+// 4b. A non-Performance secondary (timeTrial -> energyManagement, a Tactics attribute) gets NO development-room throttling — known, reported gap (see growth.ts's own doc comment). Near the Performance ceiling, primaryRaw (throttled) and secondaryRaw (NOT throttled) deliberately diverge — secondaryRaw is 35% of the UN-throttled base, not 35% of primaryRaw.
+{
+  const r = calculateRawGrowth({
+    focus: 'timeTrial', intensity: 'hard', attributes: makeAttrs(190), // near Performance ceiling
+    trainability: 75, professionalism: 75, age: 20, potential: 55,
+  });
+  check('timeTrial has an energyManagement secondary', r.secondaryAttr === 'energyManagement', r.secondaryAttr);
+  check('near the ceiling, the non-Performance secondary raw EXCEEDS 35% of the (heavily throttled) primary raw — proof it is not scaled by primary\'s devFactor',
+    r.secondaryAttr !== undefined && (r.secondaryRaw ?? 0) > r.primaryRaw * 0.35,
+    `primary ${r.primaryRaw} secondary ${r.secondaryRaw}`);
+}
+
 // 5. Hard intensity always yields more raw progress than Light, all else equal.
 {
-  const base = { focus: 'sprint' as const, currentValue: 100, trainability: 95, professionalism: 95, age: 24, potential: 95 };
+  const base = { focus: 'sprint' as const, attributes: makeAttrs(100), trainability: 95, professionalism: 95, age: 24, potential: 95 };
   const light = calculateRawGrowth({ ...base, intensity: 'light' });
   const hard = calculateRawGrowth({ ...base, intensity: 'hard' });
   check('hard > light raw', hard.primaryRaw > light.primaryRaw, `light ${light.primaryRaw} hard ${hard.primaryRaw}`);
 }
 
-// 6. Growth shrinks as a rider closes in on their potential ceiling.
+// 6. Growth shrinks as a rider's OVERALL Performance level (not just the one trained attribute) rises.
 {
-  const base = { focus: 'flat' as const, intensity: 'normal' as const, trainability: 75, professionalism: 75, age: 24, potential: 60 };
-  const farFromCeiling = calculateRawGrowth({ ...base, currentValue: 100 });
-  const nearCeiling = calculateRawGrowth({ ...base, currentValue: 159 });
-  check('less room -> smaller (or equal) raw', nearCeiling.primaryRaw <= farFromCeiling.primaryRaw,
-    `far ${farFromCeiling.primaryRaw} near ${nearCeiling.primaryRaw}`);
+  const focus: SkillAttribute = 'flat';
+  const base = { focus, intensity: 'normal' as const, trainability: 75, professionalism: 75, age: 24, potential: 60 };
+  const lowOverall = calculateRawGrowth({ ...base, attributes: makeAttrs(110, { [focus]: 110 }) });
+  const highOverall = calculateRawGrowth({ ...base, attributes: makeAttrs(185, { [focus]: 185 }) });
+  check('higher overall Performance -> smaller (or equal) raw', highOverall.primaryRaw <= lowOverall.primaryRaw,
+    `low-overall ${lowOverall.primaryRaw} high-overall ${highOverall.primaryRaw}`);
 }
 
-// 7. Zázemie V1 — Training Center facilityMultiplier applies exactly once,
-// to both primary AND secondary raw (both derive from the same `raw`).
+// 6b. At the Performance ceiling (200), raw growth is exactly zero — no further accumulator progress.
 {
-  const base = { focus: 'climbing' as const, intensity: 'hard' as const, currentValue: 120, trainability: 75, professionalism: 75, age: 20, potential: 90 };
+  const r = calculateRawGrowth({
+    focus: 'climbing', intensity: 'hard', attributes: makeAttrs(190, { climbing: 200 }),
+    trainability: 95, professionalism: 95, age: 18, potential: 95,
+  });
+  check('primaryRaw is exactly 0 once the attribute is at PERFORMANCE_MAX (200)', r.primaryRaw === 0, `${r.primaryRaw}`);
+}
+
+// 7. Zázemie V1 — Training Center facilityMultiplier applies exactly once, to both primary AND secondary raw.
+{
+  const base = { focus: 'climbing' as const, intensity: 'hard' as const, attributes: makeAttrs(120), trainability: 75, professionalism: 75, age: 20, potential: 90 };
   const noBonus = calculateRawGrowth({ ...base });
   const l5Bonus = calculateRawGrowth({ ...base, facilityMultiplier: 1.12 });
   check('no facilityMultiplier behaves exactly as before (defaults to 1)', noBonus.primaryRaw === calculateRawGrowth({ ...base, facilityMultiplier: 1 }).primaryRaw);
@@ -80,15 +120,10 @@ check('professionalismFactor(100) = 1.0', professionalismFactor(100) === 1.0);
 
 // 8. Security audit canary (see the chat report): process_training_plan()'s
 // SQL-side sanity ceiling (v_max_raw = 100) must stay generously above the
-// real formula's own theoretical maximum, or a legitimate training would
-// get rejected as if it were an injection attempt. Even a deliberately
-// generous facilityMultiplier headroom (2.0, well past any level today)
-// should stay far below 100 — if this ever fails, both v_max_raw in
-// supabase/schema.sql's process_training_plan() AND this check need
-// revisiting together.
+// real formula's own theoretical maximum.
 {
   const theoreticalMax = calculateRawGrowth({
-    focus: 'climbing', intensity: 'hard', currentValue: 100,
+    focus: 'climbing', intensity: 'hard', attributes: makeAttrs(100),
     trainability: 95, professionalism: 95, age: 18, potential: 95,
     facilityMultiplier: 2.0,
   });

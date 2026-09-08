@@ -18,7 +18,22 @@ const AXES: { key: string; from: SkillAttribute[] }[] = [
 ];
 
 const SCALE_MIN = 90;
-const SCALE_MAX = 160;
+/**
+ * Development Model V2 (see the chat report): the 7 Performance attributes
+ * now have a 200 career ceiling; Tactics/Technique/experience stay at 160.
+ * Two of the six axes above MIX a Performance attribute with a non-
+ * Performance one ('radar.flat': flat+energyManagement; 'radar.endurance':
+ * endurance+experience) — a single shared scale can't be exactly correct
+ * for a mixed axis no matter what value is picked. Using PERFORMANCE_MAX
+ * (200) here, rather than redesigning axis membership (out of this task's
+ * scope), keeps pure-Performance axes ('mountains', 'sprint') correctly
+ * proportioned all the way to 200; pure non-Performance axes ('technique',
+ * 'positioning') and the two mixed axes will visually read as never quite
+ * reaching the outer ring even at their own real maximum — an accepted,
+ * reported tradeoff for this high-level comparative chart, not a precision
+ * display.
+ */
+const SCALE_MAX = 200;
 
 export function AbilityRadar({
   t, attributes,

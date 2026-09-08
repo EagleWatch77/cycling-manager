@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { potentialToStars, type SegmentLevel } from '@/lib/rider/development';
 import { POTENTIAL_MIN, POTENTIAL_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { riderOverall, performanceScore } from '@/lib/rider/score';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import type { MarketTier } from './repository';
 
@@ -28,6 +29,16 @@ export interface MarketRiderView {
   age: number;
   archetype: string;
   potentialStars: SegmentLevel;
+  /**
+   * Player-facing 0-100 scores (see lib/rider/score.ts) — computed
+   * server-side from real persisted attributes only. Deliberately the ONLY
+   * ability-related numbers in this DTO: raw Performance/Tactics/
+   * Technique/Trainability/Professionalism/Recovery/exact Potential never
+   * reach the browser through the Free Market (see the chat report, items
+   * 19-22) — a Free player learns "this rider is overall 78", never why.
+   */
+  riderOverall: number;
+  performanceScore: number;
 }
 
 export interface MarketRiderDetail extends MarketRiderView {
@@ -59,6 +70,11 @@ export interface MarketPageResult {
 }
 
 function toView(row: Record<string, unknown>): MarketRiderView {
+  // `attributes` is fetched from the DB row (getMarketPage selects '*') to
+  // compute the two safe derived scores below, but is deliberately NEVER
+  // included in the returned object itself — a Free Market caller gets the
+  // 0-100 scores only, never the raw attribute breakdown they're built from.
+  const attributes = row.attributes as Record<SkillAttribute, number>;
   return {
     id: row.id as string,
     tier: row.tier as MarketTier,
@@ -69,6 +85,8 @@ function toView(row: Record<string, unknown>): MarketRiderView {
     age: row.age as number,
     archetype: row.inferred_archetype as string,
     potentialStars: potentialToStars(row.potential as number, POTENTIAL_MIN, POTENTIAL_MAX),
+    riderOverall: riderOverall(attributes),
+    performanceScore: performanceScore(attributes),
   };
 }
 

@@ -499,5 +499,7 @@
   "facilities.recoveryDesc": "Poprawia regenerację energii i zmniejsza zmęczenie po treningu.",
   "facilities.scoutingDesc": "Zwiększa dokładność szacowania potencjału kolarzy.",
   "facilities.technicalDesc": "Zmniejsza ryzyko problemów technicznych i cenę serwisu roweru.",
-  "facilities.teamCenterDesc": "Określa maksymalną pojemność kolarzy i personelu w drużynie."
+  "facilities.teamCenterDesc": "Określa maksymalną pojemność kolarzy i personelu w drużynie.",
+  "score.overall": "Ogólny wynik",
+  "score.performance": "Wydajność"
 }

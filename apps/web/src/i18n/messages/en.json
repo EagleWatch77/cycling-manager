@@ -499,5 +499,7 @@
   "facilities.recoveryDesc": "Improves energy recovery and reduces fatigue after training.",
   "facilities.scoutingDesc": "Increases the accuracy of a rider’s potential estimate.",
   "facilities.technicalDesc": "Reduces the risk of technical problems and the price of bike service.",
-  "facilities.teamCenterDesc": "Determines the maximum rider and staff capacity of your team."
+  "facilities.teamCenterDesc": "Determines the maximum rider and staff capacity of your team.",
+  "score.overall": "Overall score",
+  "score.performance": "Performance"
 }

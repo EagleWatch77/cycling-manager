@@ -499,5 +499,7 @@
   "facilities.recoveryDesc": "Verbessert die Energieregeneration und reduziert die Ermüdung nach dem Training.",
   "facilities.scoutingDesc": "Erhöht die Genauigkeit der Potenzialschätzung eines Fahrers.",
   "facilities.technicalDesc": "Reduziert das Risiko technischer Probleme und die Kosten des Fahrradservice.",
-  "facilities.teamCenterDesc": "Bestimmt die maximale Fahrer- und Personalkapazität deines Teams."
+  "facilities.teamCenterDesc": "Bestimmt die maximale Fahrer- und Personalkapazität deines Teams.",
+  "score.overall": "Gesamtwertung",
+  "score.performance": "Leistung"
 }

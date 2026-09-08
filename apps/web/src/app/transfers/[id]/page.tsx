@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getServerDictionary } from '@/i18n/server';
 import { getMarketRiderDetail } from '@/lib/market/playerRepository';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
-import type { SkillAttribute } from '@/lib/rider/config';
+import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES } from '@/lib/rider/config';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -11,8 +11,7 @@ import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { archetypeIcon } from '@/lib/rider/archetypeIcon';
 
-const TACTICS: SkillAttribute[] = ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'];
-const TECHNIQUE: SkillAttribute[] = ['descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface'];
+// TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES now come from lib/rider/config.ts (previously duplicated locally here).
 
 const FLAGS: Record<string, string> = {
   SK: '🇸🇰', CZ: '🇨🇿', PL: '🇵🇱', FR: '🇫🇷', IT: '🇮🇹', ES: '🇪🇸', BE: '🇧🇪', NL: '🇳🇱',
@@ -66,9 +65,9 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
         <div className="grid grid-cols-12 gap-3">
           <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
             showStatIcons statIconSize={24} showBars={false} className="col-span-12 lg:col-span-4" />
-          <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS} attributes={rider.attributes}
+          <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_ATTRIBUTES} attributes={rider.attributes}
             showBars={false} className="col-span-12 lg:col-span-4" />
-          <AttributeGroup t={t} titleKey="group.technique" icon="wheel" keys={TECHNIQUE} attributes={rider.attributes}
+          <AttributeGroup t={t} titleKey="group.technique" icon="wheel" keys={TECHNIQUE_ATTRIBUTES} attributes={rider.attributes}
             showBars={false} className="col-span-12 lg:col-span-4" />
         </div>
       </div>

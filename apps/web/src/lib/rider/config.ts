@@ -46,9 +46,44 @@ export const ATTR_NOISE = 3;
 export const STRONG_BONUS = 10;
 export const WEAK_PENALTY = 10;
 
-/** Safety clamp so noise can never produce absurd values. */
+/**
+ * Safety clamp so noise can never produce absurd values — this is the
+ * scale used at STARTER GENERATION for all 19 attributes (never changed,
+ * see the chat report: the generator must keep producing newcomers in
+ * today's range) and remains the CAREER scale for Tactics/Technique/
+ * experience forever (they do not get the new Performance ceiling below).
+ */
 export const ATTR_MIN = 100;
 export const ATTR_MAX = 160;
+
+/**
+ * Career scale for the 7 canonical Performance attributes ONLY (climbing,
+ * hills, flat, sprint, timeTrial, endurance, acceleration) — see
+ * lib/training/config.ts's PERFORMANCE_FOCUS for the canonical list.
+ * PERFORMANCE_MIN equals ATTR_MIN (starting floor is unchanged);
+ * PERFORMANCE_MAX=200 is a CAREER ceiling a rider can grow into through
+ * training over time — the starter generator still clamps newcomers to
+ * ATTR_MAX=160 above, never generates a rider anywhere near 200. Enforced
+ * authoritatively in process_training_plan() (supabase/schema.sql); this
+ * constant is the TS-side reference other Performance-scale-aware code
+ * (score normalization, UI bars/radar) reads.
+ */
+export const PERFORMANCE_MIN = ATTR_MIN;
+export const PERFORMANCE_MAX = 200;
+
+/**
+ * Canonical Tactics/Technique attribute groupings — centralizes what used
+ * to be duplicated ad hoc as local TACTICS_KEYS/TECHNIQUE_KEYS arrays in
+ * app/rider/page.tsx, app/rider/training/page.tsx, and
+ * app/transfers/[id]/page.tsx (all three had to be kept in sync by hand).
+ * Also the canonical input to lib/rider/score.ts's riderOverall().
+ */
+export const TACTICS_ATTRIBUTES: readonly SkillAttribute[] = [
+  'positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill',
+];
+export const TECHNIQUE_ATTRIBUTES: readonly SkillAttribute[] = [
+  'descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface',
+];
 
 export const AGE_MIN = 18;
 export const AGE_MAX = 22;

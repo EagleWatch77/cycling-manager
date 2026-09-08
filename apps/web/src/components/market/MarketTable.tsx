@@ -29,6 +29,8 @@ export function MarketTable({ t, riders, rankOffset }: { t: T; riders: MarketRid
             <th className="px-3.5 py-2.5 font-semibold">{t('market.colAge')}</th>
             <th className="px-3.5 py-2.5 font-semibold">{t('market.colType')}</th>
             <th className="px-3.5 py-2.5 font-semibold">{t('market.colPotential')}</th>
+            <th className="px-3.5 py-2.5 text-right font-semibold">{t('score.overall')}</th>
+            <th className="px-3.5 py-2.5 text-right font-semibold">{t('score.performance')}</th>
           </tr>
         </thead>
         <tbody>
@@ -60,6 +62,12 @@ export function MarketTable({ t, riders, rankOffset }: { t: T; riders: MarketRid
                     {'★'.repeat(r.potentialStars)}
                     <span className="text-line">{'★'.repeat(5 - r.potentialStars)}</span>
                   </Link>
+                </td>
+                <td className="p-0 text-right font-bold tabular-nums text-navy">
+                  <Link href={href} className="block px-3.5 py-2">{r.riderOverall}</Link>
+                </td>
+                <td className="p-0 text-right font-semibold tabular-nums text-navy-soft">
+                  <Link href={href} className="block px-3.5 py-2">{r.performanceScore}</Link>
                 </td>
               </tr>
             );

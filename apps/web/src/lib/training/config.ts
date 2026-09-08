@@ -1,4 +1,4 @@
-import { POTENTIAL_MIN, POTENTIAL_MAX, ATTR_MIN, ATTR_MAX, type SkillAttribute } from '@/lib/rider/config';
+import type { SkillAttribute } from '@/lib/rider/config';
 
 /**
  * Training V1 — tunable numbers and the growth formula, kept separate from
@@ -113,21 +113,11 @@ export function ageFactor(age: number): number {
   return 0.30;
 }
 
-/**
- * `potential` is persisted on a 55–95 "development rating" scale (see
- * POTENTIAL_MIN/MAX in lib/rider/config.ts) — a different scale from the
- * 100–160 attribute values it's meant to cap. No existing code related the
- * two before Training V1. This rescales potential onto the attribute range
- * to get an implied ceiling, so "room to grow" is meaningful; flagged as an
- * assumption in the report, not something the codebase already defined.
- */
-export function potentialCeiling(potential: number): number {
-  const t = (potential - POTENTIAL_MIN) / (POTENTIAL_MAX - POTENTIAL_MIN);
-  return ATTR_MIN + t * (ATTR_MAX - ATTR_MIN);
-}
-
-/** Growth slows as a Rider closes in on their (hidden) Potential ceiling. Smallest clean assumption: linear over a 40-point room. */
-export function potentialRoomFactor(currentValue: number, potential: number): number {
-  const room = Math.max(0, potentialCeiling(potential) - currentValue);
-  return Math.max(0.1, Math.min(1, room / 40));
-}
+// potentialCeiling()/potentialRoomFactor() — REMOVED (see the chat report's
+// audit). They translated Potential (55-95) directly into a per-attribute
+// ceiling on the 100-160 scale, which meant a rider's OWN Potential could
+// functionally cap a single attribute below where the game design says
+// Potential should even apply. Replaced by lib/rider/score.ts's
+// developmentRoomFactor() — keyed to overallPerformance (all 7 Performance
+// attributes together), never a single attribute's own value, and never a
+// per-rider hard ceiling below PERFORMANCE_MAX (see lib/rider/config.ts).

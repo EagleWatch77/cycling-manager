@@ -50,7 +50,10 @@ check('process_training_plan() verifies rider ownership against auth.uid()',
 // function (trainability/professionalism/age/potential/facility level),
 // never accepted as input — spot-check that the real formula factors are
 // all present as SQL computations, not parameters.
-for (const factor of ['v_trainability_factor', 'v_professionalism_factor', 'v_age_factor', 'v_potential_room_factor', 'v_facility_multiplier']) {
+// v_potential_room_factor was REMOVED (Development Model V2 — see the chat
+// report; score.test.ts / scoreSql.test.ts cover its replacement,
+// v_primary_dev_factor / public.development_room_factor()).
+for (const factor of ['v_trainability_factor', 'v_professionalism_factor', 'v_age_factor', 'v_primary_dev_factor', 'v_facility_multiplier']) {
   check(`raw growth computation includes ${factor} (computed, not passed in)`, schemaSql.includes(factor));
 }
 check('primary attribute comes from training_plans.focus, never a parameter',

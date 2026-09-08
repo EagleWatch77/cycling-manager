@@ -1,10 +1,9 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider, applyConditionResult } from '@/lib/rider/repository';
-import { ATTR_MIN, ATTR_MAX, type SkillAttribute } from '@/lib/rider/config';
 import type { SeasonInfo } from '@/lib/calendar/season';
 import { listUnprocessedTrainingPlans, type TrainingPlan } from './repository';
-import { ENERGY_COST, FATIGUE_GAIN, SECONDARY_ATTRIBUTE } from './config';
+import { ENERGY_COST, FATIGUE_GAIN } from './config';
 import { getMyFacilities, getFacilityCaps, getEffectiveFacilities, getMyLeague } from '@/lib/facilities/repository';
 import { RECOVERY_BONUS } from '@/lib/facilities/config';
 
@@ -61,20 +60,22 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 
   const supabase = await createClient();
 
-  // Local mirror of attributes/condition, updated after each plan purely
-  // for this loop's own bookkeeping (UI-facing condition write at the
-  // end) — the authoritative attribute write already happened inside the
-  // RPC per plan.
-  let attributes: Record<SkillAttribute, number> = rider.attributes;
+  // Condition is still tracked locally across the loop (written once at
+  // the end) — attributes are NOT: each RPC call below reads the rider's
+  // CURRENT attributes fresh from the DB itself (which already reflects
+  // any earlier plan in this same loop, since each call commits its own
+  // write), so there is nothing for this file to mirror locally anymore.
+  // An earlier version DID track attributes locally here — that became
+  // dead code once raw growth moved fully into SQL (Security Hardening
+  // Round 2) and was removed as part of the Development Model V2 change
+  // (see the chat report) rather than papering over it with a stale local
+  // clamp that no longer matched the new Performance ceiling (200).
   let condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number> = rider.condition;
   // Snapshot of condition as it stood before this run — written back as
   // condition_previous so the UI can compute a real trend, not a guess.
   const previousCondition = rider.condition;
 
   for (const plan of pending) {
-    const focus = plan.focus as SkillAttribute;
-    const secondaryAttr = SECONDARY_ATTRIBUTE[focus];
-
     // The only parameter this RPC takes is the plan id — see this
     // function's own doc comment and process_training_plan()'s in
     // supabase/schema.sql for why: nothing about the gain (focus,
@@ -86,13 +87,6 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 
     const result = data[0] as { primary_gain: number; secondary_gain: number; already_processed: boolean };
     if (result.already_processed) continue; // A concurrent run already handled this exact plan.
-
-    const nextAttributes = { ...attributes };
-    nextAttributes[focus] = clampAttr(nextAttributes[focus] + result.primary_gain);
-    if (secondaryAttr && result.secondary_gain) {
-      nextAttributes[secondaryAttr] = clampAttr(nextAttributes[secondaryAttr] + result.secondary_gain);
-    }
-    attributes = nextAttributes;
 
     condition = {
       ...condition,
@@ -111,10 +105,6 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
 /** A plan's week has ended once its season is behind the current one, or it's an earlier week of the current season. */
 function isWeekOver(plan: TrainingPlan, season: SeasonInfo): boolean {
   return plan.seasonId !== season.seasonId || plan.weekNumber < season.currentWeek;
-}
-
-function clampAttr(v: number): number {
-  return Math.max(ATTR_MIN, Math.min(ATTR_MAX, v));
 }
 
 function clamp100(v: number): number {

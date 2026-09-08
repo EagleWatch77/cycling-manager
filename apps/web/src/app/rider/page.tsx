@@ -1,10 +1,12 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
+import { riderOverall, performanceScore } from '@/lib/rider/score';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
+import { SummaryCard } from '@/components/ui/SummaryCard';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
@@ -18,8 +20,8 @@ import { getSkillStatIcon, getDevStatIcon } from '@/lib/rider/statIcons';
  */
 const GROUPS: { titleKey: string; icon: string; keys: readonly SkillAttribute[] }[] = [
   { titleKey: 'group.performance', icon: 'chart', keys: PERFORMANCE_FOCUS },
-  { titleKey: 'group.tactics', icon: 'bolt', keys: ['positioning', 'attackTiming', 'reaction', 'energyManagement', 'breakawaySkill'] },
-  { titleKey: 'group.technique', icon: 'wheel', keys: ['descending', 'bikeHandling', 'cornering', 'packRiding', 'wetHandling', 'roughSurface'] },
+  { titleKey: 'group.tactics', icon: 'bolt', keys: TACTICS_ATTRIBUTES },
+  { titleKey: 'group.technique', icon: 'wheel', keys: TECHNIQUE_ATTRIBUTES },
   { titleKey: 'group.other', icon: 'trophy', keys: ['experience'] },
 ];
 
@@ -49,6 +51,18 @@ export default async function RiderOverviewPage() {
 
   return (
     <>
+      {/* Celkové skóre / Výkon — item 23: a simple, separate summary, never
+          mixed with Rozvoj (Potential/Trainability/Professionalism/Recovery
+          — what the rider COULD become) or Stav jazdca (Energy/Fatigue/
+          Form/Fitness/Morale — today's readiness). Both are 0-100,
+          computed server-side from real persisted attributes only —
+          Potential/Trainability/Professionalism/Recovery/condition never
+          enter this calculation (see lib/rider/score.ts). */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <SummaryCard icon={<Icon name="trophy" className="h-4.5 w-4.5" />} label={t('score.overall')} value={riderOverall(rider.attributes)} />
+        <SummaryCard icon={<Icon name="chart" className="h-4.5 w-4.5" />} label={t('score.performance')} value={performanceScore(rider.attributes)} />
+      </div>
+
       {/* Radar + areas explainer */}
       <div className="grid grid-cols-12 gap-3">
         <Card title={t('profile.radarTitle')} dense className="col-span-12 lg:col-span-7">

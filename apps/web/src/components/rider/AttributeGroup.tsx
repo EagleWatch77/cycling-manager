@@ -1,5 +1,6 @@
 import type { T } from '@/i18n/config';
-import type { SkillAttribute } from '@/lib/rider/config';
+import { PERFORMANCE_MAX, type SkillAttribute } from '@/lib/rider/config';
+import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
@@ -59,7 +60,7 @@ export function AttributeGroup({
               <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
                 {t(`attr.${k}`)}
               </span>
-              <ProgressBar value={pct(attributes[k])} className="w-12 shrink-0 sm:w-16 lg:w-20" />
+              <ProgressBar value={pct(attributes[k], k)} className="w-12 shrink-0 sm:w-16 lg:w-20" />
               <span className="flex shrink-0 items-baseline justify-end gap-1 text-right">
                 <span className="text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
                 {bonuses?.[k] != null && (
@@ -89,6 +90,15 @@ export function AttributeGroup({
   );
 }
 
-function pct(v: number) {
-  return Math.max(0, Math.min(100, ((v - 90) / (160 - 90)) * 100));
+/**
+ * Bar-fill percentage — Development Model V2 (see the chat report):
+ * the 7 canonical Performance attributes now have a 200 career ceiling,
+ * while Tactics/Technique/experience keep their original 160 scale. Using
+ * one shared max here would under-fill Performance bars (never reaching
+ * 100% until 200) or over-fill the others, so the max is picked per
+ * attribute family.
+ */
+function pct(v: number, key: SkillAttribute) {
+  const max = (PERFORMANCE_FOCUS as readonly SkillAttribute[]).includes(key) ? PERFORMANCE_MAX : 160;
+  return Math.max(0, Math.min(100, ((v - 90) / (max - 90)) * 100));
 }
