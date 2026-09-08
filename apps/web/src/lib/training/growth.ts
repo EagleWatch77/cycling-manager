@@ -21,15 +21,16 @@ import {
  * per-attribute ceiling. See lib/rider/score.ts's own doc comment for the
  * full rationale.
  *
- * The secondary attribute is not always a Performance attribute (e.g.
- * timeTrial/endurance's secondary is energyManagement, a Tactics
- * attribute — see SECONDARY_ATTRIBUTE below) — developmentRoomFactor only
- * applies to the 7 canonical Performance attributes; a non-Performance
- * secondary target gets no additional development-room throttling here
- * (factor 1). This is a known, reported architecture gap, not a silent
- * decision: nothing in this task defined what SHOULD throttle non-
- * Performance attribute growth now that potentialRoomFactor is gone — see
- * the chat report.
+ * SECONDARY_ATTRIBUTE is Performance-only for every focus reachable from the
+ * Training page (game-design decision — see chat report "Weekly Training V1
+ * zostáva PERFORMANCE-ONLY"): Performance training must never be a backdoor
+ * way to raise Tactics/Technique, so timeTrial/endurance no longer map to
+ * energyManagement. The `isPerformance` branch below (secondary gets no
+ * developmentRoomFactor throttling) is dead code for any focus actually
+ * selectable today — SECONDARY_ATTRIBUTE still keeps Tactics/Technique-keyed
+ * entries for attributes that can never be a `focus` (see
+ * lib/training/config.ts), so the branch is kept as a safety net for that
+ * future case rather than removed.
  *
  * Training Progress Accumulator V1: this returns UNROUNDED raw progress;
  * lib/training/accumulator.ts's accumulateProgress() (backed by the

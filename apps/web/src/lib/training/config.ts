@@ -38,16 +38,26 @@ export const INTENSITY_MULTIPLIER: Record<TrainingIntensity, number> = {
   hard: 2.0,
 };
 
-/** A secondary skill trains alongside the chosen focus, at ~35% of the primary gain. */
+/**
+ * A secondary skill trains alongside the chosen focus, at ~35% of the
+ * primary gain. Performance-only by design (game-design decision, see chat
+ * report "Weekly Training V1 zostáva PERFORMANCE-ONLY"): every one of the 7
+ * active (Performance-primary) mappings below points to another Performance
+ * attribute, never Tactics/Technique — Performance training must not be a
+ * backdoor way to raise Tactics/Technique. `timeTrial`/`endurance` used to
+ * point at `energyManagement` (Tactics); that was removed for exactly this
+ * reason. See lib/training/secondaryMapping.test.ts for the canary that
+ * enforces this and keeps this table in sync with process_training_plan()'s
+ * SQL CASE mapping.
+ */
 export const SECONDARY_ATTRIBUTE: Partial<Record<SkillAttribute, SkillAttribute>> = {
-  // Given examples.
+  // The 7 active Performance-primary mappings — all Performance-only.
   climbing: 'endurance',
+  hills: 'acceleration',
+  flat: 'timeTrial',
   sprint: 'acceleration',
-  // Same reasoning applied to the rest of the Performance set.
-  hills: 'climbing',
-  flat: 'endurance',
-  timeTrial: 'energyManagement',
-  endurance: 'energyManagement',
+  timeTrial: 'endurance',
+  endurance: 'timeTrial',
   acceleration: 'sprint',
   // Tactics/Technique: not currently trainable directly (see WeekType above),
   // but the pairing is kept ready for when race-processing growth exists.

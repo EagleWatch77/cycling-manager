@@ -1262,13 +1262,19 @@ begin
 
   -- Fixed SECONDARY_ATTRIBUTE mapping — kept in sync by hand with
   -- lib/training/config.ts. Never accepted as a parameter.
+  -- The 7 active (Performance-primary) mappings below are Performance-only
+  -- by design (game-design decision — see chat report "Weekly Training V1
+  -- zostáva PERFORMANCE-ONLY"): Performance training must never be a
+  -- backdoor way to raise Tactics/Technique. Kept in sync with
+  -- lib/training/config.ts's SECONDARY_ATTRIBUTE — see
+  -- lib/training/secondaryMapping.test.ts for the canary.
   v_secondary_attr := case v_primary_attr
     when 'climbing' then 'endurance'
+    when 'hills' then 'acceleration'
+    when 'flat' then 'timeTrial'
     when 'sprint' then 'acceleration'
-    when 'hills' then 'climbing'
-    when 'flat' then 'endurance'
-    when 'timeTrial' then 'energyManagement'
-    when 'endurance' then 'energyManagement'
+    when 'timeTrial' then 'endurance'
+    when 'endurance' then 'timeTrial'
     when 'acceleration' then 'sprint'
     when 'positioning' then 'packRiding'
     when 'attackTiming' then 'reaction'

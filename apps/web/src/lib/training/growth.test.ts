@@ -68,14 +68,26 @@ check('professionalismFactor(100) = 1.0', professionalismFactor(100) === 1.0);
   check('primary raw is NOT rounded to an integer (this is the whole point of the accumulator)', !Number.isInteger(r.primaryRaw) || r.primaryRaw === 0, `${r.primaryRaw}`);
 }
 
-// 4b. A non-Performance secondary (timeTrial -> energyManagement, a Tactics attribute) gets NO development-room throttling — known, reported gap (see growth.ts's own doc comment). Near the Performance ceiling, primaryRaw (throttled) and secondaryRaw (NOT throttled) deliberately diverge — secondaryRaw is 35% of the UN-throttled base, not 35% of primaryRaw.
+// 4b. Weekly Training V1 is Performance-only (see chat report): timeTrial/endurance no longer map to energyManagement — every one of the 7 active (Performance-primary) focuses now has a Performance secondary too. See lib/training/secondaryMapping.test.ts for the full canonical-mapping canary.
 {
   const r = calculateRawGrowth({
     focus: 'timeTrial', intensity: 'hard', attributes: makeAttrs(190), // near Performance ceiling
     trainability: 75, professionalism: 75, age: 20, potential: 55,
   });
-  check('timeTrial has an energyManagement secondary', r.secondaryAttr === 'energyManagement', r.secondaryAttr);
-  check('near the ceiling, the non-Performance secondary raw EXCEEDS 35% of the (heavily throttled) primary raw — proof it is not scaled by primary\'s devFactor',
+  check('timeTrial has an endurance secondary (Performance-only mapping)', r.secondaryAttr === 'endurance', r.secondaryAttr);
+  check('near the ceiling, the (now Performance) secondary raw is throttled just like a same-devFactor Performance pair — no longer exceeds 35% of primary raw',
+    r.secondaryAttr !== undefined && (r.secondaryRaw ?? 0) <= r.primaryRaw * 0.35 + 1e-9,
+    `primary ${r.primaryRaw} secondary ${r.secondaryRaw}`);
+}
+
+// 4c. The non-Performance-secondary code path (isPerformance === false, no devFactor throttling) is unreachable from real gameplay now (focus is validated against PERFORMANCE_FOCUS at save time — see repository.ts), but SECONDARY_ATTRIBUTE still keeps Tactics/Technique-keyed entries for a possible future focus, so the branch itself must keep working if called directly (e.g. breakawaySkill -> energyManagement, a Tactics pair).
+{
+  const r = calculateRawGrowth({
+    focus: 'breakawaySkill', intensity: 'hard', attributes: makeAttrs(190),
+    trainability: 75, professionalism: 75, age: 20, potential: 55,
+  });
+  check('breakawaySkill has an energyManagement secondary (vestigial, not reachable as a real focus today)', r.secondaryAttr === 'energyManagement', r.secondaryAttr);
+  check('the non-Performance secondary still gets no development-room throttling (isPerformance branch still functions)',
     r.secondaryAttr !== undefined && (r.secondaryRaw ?? 0) > r.primaryRaw * 0.35,
     `primary ${r.primaryRaw} secondary ${r.secondaryRaw}`);
 }
