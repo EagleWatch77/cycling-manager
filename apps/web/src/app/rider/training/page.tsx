@@ -11,7 +11,8 @@ import { scoreToLevel, potentialToStars } from '@/lib/rider/development';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
-import { PERFORMANCE_FOCUS } from '@/lib/training/config';
+import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS } from '@/lib/training/config';
+import { readinessScore, readinessLabel as computeReadinessLabel } from '@/lib/training/readiness';
 import { processCompletedTrainings } from '@/lib/training/engine';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -36,9 +37,13 @@ import { saveTrainingAction } from './actions';
  * returned the empty state otherwise), but training processing below may
  * still change it, so we keep the "before/after" resilience pattern.
  *
- * Only Performance is trainable here — Tactics and Technique grow through
- * race processing, never through a plan created on this page (see
- * TrainingConfigForm, which only ever offers PERFORMANCE_FOCUS).
+ * Unified Weekly Training V1 (see the chat report): a rider plans exactly
+ * ONE plan per week, of exactly one of two types — Performance (7 focuses,
+ * Light/Normal/Hard session count) or Technical (6 Technique focuses,
+ * always 1 session, hard-capped at +1 integer point/week). Tactics is
+ * never trainable here — it grows only through a future race-situations
+ * system (see TrainingConfigForm, which offers exactly PERFORMANCE_FOCUS
+ * and TECHNICAL_FOCUS, nothing else).
  *
  * Green "+N" bonuses shown anywhere on this page are real: they come only
  * from the most recently *processed* training's persisted primary/secondary
@@ -76,6 +81,19 @@ export default async function RiderTrainingPage() {
   ]);
 
   const performanceOptions = PERFORMANCE_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
+  const technicalOptions = TECHNICAL_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
+
+  // Readiness V1 (see the chat report, item 17-18): computed from the
+  // rider's CURRENT condition, purely for the player-facing qualitative
+  // label shown alongside the training config — the authoritative
+  // multiplier used for actual training math is computed independently
+  // inside process_training_plan() (supabase/schema.sql) from condition as
+  // it stands at processing time, never trusted from this render.
+  const currentReadinessLabel = computeReadinessLabel(readinessScore(rider.condition.energy, rider.condition.fatigue));
+
+  const dayLabels = [
+    t('day.mon'), t('day.tue'), t('day.wed'), t('day.thu'), t('day.fri'), t('day.sat'), t('day.sun'),
+  ];
 
   // Rozvoj never shows exact development numbers — only a 1-5 visual read.
   // See lib/rider/development.ts for the centralized value->level mapping.
@@ -175,17 +193,33 @@ export default async function RiderTrainingPage() {
                 totalWeeks={season.totalWeeks}
                 initialPlan={plan}
                 performanceFocus={performanceOptions}
+                technicalFocus={technicalOptions}
+                condition={{ energy: rider.condition.energy, fatigue: rider.condition.fatigue }}
+                readinessLabel={currentReadinessLabel}
+                dayLabels={dayLabels}
                 labels={{
                   forWeek: t('trainingPage.forWeek'),
                   confirmedTitle: t('trainingPage.savedTitle'),
                   statusLabel: t('trainingPage.statusLabel'),
                   statusPlanned: t('trainingPage.statusPlanned'),
-                  weekTypePerformance: t('trainingPage.weekTypePerformance'),
+                  typePerformance: t('trainingPage.typePerformance'),
+                  typeTechnical: t('trainingPage.typeTechnical'),
                   focusLabel: t('trainingPage.focus'),
                   intensityLabel: t('trainingPage.intensity'),
                   intensityLight: t('trainingPage.intensityLight'),
                   intensityNormal: t('trainingPage.intensityNormal'),
                   intensityHard: t('trainingPage.intensityHard'),
+                  technicalSessionNote: t('trainingPage.technicalSessionNote'),
+                  energyLabel: t('rider.energy'),
+                  fatigueLabel: t('rider.fatigue'),
+                  readinessLabel: t('trainingPage.readinessLabel'),
+                  readiness: {
+                    excellent: t('readiness.excellent'),
+                    good: t('readiness.good'),
+                    reduced: t('readiness.reduced'),
+                    poor: t('readiness.poor'),
+                    veryPoor: t('readiness.veryPoor'),
+                  },
                   save: t('trainingPage.save'),
                   saving: t('trainingPage.saving'),
                   focusRequired: t('trainingPage.focusRequired'),

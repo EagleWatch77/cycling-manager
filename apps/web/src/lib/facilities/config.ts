@@ -21,9 +21,22 @@ export const TRAINING_BONUS: Record<FacilityLevel, number> = {
   1: 0, 2: 0.03, 3: 0.06, 4: 0.09, 5: 0.12,
 };
 
-/** Recovery Center — relative improvement to energy recovery / fatigue reduction (see lib/training/engine.ts). */
+/** Recovery Center — relative improvement to energy recovery / fatigue reduction. Superseded for training's own condition math by RECOVERY_MULTIPLIER below (Unified Weekly Training V1 — see the chat report, item 16); kept for the Facilities page's own effect display. */
 export const RECOVERY_BONUS: Record<FacilityLevel, number> = {
   1: 0, 2: 0.05, 3: 0.10, 4: 0.15, 5: 0.20,
+};
+
+/**
+ * Recovery Center — Unified Weekly Training V1 (see the chat report, item
+ * 16). Applies ONLY to the new passive weekly recovery (RECOVERY_DAY_ENERGY/
+ * RECOVERY_DAY_FATIGUE in lib/training/config.ts), never to training's own
+ * raw growth or to the training energy/fatigue cost itself — a straight
+ * multiplier (not a "reduction fraction" like RECOVERY_BONUS above), applied
+ * inside process_training_plan() (supabase/schema.sql), the sole
+ * authoritative source for condition changes now.
+ */
+export const RECOVERY_MULTIPLIER: Record<FacilityLevel, number> = {
+  1: 1.00, 2: 1.05, 3: 1.10, 4: 1.15, 5: 1.20,
 };
 
 /**

@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Reduces the risk of technical problems and the price of bike service.",
   "facilities.teamCenterDesc": "Determines the maximum rider and staff capacity of your team.",
   "score.overall": "Overall score",
-  "score.performance": "Performance"
+  "score.performance": "Performance",
+  "trainingPage.typePerformance": "Performance",
+  "trainingPage.typeTechnical": "Technical",
+  "trainingPage.technicalSessionNote": "1 technical training session per week",
+  "trainingPage.readinessLabel": "Readiness",
+  "day.mon": "Mon",
+  "day.tue": "Tue",
+  "day.wed": "Wed",
+  "day.thu": "Thu",
+  "day.fri": "Fri",
+  "day.sat": "Sat",
+  "day.sun": "Sun",
+  "readiness.excellent": "Excellent",
+  "readiness.good": "Good",
+  "readiness.reduced": "Reduced",
+  "readiness.poor": "Poor",
+  "readiness.veryPoor": "Very poor"
 }

@@ -2,9 +2,20 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { PERFORMANCE_FOCUS, type TrainingIntensity, type WeekType } from './config';
+import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, type TrainingIntensity, type WeekType } from './config';
 
 const VALID_INTENSITIES: readonly TrainingIntensity[] = ['light', 'normal', 'hard'];
+/**
+ * Technical training has no player-facing intensity (see the chat report,
+ * item 26). The `intensity` DB column is NOT NULL with a check constraint
+ * on ('light','normal','hard') — rather than widen the schema for a value
+ * that's never player-facing, a technical plan is persisted with this
+ * neutral placeholder. process_training_plan() (supabase/schema.sql)
+ * ignores Performance intensity semantics entirely once week_type is
+ * 'technical' and always processes exactly 1 technical session — see that
+ * function's own doc comment.
+ */
+const TECHNICAL_INTENSITY_PLACEHOLDER: TrainingIntensity = 'light';
 
 /**
  * The only week a plan may ever target: exactly one week ahead of whatever
@@ -111,9 +122,16 @@ export type SaveTrainingResult =
  * the current week, or even in the plannable week itself, has no bearing on
  * whether training can be scheduled — those are independent systems.
  *
- * Always writes week_type 'performance': Tactics and Technique cannot be
- * trained directly from this page — they only grow through race processing
- * — so `focus` must be one of PERFORMANCE_FOCUS's 6 real attributes.
+ * Unified Weekly Training V1 (see the chat report): a rider has exactly ONE
+ * plan per week, of exactly one of two types — `weekType` decides which
+ * focus set is valid and which intensity semantics apply. Server-side
+ * validation enforces the pairing so a client can never submit
+ * technical+climbing or performance+descending (item 24):
+ *   - 'performance': focus must be one of PERFORMANCE_FOCUS, intensity is
+ *     the real Light/Normal/Hard choice (drives session count).
+ *   - 'technical': focus must be one of TECHNICAL_FOCUS; intensity has no
+ *     player-facing meaning — always written as TECHNICAL_INTENSITY_PLACEHOLDER
+ *     (see its own comment) and ignored by process_training_plan().
  *
  * Once a plan exists for that week it is permanent: this function is only
  * ever called while no plan exists yet (the UI removes the form the moment
@@ -127,6 +145,7 @@ export type SaveTrainingResult =
 export async function saveTrainingPlan(input: {
   seasonId: string;
   weekNumber: number;
+  weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {
@@ -141,7 +160,18 @@ export async function saveTrainingPlan(input: {
     return { ok: false, reason: 'locked' };
   }
 
-  if (!VALID_INTENSITIES.includes(input.intensity) || !PERFORMANCE_FOCUS.includes(input.focus as never)) {
+  let intensity: TrainingIntensity;
+  if (input.weekType === 'performance') {
+    if (!VALID_INTENSITIES.includes(input.intensity) || !PERFORMANCE_FOCUS.includes(input.focus as never)) {
+      return { ok: false, reason: 'invalid-focus' };
+    }
+    intensity = input.intensity;
+  } else if (input.weekType === 'technical') {
+    if (!TECHNICAL_FOCUS.includes(input.focus as never)) {
+      return { ok: false, reason: 'invalid-focus' };
+    }
+    intensity = TECHNICAL_INTENSITY_PLACEHOLDER;
+  } else {
     return { ok: false, reason: 'invalid-focus' };
   }
 
@@ -156,9 +186,9 @@ export async function saveTrainingPlan(input: {
         rider_id: rider.id,
         season_id: input.seasonId,
         week_number: input.weekNumber,
-        week_type: 'performance' satisfies WeekType,
+        week_type: input.weekType,
         focus: input.focus,
-        intensity: input.intensity,
+        intensity,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'rider_id,season_id,week_number' },

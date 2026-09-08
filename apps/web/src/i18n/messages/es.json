@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Reduce el riesgo de problemas técnicos y el precio del servicio de bicicleta.",
   "facilities.teamCenterDesc": "Determina la capacidad máxima de corredores y personal de tu equipo.",
   "score.overall": "Puntuación global",
-  "score.performance": "Rendimiento"
+  "score.performance": "Rendimiento",
+  "trainingPage.typePerformance": "Rendimiento",
+  "trainingPage.typeTechnical": "Técnico",
+  "trainingPage.technicalSessionNote": "1 unidad de entrenamiento técnico por semana",
+  "trainingPage.readinessLabel": "Preparación",
+  "day.mon": "Lu",
+  "day.tue": "Ma",
+  "day.wed": "Mi",
+  "day.thu": "Ju",
+  "day.fri": "Vi",
+  "day.sat": "Sá",
+  "day.sun": "Do",
+  "readiness.excellent": "Excelente",
+  "readiness.good": "Buena",
+  "readiness.reduced": "Reducida",
+  "readiness.poor": "Baja",
+  "readiness.veryPoor": "Muy baja"
 }

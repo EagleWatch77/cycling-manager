@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Reduziert das Risiko technischer Probleme und die Kosten des Fahrradservice.",
   "facilities.teamCenterDesc": "Bestimmt die maximale Fahrer- und Personalkapazität deines Teams.",
   "score.overall": "Gesamtwertung",
-  "score.performance": "Leistung"
+  "score.performance": "Leistung",
+  "trainingPage.typePerformance": "Leistung",
+  "trainingPage.typeTechnical": "Technisch",
+  "trainingPage.technicalSessionNote": "1 technische Trainingseinheit pro Woche",
+  "trainingPage.readinessLabel": "Bereitschaft",
+  "day.mon": "Mo",
+  "day.tue": "Di",
+  "day.wed": "Mi",
+  "day.thu": "Do",
+  "day.fri": "Fr",
+  "day.sat": "Sa",
+  "day.sun": "So",
+  "readiness.excellent": "Ausgezeichnet",
+  "readiness.good": "Gut",
+  "readiness.reduced": "Reduziert",
+  "readiness.poor": "Schwach",
+  "readiness.veryPoor": "Sehr schwach"
 }

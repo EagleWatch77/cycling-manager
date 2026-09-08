@@ -126,30 +126,17 @@ export async function listAllRiders(): Promise<StoredRider[]> {
   return data.map(fromRow);
 }
 
-/**
- * Persists the condition cost of a processed training run. Called only by
- * the training engine (lib/training/engine.ts) after its loop over all
- * pending plans finishes.
- *
- * Training Progress Accumulator V1 (see the chat report): this used to
- * also write `attributes` in one batched call at the end of the loop.
- * Attribute gains are now written per-plan, atomically, inside
- * process_training_plan() (supabase/schema.sql) — so this function must
- * NEVER touch `attributes` anymore; doing so would risk overwriting a
- * concurrent run's already-persisted gain with a stale local snapshot.
- *
- * `previousCondition` is the rider's condition as it was *before* this
- * change — written to condition_previous so the Stav jazdca UI can compute
- * a real trend arrow later, never inferred from "something happened recently".
- */
-export async function applyConditionResult(
-  riderId: string,
-  condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number>,
-  previousCondition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number>,
-): Promise<void> {
-  const supabase = await createClient();
-  await supabase
-    .from('riders')
-    .update({ condition, condition_previous: previousCondition })
-    .eq('id', riderId);
-}
+// applyConditionResult() — REMOVED (Unified Weekly Training V1, see the
+// chat report, item 25: "SQL musí sám čítať... condition"). It used to be
+// this file's only caller of a plain, non-security-definer `update` on
+// riders.condition — reachable by any authenticated client via PostgREST
+// with an ARBITRARY condition value (RLS only checks row ownership, not
+// column values), since this project has no service-role key. That was a
+// real, latent gap: nothing stopped a direct RPC/PostgREST call from
+// setting energy=100/fatigue=0 every week regardless of real training.
+// Energy/Fatigue (and condition_previous) are now written exclusively
+// inside process_training_plan() (a security-definer function, see
+// supabase/schema.sql), the same trusted-only write path already used for
+// attribute gains — closing the gap rather than extending it with new
+// readiness/recovery logic. lib/training/engine.ts no longer needs this
+// function at all.

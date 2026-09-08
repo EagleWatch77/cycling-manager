@@ -30,13 +30,23 @@ export interface AccumulateResult {
  */
 const EPSILON = 1e-9;
 
+/**
+ * `maxGain` (default: unlimited) caps the WHOLE-POINT gain a single call may
+ * apply — used by Technical training's hard +1/week cap (see the chat
+ * report, item 9): if accumulated progress would otherwise convert into 2+
+ * points, only `maxGain` is applied and consumed; the rest of the raw total
+ * stays in `remainingProgress` for a future call (never lost, never
+ * inflating a single week's gain above the cap).
+ */
 export function accumulateProgress(
   existingProgress: number,
   rawGrowth: number,
   threshold: number = TRAINING_GAIN_THRESHOLD,
+  maxGain: number = Infinity,
 ): AccumulateResult {
   const total = existingProgress + rawGrowth;
-  const gain = Math.floor((total + EPSILON) / threshold);
+  const uncappedGain = Math.floor((total + EPSILON) / threshold);
+  const gain = Math.min(uncappedGain, maxGain);
   const remainingProgress = Math.max(0, total - gain * threshold);
   return { gain, remainingProgress };
 }

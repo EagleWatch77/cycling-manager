@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Znižuje riziko technických problémov a cenu servisu bicykla.",
   "facilities.teamCenterDesc": "Určuje maximálnu kapacitu jazdcov a personálu v tíme.",
   "score.overall": "Celkové skóre",
-  "score.performance": "Výkon"
+  "score.performance": "Výkon",
+  "trainingPage.typePerformance": "Výkonnostný",
+  "trainingPage.typeTechnical": "Technický",
+  "trainingPage.technicalSessionNote": "1 technická tréningová jednotka za týždeň",
+  "trainingPage.readinessLabel": "Pripravenosť",
+  "day.mon": "Po",
+  "day.tue": "Ut",
+  "day.wed": "St",
+  "day.thu": "Št",
+  "day.fri": "Pi",
+  "day.sat": "So",
+  "day.sun": "Ne",
+  "readiness.excellent": "Výborná",
+  "readiness.good": "Dobrá",
+  "readiness.reduced": "Znížená",
+  "readiness.poor": "Slabá",
+  "readiness.veryPoor": "Veľmi slabá"
 }

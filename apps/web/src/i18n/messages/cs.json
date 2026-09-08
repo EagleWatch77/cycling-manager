@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Snižuje riziko technických problémů a cenu servisu kola.",
   "facilities.teamCenterDesc": "Určuje maximální kapacitu jezdců a personálu v týmu.",
   "score.overall": "Celkové skóre",
-  "score.performance": "Výkon"
+  "score.performance": "Výkon",
+  "trainingPage.typePerformance": "Výkonnostní",
+  "trainingPage.typeTechnical": "Technický",
+  "trainingPage.technicalSessionNote": "1 technická tréninková jednotka za týden",
+  "trainingPage.readinessLabel": "Připravenost",
+  "day.mon": "Po",
+  "day.tue": "Út",
+  "day.wed": "St",
+  "day.thu": "Čt",
+  "day.fri": "Pá",
+  "day.sat": "So",
+  "day.sun": "Ne",
+  "readiness.excellent": "Výborná",
+  "readiness.good": "Dobrá",
+  "readiness.reduced": "Snížená",
+  "readiness.poor": "Slabá",
+  "readiness.veryPoor": "Velmi slabá"
 }

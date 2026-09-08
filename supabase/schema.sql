@@ -1101,60 +1101,148 @@ grant execute on function public.overall_performance(jsonb) to authenticated;
 grant execute on function public.overall_potential_factor(numeric, numeric) to authenticated;
 grant execute on function public.development_room_factor(numeric, numeric, numeric) to authenticated;
 
+-- ============================================================================
+-- Unified Weekly Training V1 — canonical SQL helpers (see the chat report,
+-- "UNIFIED WEEKLY TRAINING V1"). Mirror lib/training/config.ts's
+-- TECHNICAL_FOCUS and lib/training/readiness.ts exactly — kept in sync by
+-- hand, see the TS side's own canary tests.
+-- ============================================================================
+
+/** The 6 canonical Technique attributes selectable as a Technical training focus — kept in sync by hand with lib/training/config.ts's TECHNICAL_FOCUS. */
+create or replace function public.is_technical_attribute(p_attr text)
+returns boolean
+language sql
+immutable
+as $$
+  select p_attr = any(array['descending','bikeHandling','cornering','packRiding','wetHandling','roughSurface']);
+$$;
+
+/** Readiness V1 — mirrors lib/training/readiness.ts's readinessScore(). */
+create or replace function public.readiness_score(p_energy numeric, p_fatigue numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select (p_energy + (100 - p_fatigue)) / 2;
+$$;
+
+/** Hidden training-effectiveness multiplier — never shown to the player directly. Mirrors lib/training/readiness.ts's readinessEffectiveness(). */
+create or replace function public.readiness_effectiveness(p_score numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select case
+    when p_score >= 80 then 1.00
+    when p_score >= 60 then 0.95
+    when p_score >= 40 then 0.85
+    when p_score >= 20 then 0.70
+    else 0.50
+  end;
+$$;
+
+grant execute on function public.is_technical_attribute(text) to authenticated;
+grant execute on function public.readiness_score(numeric, numeric) to authenticated;
+grant execute on function public.readiness_effectiveness(numeric) to authenticated;
+
 /**
  * Processes ONE training plan atomically: computes the AUTHORITATIVE raw
  * training growth entirely from trusted, persisted server-side data,
  * accumulates it for the primary attribute (and its fixed secondary, if
- * any) via existingProgress + rawGrowth -> floor(total/threshold), applies
- * the resulting whole-number gain(s) to riders.attributes, and stamps
- * training_plans.applied_at — all inside one function invocation, so a
- * crash or a concurrent duplicate call can never leave
- * attribute/progress/applied_at out of sync with each other.
+ * any — Performance only) via existingProgress + rawGrowth ->
+ * floor(total/threshold), applies the resulting whole-number gain(s) to
+ * riders.attributes, computes and applies this week's Energy/Fatigue
+ * change (training cost + passive recovery, Recovery-Center-boosted), and
+ * stamps training_plans.applied_at — all inside one function invocation,
+ * so a crash or a concurrent duplicate call can never leave
+ * attribute/condition/progress/applied_at out of sync with each other.
  *
- * SECURITY (see the chat report's audit — TWO rounds of fixes):
+ * UNIFIED WEEKLY TRAINING V1 (see the chat report): a plan is exactly one
+ * of two types, read from training_plans.week_type — never a parameter:
+ *   - 'performance': focus is one of the 7 Performance attributes;
+ *     intensity (light/normal/hard) selects a SESSION COUNT (1/2/3 — see
+ *     v_session_count below), which REPLACES the old flat
+ *     v_intensity_multiplier (1.0/1.5/2.0): stacking both would have been a
+ *     6x Light-to-Hard spread instead of the intended 3x. Uses the full
+ *     Development Model V2 formula (developmentRoomFactor, facility bonus,
+ *     Performance-only secondary gain).
+ *   - 'technical': focus is one of the 6 Technique attributes (see
+ *     public.is_technical_attribute() above); intensity is NOT
+ *     player-facing (always exactly 1 session — v_session_count is not
+ *     even used) and the row's `intensity` column value is ignored
+ *     entirely (it holds a neutral placeholder — see
+ *     lib/training/repository.ts's TECHNICAL_INTENSITY_PLACEHOLDER). No
+ *     facility bonus, no Development Model V2 (Technique stays on the
+ *     canonical 100-160 scale — Potential does not govern it), no
+ *     secondary gain at all. HARD-CAPPED at +1 integer point per processed
+ *     plan (v_max_primary_gain) regardless of how much accumulator
+ *     progress is available — any progress beyond that stays banked in
+ *     rider_training_progress for a future week, never lost, never
+ *     applied as +2/+3 in one week.
+ *
+ * READINESS (item 17): before this week's OWN training cost/recovery are
+ * applied, readiness is computed from the rider's CURRENT (pre-processing)
+ * Energy/Fatigue and used as a multiplier on raw growth for BOTH training
+ * types — poor condition can only slow training down, never speed it past
+ * the Technical weekly cap (item 18) or bypass Development Model V2. Never
+ * player-facing as a number — see public.readiness_score()/
+ * readiness_effectiveness() above.
+ *
+ * CONDITION (item 25: SQL now owns condition, not the TS app — see
+ * lib/training/engine.ts's own doc comment for the security rationale this
+ * closes): training cost (ENERGY_COST/FATIGUE_GAIN, Performance; a fixed
+ * smaller cost, Technical) is applied ONCE per plan, never once per
+ * session (item 13). Passive weekly recovery (item 15) — one baseline
+ * amount per non-training day of the week, boosted by the Recovery
+ * Center's RECOVERY_MULTIPLIER (item 16, applied ONLY to recovery, never to
+ * the training cost itself or to raw growth) — is added in the same pass.
+ * Hard is never blocked by low readiness (item 19) — it just costs more and
+ * trains less effectively.
+ *
+ * SECURITY (see the chat report's audit — THREE rounds of fixes across two
+ * chat sessions):
  *   Round 1 closed: no ownership check; primary_attr trusted as a
  *   parameter; secondary_attr unrestricted.
- *   Round 2 (this version) closes the remaining, more serious gap: raw
- *   growth itself (p_primary_raw/p_secondary_raw) used to be caller-
- *   supplied and merely clamped to a ceiling — clamping does NOT stop an
- *   authenticated player from calling this RPC directly (bypassing the
- *   Next.js app entirely — this project has no service-role key, so the
- *   app's own server code has NO more trust than any other authenticated
- *   caller hitting the same RPC via PostgREST) with e.g.
- *   p_primary_raw = <the ceiling> on every training, always getting the
- *   maximum legitimate-looking gain regardless of their rider's actual
- *   trainability/professionalism/age/potential/facility level.
+ *   Round 2 closed: raw growth itself (p_primary_raw/p_secondary_raw) used
+ *   to be caller-supplied and merely clamped to a ceiling — clamping does
+ *   NOT stop an authenticated player from calling this RPC directly
+ *   (bypassing the Next.js app entirely — this project has no
+ *   service-role key, so the app's own server code has NO more trust than
+ *   any other authenticated caller hitting the same RPC via PostgREST).
+ *   Fixed by taking ONLY p_plan_id — every input the growth formula needs
+ *   is read here from persisted rows the caller cannot influence.
+ *   Round 3 (this version, Unified Weekly Training V1) closes a gap this
+ *   very refactor could otherwise have reintroduced: condition
+ *   (Energy/Fatigue) used to be computed in TS (lib/training/engine.ts)
+ *   and written via a plain, non-security-definer `update` on
+ *   riders.condition — reachable by any authenticated client with an
+ *   ARBITRARY condition value (RLS only checks row ownership, not column
+ *   values). Rather than extend that same pattern with new
+ *   readiness/recovery logic, condition is now computed and written HERE,
+ *   inside this security-definer function, alongside attributes — the
+ *   same trusted-only write path, closing the gap instead of growing it.
+ *   lib/rider/repository.ts's old applyConditionResult() has been removed.
  *
- *   Fixed the only real way possible without a service role: this
- *   function now takes ONLY p_plan_id. Every input the growth formula
- *   needs — focus, intensity, rider age/attributes/trainability/
- *   professionalism/potential, and the Training Center's EFFECTIVE level
- *   (league cap + Team Center cap + admin override, exactly mirroring
- *   lib/facilities/capMath.ts) — is read here from persisted rows the
- *   caller cannot influence. The secondary attribute is derived from a
- *   fixed CASE mapping, never accepted as input, so nothing about which
- *   attributes get trained is client-controlled anymore.
- *
- *   This duplicates lib/training/growth.ts's formula into SQL — a real,
- *   accepted tradeoff, not an oversight: keeping the two in sync by hand
- *   is the SAME convention already used throughout this file for
- *   ATTR_MIN/MAX, league caps, and the training-bonus percentages; the
- *   difference here is only that the duplicated unit is a formula instead
- *   of a constant. If you change BASE_TRAINING, INTENSITY_MULTIPLIER,
- *   trainabilityFactor/professionalismFactor/ageFactor, TRAINING_BONUS,
- *   SECONDARY_ATTRIBUTE, or anything in lib/rider/score.ts (Development
- *   Model V2 — localAttributeFactor/overallPerformance/
- *   overallPotentialFactor/developmentRoomFactor) in the TS layer, you
- *   MUST update the matching SQL helper functions above too — see
- *   growth.test.ts's and score.test.ts's canary tests that compare a
- *   handful of known inputs
- *   against this function's expected output.
+ *   This duplicates lib/training/growth.ts + condition.ts + readiness.ts's
+ *   formulas into SQL — a real, accepted tradeoff, not an oversight:
+ *   keeping the two in sync by hand is the SAME convention already used
+ *   throughout this file for ATTR_MIN/MAX, league caps, and the
+ *   training-bonus percentages. If you change BASE_TRAINING/
+ *   TECHNICAL_BASE, SESSION_COUNT, trainabilityFactor/
+ *   professionalismFactor/ageFactor, TRAINING_BONUS/RECOVERY_MULTIPLIER,
+ *   SECONDARY_ATTRIBUTE, ENERGY_COST/FATIGUE_GAIN/TECHNICAL_ENERGY_COST/
+ *   TECHNICAL_FATIGUE_GAIN, PERFORMANCE_RECOVERY_DAYS/
+ *   TECHNICAL_RECOVERY_DAYS/RECOVERY_DAY_ENERGY/RECOVERY_DAY_FATIGUE, the
+ *   readiness bands, or anything in lib/rider/score.ts (Development Model
+ *   V2) in the TS layer, you MUST update the matching SQL here too — see
+ *   growth.test.ts's, score.test.ts's, and secondaryMapping.test.ts's
+ *   canary tests.
  *
  * Idempotency: the plan row is locked (`for update`) and its applied_at
  * checked FIRST; if already applied, this returns immediately with
  * already_processed = true and mutates nothing — a second concurrent call
- * (two tabs, a retry) can never double-consume progress or double-apply a
- * gain.
+ * (two tabs, a retry) can never double-consume progress, double-apply a
+ * gain, or double-apply a condition change.
  */
 -- CRITICAL: `create or replace function` does NOT replace a function with
 -- a DIFFERENT parameter signature — Postgres overloads by signature, so
@@ -1172,13 +1260,21 @@ as $$
 declare
   -- ---- Kept in sync by hand with lib/training/config.ts ----
   v_base_training constant numeric := 3;
+  v_technical_base constant numeric := 2.0;
   v_secondary_gain_share constant numeric := 0.35;
-  v_threshold constant numeric := 1.0; -- TRAINING_GAIN_THRESHOLD
-  -- ---- Kept in sync by hand with lib/facilities/config.ts (TRAINING_BONUS) ----
+  v_threshold constant numeric := 12; -- TRAINING_GAIN_THRESHOLD
+  v_technical_weekly_gain_cap constant int := 1; -- TECHNICAL_WEEKLY_GAIN_CAP
+  v_recovery_day_energy constant numeric := 5; -- RECOVERY_DAY_ENERGY
+  v_recovery_day_fatigue constant numeric := 4; -- RECOVERY_DAY_FATIGUE
+  v_technical_energy_cost constant numeric := 5; -- TECHNICAL_ENERGY_COST
+  v_technical_fatigue_gain constant numeric := 5; -- TECHNICAL_FATIGUE_GAIN
+  v_technical_recovery_days constant numeric := 6; -- TECHNICAL_RECOVERY_DAYS
+  -- ---- Kept in sync by hand with lib/facilities/config.ts (TRAINING_BONUS/RECOVERY_MULTIPLIER) ----
   -- ---- Kept in sync by hand with lib/leagues.ts (maxFacilityLevel) ----
 
   v_plan_applied_at timestamptz;
   v_rider_id uuid;
+  v_week_type text;
   v_focus text;
   v_intensity text;
   v_primary_attr text;
@@ -1190,6 +1286,8 @@ declare
   v_professionalism numeric;
   v_potential numeric;
   v_attrs jsonb;
+  v_condition jsonb;
+  v_condition_previous jsonb;
   v_current_value numeric;
 
   v_league text;
@@ -1199,26 +1297,43 @@ declare
   v_team_center_cap int;
   v_training_cap int;
   v_training_level int;
+  v_recovery_level int;
   v_effective_training_level int;
+  v_effective_recovery_level int;
   v_training_bonus numeric;
+  v_recovery_multiplier numeric;
 
-  v_intensity_multiplier numeric;
+  v_session_count numeric;
   v_trainability_factor numeric;
   v_professionalism_factor numeric;
   v_age_factor numeric;
   v_facility_multiplier numeric;
   v_base numeric;
 
+  v_energy numeric;
+  v_fatigue numeric;
+  v_readiness_score numeric;
+  v_readiness_factor numeric;
+  v_training_energy_cost numeric;
+  v_training_fatigue_gain numeric;
+  v_recovery_days numeric;
+  v_energy_delta numeric;
+  v_fatigue_delta numeric;
+  v_new_energy numeric;
+  v_new_fatigue numeric;
+
   v_overall_performance numeric;
   v_secondary_current_value numeric;
   v_primary_dev_factor numeric;
   v_secondary_dev_factor numeric;
   v_primary_at_cap boolean;
+  v_max_primary_gain int;
 
   v_primary_raw numeric;
   v_secondary_raw numeric;
   v_progress numeric;
   v_total numeric;
+  v_uncapped_gain int;
   v_primary_gain int := 0;
   v_secondary_gain int := 0;
 begin
@@ -1226,8 +1341,8 @@ begin
     raise exception 'not_authenticated';
   end if;
 
-  select applied_at, rider_id, focus, intensity
-  into v_plan_applied_at, v_rider_id, v_focus, v_intensity
+  select applied_at, rider_id, week_type, focus, intensity
+  into v_plan_applied_at, v_rider_id, v_week_type, v_focus, v_intensity
   from public.training_plans
   where id = p_plan_id
   for update;
@@ -1236,8 +1351,8 @@ begin
     raise exception 'plan_not_found';
   end if;
 
-  select player_id, age, attributes, trainability, professionalism, potential
-  into v_owner_id, v_age, v_attrs, v_trainability, v_professionalism, v_potential
+  select player_id, age, attributes, condition, trainability, professionalism, potential
+  into v_owner_id, v_age, v_attrs, v_condition, v_trainability, v_professionalism, v_potential
   from public.riders
   where id = v_rider_id
   for update;
@@ -1252,50 +1367,68 @@ begin
   end if;
 
   -- Primary attribute comes ONLY from the plan's own persisted focus —
-  -- never a parameter. Defense-in-depth: reject if it's somehow not a
-  -- real attribute key (should be impossible — saveTrainingPlan() already
-  -- validates against PERFORMANCE_FOCUS at save time).
+  -- never a parameter. week_type decides which focus family is valid; a
+  -- plan can never mix technical+climbing or performance+descending
+  -- (item 24) because saveTrainingPlan() already validates this pairing at
+  -- save time — this is defense-in-depth, not the only guard.
   v_primary_attr := v_focus;
-  if not (v_attrs ? v_primary_attr) then
-    raise exception 'invalid_focus';
+
+  if v_week_type = 'performance' then
+    if not public.is_performance_attribute(v_primary_attr) then
+      raise exception 'invalid_focus';
+    end if;
+
+    -- Fixed SECONDARY_ATTRIBUTE mapping — kept in sync by hand with
+    -- lib/training/config.ts. Never accepted as a parameter. Performance
+    -- training must never be a backdoor way to raise Tactics/Technique —
+    -- every one of these 7 active pairs is Performance-only (see
+    -- lib/training/secondaryMapping.test.ts).
+    v_secondary_attr := case v_primary_attr
+      when 'climbing' then 'endurance'
+      when 'hills' then 'acceleration'
+      when 'flat' then 'timeTrial'
+      when 'sprint' then 'acceleration'
+      when 'timeTrial' then 'endurance'
+      when 'endurance' then 'timeTrial'
+      when 'acceleration' then 'sprint'
+      else null
+    end;
+
+    v_session_count := case v_intensity
+      when 'light' then 1
+      when 'normal' then 2
+      when 'hard' then 3
+      else 1
+    end;
+    v_training_energy_cost := case v_intensity when 'light' then 5 when 'normal' then 10 when 'hard' then 15 else 5 end;
+    v_training_fatigue_gain := case v_intensity when 'light' then 5 when 'normal' then 10 when 'hard' then 18 else 5 end;
+    v_recovery_days := case v_intensity when 'light' then 6 when 'normal' then 5 when 'hard' then 4 else 6 end;
+    v_max_primary_gain := 2147483647; -- effectively unlimited — Performance has no weekly cap
+  elsif v_week_type = 'technical' then
+    if not public.is_technical_attribute(v_primary_attr) then
+      raise exception 'invalid_focus';
+    end if;
+
+    -- Technical training has no secondary gain at all (item 10) — trains
+    -- ONLY the chosen focus.
+    v_secondary_attr := null;
+
+    v_session_count := 1; -- always exactly 1 technical session/week — no player-facing intensity
+    v_training_energy_cost := v_technical_energy_cost;
+    v_training_fatigue_gain := v_technical_fatigue_gain;
+    v_recovery_days := v_technical_recovery_days;
+    v_max_primary_gain := v_technical_weekly_gain_cap; -- item 9: hard cap, +1/week, never more
+  else
+    raise exception 'invalid_week_type';
   end if;
 
-  -- Fixed SECONDARY_ATTRIBUTE mapping — kept in sync by hand with
-  -- lib/training/config.ts. Never accepted as a parameter.
-  -- The 7 active (Performance-primary) mappings below are Performance-only
-  -- by design (game-design decision — see chat report "Weekly Training V1
-  -- zostáva PERFORMANCE-ONLY"): Performance training must never be a
-  -- backdoor way to raise Tactics/Technique. Kept in sync with
-  -- lib/training/config.ts's SECONDARY_ATTRIBUTE — see
-  -- lib/training/secondaryMapping.test.ts for the canary.
-  v_secondary_attr := case v_primary_attr
-    when 'climbing' then 'endurance'
-    when 'hills' then 'acceleration'
-    when 'flat' then 'timeTrial'
-    when 'sprint' then 'acceleration'
-    when 'timeTrial' then 'endurance'
-    when 'endurance' then 'timeTrial'
-    when 'acceleration' then 'sprint'
-    when 'positioning' then 'packRiding'
-    when 'attackTiming' then 'reaction'
-    when 'reaction' then 'attackTiming'
-    when 'energyManagement' then 'endurance'
-    when 'breakawaySkill' then 'energyManagement'
-    when 'descending' then 'cornering'
-    when 'bikeHandling' then 'cornering'
-    when 'cornering' then 'bikeHandling'
-    when 'packRiding' then 'positioning'
-    when 'roughSurface' then 'bikeHandling'
-    when 'wetHandling' then 'descending'
-    else null
-  end;
-
-  -- ---- Effective Training Center level (mirrors lib/facilities/capMath.ts) ----
-  select coalesce(training_level, 1), coalesce(team_center_level, 1)
-  into v_training_level, v_team_center_level
+  -- ---- Effective Training Center / Recovery Center level (mirrors lib/facilities/capMath.ts — both share the same "otherCap" formula) ----
+  select coalesce(training_level, 1), coalesce(recovery_level, 1), coalesce(team_center_level, 1)
+  into v_training_level, v_recovery_level, v_team_center_level
   from public.player_facilities
   where player_id = auth.uid();
   v_training_level := coalesce(v_training_level, 1);
+  v_recovery_level := coalesce(v_recovery_level, 1);
   v_team_center_level := coalesce(v_team_center_level, 1);
 
   select exists(select 1 from public.admin_users a where a.user_id = auth.uid()) into v_is_admin;
@@ -1316,8 +1449,9 @@ begin
   end if;
 
   v_team_center_cap := least(5, v_team_center_level + 1);
-  v_training_cap := least(v_league_cap, v_team_center_cap);
+  v_training_cap := least(v_league_cap, v_team_center_cap); -- shared "otherCap" — training/recovery/scouting/technical all use this same cap
   v_effective_training_level := least(v_training_level, v_training_cap);
+  v_effective_recovery_level := least(v_recovery_level, v_training_cap);
 
   v_training_bonus := case v_effective_training_level
     when 1 then 0
@@ -1327,15 +1461,26 @@ begin
     when 5 then 0.12
     else 0
   end;
-  v_facility_multiplier := 1 + v_training_bonus;
+  -- Technical training deliberately has NO facility multiplier at all
+  -- (item 11 — Training Center support for Technical training is an
+  -- explicitly deferred decision).
+  v_facility_multiplier := case when v_week_type = 'performance' then 1 + v_training_bonus else 1 end;
 
-  -- ---- Raw growth formula (mirrors lib/training/growth.ts + config.ts) ----
-  v_intensity_multiplier := case v_intensity
-    when 'light' then 1.0
-    when 'normal' then 1.5
-    when 'hard' then 2.0
-    else 1.0
+  v_recovery_multiplier := case v_effective_recovery_level
+    when 1 then 1.00
+    when 2 then 1.05
+    when 3 then 1.10
+    when 4 then 1.15
+    when 5 then 1.20
+    else 1.00
   end;
+
+  -- ---- Readiness (item 17) — computed from CURRENT (pre-this-week) condition, never from a client-supplied value ----
+  v_energy := (v_condition ->> 'energy')::numeric;
+  v_fatigue := (v_condition ->> 'fatigue')::numeric;
+  v_readiness_score := public.readiness_score(v_energy, v_fatigue);
+  v_readiness_factor := public.readiness_effectiveness(v_readiness_score);
+
   v_trainability_factor := 0.5 + v_trainability / 200;
   v_professionalism_factor := 0.8 + v_professionalism / 500;
   v_age_factor := case
@@ -1348,55 +1493,70 @@ begin
     else 0.30
   end;
 
-  -- ---- Development Model V2 (see the chat report) ----
-  -- Replaces potentialCeiling()/potentialRoomFactor(): Potential no longer
-  -- implies a per-attribute ceiling. developmentRoomFactor is keyed to
-  -- overallPerformance (all 7 Performance attributes together) and the
-  -- attribute's own value — see public.development_room_factor() above.
   v_current_value := (v_attrs ->> v_primary_attr)::numeric;
-  v_overall_performance := public.overall_performance(v_attrs);
-  v_primary_at_cap := v_current_value >= 200;
 
-  -- base = everything EXCEPT the development-room factor — shared between
-  -- primary and secondary, exactly mirroring lib/training/growth.ts's `base`.
-  v_base := v_base_training * v_intensity_multiplier * v_trainability_factor
-    * v_professionalism_factor * v_age_factor * v_facility_multiplier;
+  if v_week_type = 'performance' then
+    -- ---- Development Model V2 (see the chat report) ----
+    -- Replaces potentialCeiling()/potentialRoomFactor(): Potential no
+    -- longer implies a per-attribute ceiling. developmentRoomFactor is
+    -- keyed to overallPerformance (all 7 Performance attributes together)
+    -- and the attribute's own value — see
+    -- public.development_room_factor() above. NOT used for Technical
+    -- training at all (item 11) — Technique has no Performance ceiling.
+    v_overall_performance := public.overall_performance(v_attrs);
+    v_primary_at_cap := v_current_value >= 200;
 
-  if v_primary_at_cap then
-    -- Item 7 of the request: at/above the Performance ceiling, no further
-    -- accumulator progress at all for this attribute — not just raw=0.
-    v_primary_dev_factor := 0;
-    v_primary_raw := 0;
-  else
-    v_primary_dev_factor := public.development_room_factor(v_current_value, v_overall_performance, v_potential);
-    v_primary_raw := greatest(0, v_base * v_primary_dev_factor);
-  end if;
+    -- base = everything EXCEPT the development-room factor — shared
+    -- between primary and secondary, exactly mirroring
+    -- lib/training/growth.ts's calculatePerformanceRawGrowth() `base`.
+    -- v_session_count REPLACES the old flat intensity multiplier.
+    v_base := v_base_training * v_session_count * v_trainability_factor
+      * v_professionalism_factor * v_age_factor * v_facility_multiplier * v_readiness_factor;
 
-  -- Secondary attribute: developmentRoomFactor only applies when it is
-  -- ALSO one of the 7 Performance attributes (e.g. climbing -> endurance).
-  -- A non-Performance secondary (e.g. timeTrial -> energyManagement, a
-  -- Tactics attribute) gets NO development-room throttling here — a known,
-  -- reported gap (see lib/training/growth.ts's own doc comment): nothing
-  -- in this task defined what should throttle non-Performance growth now
-  -- that potentialRoomFactor is gone.
-  if v_secondary_attr is not null then
-    v_secondary_current_value := (v_attrs ->> v_secondary_attr)::numeric;
-    if public.is_performance_attribute(v_secondary_attr) then
-      if v_secondary_current_value >= 200 then
-        v_secondary_dev_factor := 0;
-      else
-        v_secondary_dev_factor := public.development_room_factor(v_secondary_current_value, v_overall_performance, v_potential);
-      end if;
+    if v_primary_at_cap then
+      -- At/above the Performance ceiling (200), no further accumulator
+      -- progress at all for this attribute — not just raw=0.
+      v_primary_dev_factor := 0;
+      v_primary_raw := 0;
     else
-      v_secondary_dev_factor := 1;
+      v_primary_dev_factor := public.development_room_factor(v_current_value, v_overall_performance, v_potential);
+      v_primary_raw := greatest(0, v_base * v_primary_dev_factor);
     end if;
-    v_secondary_raw := greatest(0, v_base * v_secondary_dev_factor * v_secondary_gain_share);
+
+    -- Secondary attribute: developmentRoomFactor only applies when it is
+    -- ALSO one of the 7 Performance attributes — which, since Weekly
+    -- Training V1 is Performance-only, is always true for every reachable
+    -- focus today (see growth.ts's own doc comment on why the
+    -- non-Performance branch is kept as a safety net, not removed).
+    if v_secondary_attr is not null then
+      v_secondary_current_value := (v_attrs ->> v_secondary_attr)::numeric;
+      if public.is_performance_attribute(v_secondary_attr) then
+        if v_secondary_current_value >= 200 then
+          v_secondary_dev_factor := 0;
+        else
+          v_secondary_dev_factor := public.development_room_factor(v_secondary_current_value, v_overall_performance, v_potential);
+        end if;
+      else
+        v_secondary_dev_factor := 1;
+      end if;
+      v_secondary_raw := greatest(0, v_base * v_secondary_dev_factor * v_secondary_gain_share);
+    end if;
+  else
+    -- ---- Technical training (item 11): no facility bonus, no
+    -- Development Model V2 — Technique stays on the canonical 100-160
+    -- scale, Potential does not govern it. No secondary gain at all
+    -- (v_secondary_attr is null, so the secondary block below no-ops).
+    v_primary_at_cap := false;
+    v_base := v_technical_base * v_trainability_factor * v_professionalism_factor * v_age_factor * v_readiness_factor;
+    v_primary_raw := greatest(0, v_base);
   end if;
 
   -- Primary attribute — v_primary_attr came from training_plans.focus
-  -- itself, never from a caller-supplied parameter. Item 7 of the request:
-  -- once at the Performance ceiling, skip progress accumulation entirely
-  -- (not merely add a raw=0 no-op) — there is nothing left to accumulate.
+  -- itself, never from a caller-supplied parameter. At the Performance
+  -- ceiling, skip progress accumulation entirely (not merely add a raw=0
+  -- no-op) — there is nothing left to accumulate. v_max_primary_gain caps
+  -- Technical training at +1/week (item 9) — any progress beyond that
+  -- stays banked in rider_training_progress for a future week, never lost.
   if not v_primary_at_cap then
     insert into public.rider_training_progress (rider_id, attribute, progress)
     values (v_rider_id, v_primary_attr, 0)
@@ -1411,7 +1571,8 @@ begin
     -- (see lib/training/accumulator.ts) — guards the same threshold-crossing
     -- edge as there, kept in sync by hand.
     v_total := v_progress + v_primary_raw;
-    v_primary_gain := floor((v_total + 0.000000001) / v_threshold)::int;
+    v_uncapped_gain := floor((v_total + 0.000000001) / v_threshold)::int;
+    v_primary_gain := least(v_uncapped_gain, v_max_primary_gain);
 
     update public.rider_training_progress
     set progress = greatest(0, v_total - v_primary_gain * v_threshold), updated_at = now()
@@ -1423,10 +1584,11 @@ begin
     end if;
   end if;
 
-  -- Secondary attribute (optional) — its own, separate progress row: never
-  -- a shared pool with the primary attribute (item 5 of the request). Same
+  -- Secondary attribute (optional, Performance only) — its own, separate
+  -- progress row: never a shared pool with the primary attribute. Same
   -- ceiling-skip rule applies if the secondary itself is a Performance
-  -- attribute already at 200.
+  -- attribute already at 200. Never capped (Technical training never
+  -- reaches here — v_secondary_attr is always null for it).
   if v_secondary_attr is not null and v_secondary_dev_factor is distinct from 0 then
     insert into public.rider_training_progress (rider_id, attribute, progress)
     values (v_rider_id, v_secondary_attr, 0)
@@ -1450,7 +1612,19 @@ begin
     end if;
   end if;
 
-  update public.riders set attributes = v_attrs where id = v_rider_id;
+  -- ---- Condition (item 25: SQL owns this now, not the TS app) ----
+  -- Training cost applied ONCE per plan (item 13/14); passive weekly
+  -- recovery (item 15) boosted by the Recovery Center multiplier (item 16,
+  -- applied only here, never to raw growth or to the training cost).
+  v_energy_delta := -v_training_energy_cost + v_recovery_days * v_recovery_day_energy * v_recovery_multiplier;
+  v_fatigue_delta := v_training_fatigue_gain - v_recovery_days * v_recovery_day_fatigue * v_recovery_multiplier;
+  v_new_energy := least(100, greatest(0, v_energy + v_energy_delta));
+  v_new_fatigue := least(100, greatest(0, v_fatigue + v_fatigue_delta));
+
+  v_condition_previous := v_condition;
+  v_condition := jsonb_set(jsonb_set(v_condition, '{energy}', to_jsonb(v_new_energy)), '{fatigue}', to_jsonb(v_new_fatigue));
+
+  update public.riders set attributes = v_attrs, condition = v_condition, condition_previous = v_condition_previous where id = v_rider_id;
 
   update public.training_plans set
     applied_at = now(),

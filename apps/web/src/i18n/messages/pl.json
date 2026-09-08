@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Zmniejsza ryzyko problemów technicznych i cenę serwisu roweru.",
   "facilities.teamCenterDesc": "Określa maksymalną pojemność kolarzy i personelu w drużynie.",
   "score.overall": "Ogólny wynik",
-  "score.performance": "Wydajność"
+  "score.performance": "Wydajność",
+  "trainingPage.typePerformance": "Wydajnościowy",
+  "trainingPage.typeTechnical": "Techniczny",
+  "trainingPage.technicalSessionNote": "1 techniczna jednostka treningowa w tygodniu",
+  "trainingPage.readinessLabel": "Gotowość",
+  "day.mon": "Pon",
+  "day.tue": "Wt",
+  "day.wed": "Śr",
+  "day.thu": "Czw",
+  "day.fri": "Pt",
+  "day.sat": "Sob",
+  "day.sun": "Ndz",
+  "readiness.excellent": "Doskonała",
+  "readiness.good": "Dobra",
+  "readiness.reduced": "Obniżona",
+  "readiness.poor": "Słaba",
+  "readiness.veryPoor": "Bardzo słaba"
 }

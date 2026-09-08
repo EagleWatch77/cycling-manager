@@ -501,5 +501,21 @@
   "facilities.technicalDesc": "Réduit le risque de problèmes techniques et le prix de l'entretien du vélo.",
   "facilities.teamCenterDesc": "Détermine la capacité maximale de coureurs et de staff de votre équipe.",
   "score.overall": "Score global",
-  "score.performance": "Performance"
+  "score.performance": "Performance",
+  "trainingPage.typePerformance": "Performance",
+  "trainingPage.typeTechnical": "Technique",
+  "trainingPage.technicalSessionNote": "1 séance d'entraînement technique par semaine",
+  "trainingPage.readinessLabel": "Disponibilité",
+  "day.mon": "Lu",
+  "day.tue": "Ma",
+  "day.wed": "Me",
+  "day.thu": "Je",
+  "day.fri": "Ve",
+  "day.sat": "Sa",
+  "day.sun": "Di",
+  "readiness.excellent": "Excellente",
+  "readiness.good": "Bonne",
+  "readiness.reduced": "Réduite",
+  "readiness.poor": "Faible",
+  "readiness.veryPoor": "Très faible"
 }
