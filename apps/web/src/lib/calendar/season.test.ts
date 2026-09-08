@@ -2,7 +2,7 @@
  * Real-time game calendar — bounds, determinism, week/season transitions.
  * Run with: npx tsx src/lib/calendar/season.test.ts
  */
-import { getCurrentSeasonInfo, getWeekDateRange, TOTAL_WEEKS, SEASON_LENGTH_DAYS, SEASON_ONE_START } from './season';
+import { getCurrentSeasonInfo, getWeekDateRange, getSeasonBounds, seasonsNeedingProcessing, TOTAL_WEEKS, SEASON_LENGTH_DAYS, SEASON_ONE_START } from './season';
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail = '') {
@@ -69,7 +69,28 @@ const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
   check('week 2 starts the day after week 1 ends', w2.start.getTime() - w1.end.getTime() === 86_400_000);
 }
 
-// 7. Today's real calculation (informational, printed below).
+// 7. Season Aging V1 — getSeasonBounds() for an arbitrary past season
+// number matches what getCurrentSeasonInfo() would compute for a `now`
+// that actually falls inside that season.
+{
+  const bounds2 = getSeasonBounds(2);
+  const infoOnDay70 = getCurrentSeasonInfo(new Date(day(SEASON_ONE_START).getTime() + SEASON_LENGTH_DAYS * 86_400_000));
+  check('getSeasonBounds(2).seasonStart matches the real day-70 rollover', bounds2.seasonStart.getTime() === infoOnDay70.seasonStart.getTime());
+  check('getSeasonBounds(2).seasonEnd matches getCurrentSeasonInfo\'s seasonEnd for the same season', bounds2.seasonEnd.getTime() === infoOnDay70.seasonEnd.getTime());
+  check('getSeasonBounds(1).seasonId is "season-1"', getSeasonBounds(1).seasonId === 'season-1');
+  check('a season spans exactly SEASON_LENGTH_DAYS - 1 days end-to-end', (bounds2.seasonEnd.getTime() - bounds2.seasonStart.getTime()) / 86_400_000 === SEASON_LENGTH_DAYS - 1);
+}
+
+// 8. seasonsNeedingProcessing — the "catch up N skipped seasons" gap logic.
+{
+  check('nothing pending when already caught up (last=3, current=4 -> season 4 not ended yet)', JSON.stringify(seasonsNeedingProcessing(3, 4)) === '[]');
+  check('exactly one season pending after a normal single-season rollover', JSON.stringify(seasonsNeedingProcessing(1, 3)) === '[2]');
+  check('multiple skipped seasons are all returned, in order', JSON.stringify(seasonsNeedingProcessing(1, 6)) === '[2,3,4,5]');
+  check('fresh game, nothing processed yet, still in season 1: nothing pending', JSON.stringify(seasonsNeedingProcessing(0, 1)) === '[]');
+  check('fresh game, nothing processed yet, now in season 2: season 1 pending', JSON.stringify(seasonsNeedingProcessing(0, 2)) === '[1]');
+}
+
+// 9. Today's real calculation (informational, printed below).
 const today = getCurrentSeasonInfo();
 console.log(`\n  Today (${today.now.toISOString().slice(0, 10)}): Season ${today.seasonNumber}, Week ${today.currentWeek}/${today.totalWeeks}`);
 console.log(`  Season window: ${today.seasonStart.toISOString().slice(0, 10)} .. ${today.seasonEnd.toISOString().slice(0, 10)}`);

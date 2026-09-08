@@ -71,3 +71,33 @@ export function getWeekDateRange(info: SeasonInfo, weekNumber: number): { start:
   const end = new Date(start.getTime() + (WEEK_LENGTH_DAYS - 1) * MS_PER_DAY);
   return { start, end };
 }
+
+/**
+ * Season Aging V1 — the same anchor arithmetic getCurrentSeasonInfo() uses,
+ * but parameterized by an arbitrary 1-indexed season NUMBER instead of the
+ * real clock, so a PAST (already-elapsed) season's exact end date can be
+ * computed for the season-transition aging job (lib/calendar/seasonAging.ts)
+ * without re-deriving it from "now". Not a parallel season model — same
+ * constants, same math, just not bound to `new Date()`.
+ */
+export function getSeasonBounds(seasonNumber: number): { seasonId: string; seasonStart: Date; seasonEnd: Date } {
+  const anchor = startOfUtcDay(new Date(`${SEASON_ONE_START}T00:00:00Z`));
+  const seasonIndex = seasonNumber - 1;
+  const seasonStart = new Date(anchor.getTime() + seasonIndex * SEASON_LENGTH_DAYS * MS_PER_DAY);
+  const seasonEnd = new Date(seasonStart.getTime() + (SEASON_LENGTH_DAYS - 1) * MS_PER_DAY);
+  return { seasonId: `season-${seasonNumber}`, seasonStart, seasonEnd };
+}
+
+/**
+ * Every FULLY ELAPSED season number that still needs its end-of-season
+ * aging applied — i.e. everything strictly between the highest season
+ * already processed and the current (still in-progress) season, in order.
+ * Pure — no I/O — so the "catch up N skipped seasons" logic is directly
+ * unit-testable without a database (see season.test.ts). The current
+ * season itself is never included: it hasn't ended yet.
+ */
+export function seasonsNeedingProcessing(lastProcessedSeasonNumber: number, currentSeasonNumber: number): number[] {
+  const result: number[] = [];
+  for (let n = lastProcessedSeasonNumber + 1; n <= currentSeasonNumber - 1; n++) result.push(n);
+  return result;
+}

@@ -184,28 +184,3 @@ export async function listUnprocessedTrainingPlans(riderId: string): Promise<Tra
   return data.map(fromRow);
 }
 
-/**
- * Stamps a plan with its real, computed result. Only ever called by the
- * training engine, once per plan. The `applied_at IS NULL` filter is a
- * second, DB-level guard against double-processing on top of the engine's
- * own check — two concurrent runs can't both apply the same plan twice.
- */
-export async function applyTrainingPlanResult(planId: string, result: {
-  primaryAttr: string;
-  primaryGain: number;
-  secondaryAttr: string | null;
-  secondaryGain: number | null;
-}): Promise<void> {
-  const supabase = await createClient();
-  await supabase
-    .from('training_plans')
-    .update({
-      primary_attr: result.primaryAttr,
-      primary_gain: result.primaryGain,
-      secondary_attr: result.secondaryAttr,
-      secondary_gain: result.secondaryGain,
-      applied_at: new Date().toISOString(),
-    })
-    .eq('id', planId)
-    .is('applied_at', null);
-}

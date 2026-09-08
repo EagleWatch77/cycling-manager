@@ -821,3 +821,255 @@ on conflict (rider_id) do nothing;
 -- registrations it has already applied wear for, the same
 -- applied_at-guards-idempotency idea training_plans already uses.
 alter table public.tour_registrations add column if not exists wear_processed_at timestamptz;
+
+-- ============================================================================
+-- Season Aging V1.
+--
+-- Global, idempotent "a season has fully ended" marker. `season_number` is a
+-- separate int column (not just parsed from season_id) so the caller can
+-- efficiently ask "what's the highest season already processed?" with a
+-- correct numeric MAX(), not a lexicographic string comparison ("season-10"
+-- would otherwise sort before "season-9").
+--
+-- Nothing about *which* season is "next" lives in this table or in SQL —
+-- lib/calendar/season.ts (pure, time-based) remains the single source of
+-- truth for season/week arithmetic; this table only remembers which season
+-- numbers have already had their end-of-season aging applied, so the same
+-- transition can never run twice no matter how many concurrent requests,
+-- tabs, or retries trigger it.
+-- ============================================================================
+
+create table if not exists public.season_transition_processing (
+  season_id          text primary key,
+  season_number      int not null,
+  aging_processed_at timestamptz not null default now(),
+  created_at         timestamptz not null default now()
+);
+
+create index if not exists season_transition_processing_number_idx
+  on public.season_transition_processing (season_number);
+
+alter table public.season_transition_processing enable row level security;
+
+-- Read-only, global state — any authenticated player may see which seasons
+-- have been processed (useful for debugging, not sensitive). No player
+-- (and no bare "authenticated" grant) can insert/update directly; the only
+-- write path is process_season_aging() below.
+drop policy if exists "season_transition_processing_select_all" on public.season_transition_processing;
+create policy "season_transition_processing_select_all"
+  on public.season_transition_processing for select
+  using (true);
+
+grant select on public.season_transition_processing to authenticated;
+
+/**
+ * Ages EVERY persistent rider that existed by the end of season
+ * `p_season_number` (real riders, AI fillers, and still-unsigned/available
+ * market riders alike — see the chat report for why 'acquired' market_riders
+ * rows are deliberately left untouched: they are permanent historical
+ * snapshots of "age at time of signing", not a live rider record) by
+ * exactly +1, but only the FIRST time this season number is ever claimed —
+ * `insert ... on conflict (season_id) do nothing returning` is the atomic
+ * race-safe claim: if two requests call this concurrently for the same
+ * season, only one gets a row back from the RETURNING clause and performs
+ * the UPDATEs; the other returns false immediately having touched nothing.
+ * This is the second security-definer function in this file (after
+ * handle_new_user()) — needed because this project never uses a
+ * service-role key, so a DB function is the only way to perform a
+ * cross-player bulk update that no single player's own RLS would permit.
+ */
+create or replace function public.process_season_aging(
+  p_season_id text,
+  p_season_number int,
+  p_cutoff timestamptz
+)
+returns boolean
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_claimed_id text;
+begin
+  insert into public.season_transition_processing (season_id, season_number)
+  values (p_season_id, p_season_number)
+  on conflict (season_id) do nothing
+  returning season_id into v_claimed_id;
+
+  if v_claimed_id is null then
+    return false;
+  end if;
+
+  -- Real player riders and AI fillers alike (no is_ai filter — see the
+  -- chat report: aging applies to every persistent rider record).
+  update public.riders set age = age + 1 where created_at <= p_cutoff;
+
+  -- Still-unsold market riders age too (item 1 of the request: "Market
+  -- riders NESMÚ zostať navždy rovnakého veku") — but only 'available'
+  -- ones. 'acquired' rows are permanent history of "age at the moment they
+  -- were signed" (see market_riders' own schema comment above) and are
+  -- deliberately left untouched, same as they're excluded from the
+  -- test-reset action. market_riders has no created_at column; generated_at
+  -- is its equivalent "this row has existed since" timestamp.
+  update public.market_riders set age = age + 1
+  where generated_at <= p_cutoff and status = 'available';
+
+  return true;
+end;
+$$;
+
+grant execute on function public.process_season_aging(text, int, timestamptz) to authenticated;
+
+-- ============================================================================
+-- Training Progress Accumulator V1.
+--
+-- Replaces "round the raw weekly progress and throw the remainder away"
+-- with a real per-rider-per-attribute running total, so a facility bonus's
+-- fractional effect (e.g. raw 1.52 vs 1.60) is never silently lost — it
+-- carries into the next training instead. No row needs to exist ahead of
+-- time for every attribute: process_training_plan() below inserts one
+-- on-demand (progress 0) the first time that rider/attribute pair is
+-- trained, per the request's own "0 progress can be implicit" allowance.
+-- ============================================================================
+
+create table if not exists public.rider_training_progress (
+  rider_id    uuid not null references public.riders (id) on delete cascade,
+  attribute   text not null,
+  progress    numeric not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  primary key (rider_id, attribute)
+);
+
+alter table public.rider_training_progress enable row level security;
+
+drop policy if exists "rider_training_progress_select_own" on public.rider_training_progress;
+create policy "rider_training_progress_select_own"
+  on public.rider_training_progress for select
+  using (exists (select 1 from public.riders r where r.id = rider_training_progress.rider_id and (r.player_id = auth.uid() or r.is_ai)));
+
+-- No direct INSERT/UPDATE grant for `authenticated` at all — every write
+-- goes through process_training_plan() below, same "security-definer is
+-- the only write path" pattern as player_facilities/upgrade_facility().
+grant select on public.rider_training_progress to authenticated;
+
+/**
+ * Processes ONE training plan atomically: accumulates raw progress for the
+ * primary attribute (and the secondary, if any) via the exact
+ * existingProgress + rawGrowth -> floor(total/threshold) rule (mirrors
+ * lib/training/accumulator.ts's accumulateProgress() — kept in sync by
+ * hand, same convention as upgrade_facility()'s league caps mirroring
+ * lib/leagues.ts), applies the resulting whole-number gain(s) to
+ * riders.attributes, and stamps training_plans.applied_at — all inside one
+ * function invocation, so a crash or a concurrent duplicate call can never
+ * leave attribute/progress/applied_at out of sync with each other.
+ *
+ * Idempotency: the plan row is locked (`for update`) and its applied_at
+ * checked FIRST; if already applied, this returns immediately with
+ * already_processed = true and mutates nothing — a second concurrent call
+ * (two tabs, a retry) can never double-consume progress or double-apply a
+ * gain, which a naive "read progress, then separately write it back" flow
+ * from the application layer could not have guaranteed.
+ *
+ * ATTR_MIN/ATTR_MAX (100/160) are duplicated here from
+ * lib/rider/config.ts's own constants — the same "kept in sync by hand"
+ * tradeoff already accepted elsewhere in this file for numbers that must
+ * be enforced at the DB layer; see the chat report.
+ */
+create or replace function public.process_training_plan(
+  p_plan_id uuid,
+  p_primary_attr text,
+  p_primary_raw numeric,
+  p_secondary_attr text,
+  p_secondary_raw numeric,
+  p_threshold numeric
+)
+returns table(primary_gain int, secondary_gain int, already_processed boolean)
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_plan_applied_at timestamptz;
+  v_rider_id uuid;
+  v_attrs jsonb;
+  v_progress numeric;
+  v_total numeric;
+  v_primary_gain int := 0;
+  v_secondary_gain int := 0;
+begin
+  select applied_at, rider_id into v_plan_applied_at, v_rider_id
+  from public.training_plans
+  where id = p_plan_id
+  for update;
+
+  if v_plan_applied_at is not null then
+    return query select 0, 0, true;
+    return;
+  end if;
+
+  select attributes into v_attrs from public.riders where id = v_rider_id for update;
+
+  -- Primary attribute.
+  insert into public.rider_training_progress (rider_id, attribute, progress)
+  values (v_rider_id, p_primary_attr, 0)
+  on conflict (rider_id, attribute) do nothing;
+
+  select progress into v_progress
+  from public.rider_training_progress
+  where rider_id = v_rider_id and attribute = p_primary_attr
+  for update;
+
+  -- 0.000000001 epsilon before floor(): mirrors accumulateProgress()'s own
+  -- (see lib/training/accumulator.ts) — guards the same threshold-crossing
+  -- edge as there, kept in sync by hand.
+  v_total := v_progress + p_primary_raw;
+  v_primary_gain := floor((v_total + 0.000000001) / p_threshold)::int;
+
+  update public.rider_training_progress
+  set progress = greatest(0, v_total - v_primary_gain * p_threshold), updated_at = now()
+  where rider_id = v_rider_id and attribute = p_primary_attr;
+
+  if v_primary_gain > 0 then
+    v_attrs := jsonb_set(v_attrs, array[p_primary_attr],
+      to_jsonb(least(160, greatest(100, (v_attrs ->> p_primary_attr)::int + v_primary_gain))));
+  end if;
+
+  -- Secondary attribute (optional) — its own, separate progress row: never
+  -- a shared pool with the primary attribute (item 5 of the request).
+  if p_secondary_attr is not null then
+    insert into public.rider_training_progress (rider_id, attribute, progress)
+    values (v_rider_id, p_secondary_attr, 0)
+    on conflict (rider_id, attribute) do nothing;
+
+    select progress into v_progress
+    from public.rider_training_progress
+    where rider_id = v_rider_id and attribute = p_secondary_attr
+    for update;
+
+    v_total := v_progress + p_secondary_raw;
+    v_secondary_gain := floor((v_total + 0.000000001) / p_threshold)::int;
+
+    update public.rider_training_progress
+    set progress = greatest(0, v_total - v_secondary_gain * p_threshold), updated_at = now()
+    where rider_id = v_rider_id and attribute = p_secondary_attr;
+
+    if v_secondary_gain > 0 then
+      v_attrs := jsonb_set(v_attrs, array[p_secondary_attr],
+        to_jsonb(least(160, greatest(100, (v_attrs ->> p_secondary_attr)::int + v_secondary_gain))));
+    end if;
+  end if;
+
+  update public.riders set attributes = v_attrs where id = v_rider_id;
+
+  update public.training_plans set
+    applied_at = now(),
+    primary_attr = p_primary_attr,
+    primary_gain = v_primary_gain,
+    secondary_attr = p_secondary_attr,
+    secondary_gain = case when p_secondary_attr is not null then v_secondary_gain else null end
+  where id = p_plan_id;
+
+  return query select v_primary_gain, v_secondary_gain, false;
+end;
+$$;
+
+grant execute on function public.process_training_plan(uuid, text, numeric, text, numeric, numeric) to authenticated;

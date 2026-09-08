@@ -70,6 +70,20 @@ export const SECONDARY_GAIN_SHARE = 0.35;
 export const BASE_TRAINING = 3;
 
 /**
+ * Training Progress Accumulator V1 — the whole-point-scale a rider's
+ * per-attribute progress must reach before it converts into a real +1
+ * (or more) persisted attribute gain. See lib/training/accumulator.ts for
+ * the pure floor()-based conversion, and supabase/schema.sql's
+ * process_training_plan() for the authoritative DB-side copy of the same
+ * math (kept in sync by hand — see that function's own doc comment).
+ * V1 keeps this at a simple 1.0 (one "point" of raw growth = one whole
+ * attribute point); centralized here instead of a magic number so it can
+ * be rebalanced without touching either the pure function or the DB
+ * function's call sites.
+ */
+export const TRAINING_GAIN_THRESHOLD = 1.0;
+
+/**
  * Condition cost of a training week, by intensity. Not specified anywhere in
  * the codebase before Training V1 (no formula existed); smallest clean
  * assumption, kept here — the one place to rebalance — rather than inline in

@@ -6,23 +6,33 @@ import {
 } from './config';
 
 /**
- * Training V1 growth formula — implements exactly the formula given in the
- * brief (growth = baseTraining × trainabilityFactor × professionalismFactor
- * × ageFactor × potentialRoomFactor), confirmed via repo inspection to not
- * exist anywhere before this feature (no training/growth code of any kind
- * was found). Pure function: no I/O, nothing here writes to the database.
+ * Training V1 raw growth formula — implements exactly the formula given in
+ * the brief (growth = baseTraining × trainabilityFactor × professionalismFactor
+ * × ageFactor × potentialRoomFactor). Pure function: no I/O, nothing here
+ * writes to the database.
+ *
+ * IMPORTANT (Training Progress Accumulator V1): this used to round its own
+ * output into a final integer gain. It no longer does — see the chat
+ * report: Math.round()-ing raw progress every week silently discarded the
+ * fractional remainder, which made a facility bonus like +3–5% invisible
+ * most weeks (confirmed by simulation). `calculateRawGrowth` now returns
+ * the UNROUNDED progress values; lib/training/accumulator.ts's
+ * accumulateProgress() (backed by the persistent rider_training_progress
+ * table — see supabase/schema.sql's process_training_plan()) is what turns
+ * accumulated raw progress into a real whole-number attribute gain.
  *
  * Invoked by lib/training/engine.ts — the "process training" step that
  * applies a plan's gain once its week has passed.
  */
-export interface GrowthResult {
+export interface RawGrowthResult {
   primaryAttr: SkillAttribute;
-  primaryGain: number;
+  /** Unrounded raw progress for this week — feed into accumulateProgress(), never applied to an attribute directly. */
+  primaryRaw: number;
   secondaryAttr?: SkillAttribute;
-  secondaryGain?: number;
+  secondaryRaw?: number;
 }
 
-export function calculateGrowth(params: {
+export function calculateRawGrowth(params: {
   focus: SkillAttribute;
   intensity: TrainingIntensity;
   currentValue: number;
@@ -32,14 +42,14 @@ export function calculateGrowth(params: {
   potential: number;
   /**
    * Training Center facility multiplier (1 + TRAINING_BONUS[level], see
-   * lib/facilities/config.ts) — applied here, once, to the SAME `raw`
-   * progress value both primaryGain and secondaryGain derive from, exactly
+   * lib/facilities/config.ts) — applied here, once, to the SAME raw
+   * progress value both primaryRaw and secondaryRaw derive from, exactly
    * per the brief's own example (effectiveProgress = baseProgress × 1.12).
    * Defaults to 1 (no bonus) so every existing caller/test not passing it
    * keeps behaving identically.
    */
   facilityMultiplier?: number;
-}): GrowthResult {
+}): RawGrowthResult {
   const raw = BASE_TRAINING
     * INTENSITY_MULTIPLIER[params.intensity]
     * trainabilityFactor(params.trainability)
@@ -48,13 +58,13 @@ export function calculateGrowth(params: {
     * potentialRoomFactor(params.currentValue, params.potential)
     * (params.facilityMultiplier ?? 1);
 
-  const primaryGain = Math.max(0, Math.round(raw));
+  const primaryRaw = Math.max(0, raw);
   const secondaryAttr = SECONDARY_ATTRIBUTE[params.focus];
 
   return {
     primaryAttr: params.focus,
-    primaryGain,
+    primaryRaw,
     secondaryAttr,
-    secondaryGain: secondaryAttr ? Math.max(0, Math.round(raw * SECONDARY_GAIN_SHARE)) : undefined,
+    secondaryRaw: secondaryAttr ? Math.max(0, raw * SECONDARY_GAIN_SHARE) : undefined,
   };
 }

@@ -1,7 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { generateStarterRider, type GeneratedRider } from './generate';
-import type { SkillAttribute } from './config';
 
 /**
  * Server-side rider persistence. Everything here runs with the logged-in
@@ -128,24 +127,29 @@ export async function listAllRiders(): Promise<StoredRider[]> {
 }
 
 /**
- * Persists the outcome of processed training onto the rider: new attribute
- * values and the condition cost of that training. Called only by the
- * training engine (lib/training/engine.ts) — it computes the numbers, this
- * just writes them, so growth logic stays out of the persistence layer.
+ * Persists the condition cost of a processed training run. Called only by
+ * the training engine (lib/training/engine.ts) after its loop over all
+ * pending plans finishes.
+ *
+ * Training Progress Accumulator V1 (see the chat report): this used to
+ * also write `attributes` in one batched call at the end of the loop.
+ * Attribute gains are now written per-plan, atomically, inside
+ * process_training_plan() (supabase/schema.sql) — so this function must
+ * NEVER touch `attributes` anymore; doing so would risk overwriting a
+ * concurrent run's already-persisted gain with a stale local snapshot.
  *
  * `previousCondition` is the rider's condition as it was *before* this
  * change — written to condition_previous so the Stav jazdca UI can compute
  * a real trend arrow later, never inferred from "something happened recently".
  */
-export async function applyTrainingResult(
+export async function applyConditionResult(
   riderId: string,
-  attributes: Record<SkillAttribute, number>,
   condition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number>,
   previousCondition: Record<'energy' | 'fatigue' | 'form' | 'fitness' | 'morale', number>,
 ): Promise<void> {
   const supabase = await createClient();
   await supabase
     .from('riders')
-    .update({ attributes, condition, condition_previous: previousCondition })
+    .update({ condition, condition_previous: previousCondition })
     .eq('id', riderId);
 }
