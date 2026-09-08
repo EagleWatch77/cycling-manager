@@ -1,5 +1,4 @@
 import { getServerDictionary } from '@/i18n/server';
-import { getMyRider } from '@/lib/rider/repository';
 import { isAdmin } from '@/lib/admin/auth';
 import { getMyFacilities, getFacilityCaps, getMyLeague, getEffectiveFacilities } from '@/lib/facilities/repository';
 import {
@@ -7,18 +6,13 @@ import {
   upgradePrice, type FacilityId, type FacilityLevel,
 } from '@/lib/facilities/config';
 import { scoutingAccuracyLabelKey } from '@/lib/facilities/scouting';
-import { getMyBikeCondition, computeServiceQuote, processCompletedBikeWear } from '@/lib/facilities/bike';
 import { AppShell } from '@/components/AppShell';
 import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FacilityCard, type FacilityCardProps } from '@/components/facilities/FacilityCard';
-import { BikeServiceCard } from '@/components/facilities/BikeServiceCard';
 
 /**
- * Real local assets only (see the chat report — the requested path was
- * `/groundoka/...`, the files actually live under `public/ground/...`;
- * verified the 5 files exist there and used the real path rather than
- * silently guessing). Never remote, never a shared/duplicate image.
+ * Real local assets only — verified to exist under public/ground/.
  */
 const FACILITY_META: Record<FacilityId, { icon: string; nameKey: string; descKey: string; image: string }> = {
   training: { icon: 'chart', nameKey: 'facilities.trainingCenter', descKey: 'facilities.trainingDesc', image: '/ground/training.png' },
@@ -28,67 +22,62 @@ const FACILITY_META: Record<FacilityId, { icon: string; nameKey: string; descKey
   teamCenter: { icon: 'team', nameKey: 'facilities.teamCenter', descKey: 'facilities.teamCenterDesc', image: '/ground/timove.png' },
 };
 
+/** Card render order — Zázemie UI redesign V2 (see the chat report, item 3). */
+const FACILITY_ORDER: readonly FacilityId[] = ['training', 'recovery', 'scouting', 'technical', 'teamCenter'];
+
 function pct(v: number): number {
   return Math.round(v * 100);
 }
 
 /**
- * Zázemie — a single page (no per-facility detail routes), five facility
- * cards in a 3-column grid + a compact info panel as the 6th cell + a Bike
- * Service section. All effect numbers come from lib/facilities/config.ts
- * (the one canonical source); all level/cap state comes from
- * lib/facilities/repository.ts, which defers every real cap/bypass
- * decision to the server (upgrade_facility(), see supabase/schema.sql).
+ * Zázemie — a single page (no per-facility detail routes, no Bike Service
+ * section, no "Ako funguje Zázemie" info panel — both removed in the
+ * Zázemie UI redesign V2, see the chat report: this page is now just a
+ * header + 5 compact facility cards). All effect numbers still come from
+ * lib/facilities/config.ts (the one canonical source, UNCHANGED — this is
+ * a visual/UX redesign only, no game-logic/economy change); all
+ * level/cap state comes from lib/facilities/repository.ts, which defers
+ * every real cap/bypass decision to the server (upgrade_facility(), see
+ * supabase/schema.sql).
  */
 export default async function FacilitiesPage() {
   const { t, locale } = await getServerDictionary();
-  const rider = await getMyRider();
   const [facilities, league, admin] = await Promise.all([getMyFacilities(), getMyLeague(), isAdmin()]);
   const caps = await getFacilityCaps(league, facilities);
   const effective = getEffectiveFacilities(facilities, caps);
 
-  let bikeSection = null;
-  if (rider) {
-    await processCompletedBikeWear(rider.id);
-    const condition = await getMyBikeCondition(rider.id);
-    const quote = computeServiceQuote(condition, effective.technical);
-    bikeSection = (
-      <BikeServiceCard
-        overall={condition.overall}
-        riskBand={condition.riskBand}
-        items={quote.items}
-        discountedPrice={quote.discountedPrice}
-        labels={{
-          overall: t('facilities.bikeOverall'),
-          tires: t('facilities.bikeTires'), brakes: t('facilities.bikeBrakes'), drivetrain: t('facilities.bikeDrivetrain'),
-          recommended: t('facilities.bikeRecommended'),
-          serviceCta: t('facilities.bikeServiceCta'),
-          servicePrice: t('facilities.bikeServicePrice'),
-          fullCondition: t('facilities.bikeFullCondition'),
-          risk: {
-            normal: t('facilities.riskNormal'), elevated: t('facilities.riskElevated'),
-            high: t('facilities.riskHigh'), veryHigh: t('facilities.riskVeryHigh'),
-          },
-          financeNote: t('facilities.financeNote'),
-          serviceError: t('facilities.serviceError'),
-          componentLabel: { tires: t('facilities.bikeTires'), brakes: t('facilities.bikeBrakes'), drivetrain: t('facilities.bikeDrivetrain') },
-        }}
-      />
-    );
+  /**
+   * Current-effect title/subtitle per facility — Training Center uses the
+   * already-agreed age-focused identity per level (item 9 of the chat
+   * report: NEVER an invented percentage — the numeric subtitle is the
+   * SAME canonical TRAINING_BONUS this page always used, just paired with
+   * the identity text instead of a bare "+X%" line; L1 has a 0% bonus so
+   * no subtitle is shown there, only the identity). Every other facility
+   * keeps its existing single-line canonical effect text as the title,
+   * unchanged from before this redesign.
+   */
+  function currentEffect(id: FacilityId, level: FacilityLevel): { title: string; subtitle: string | null } {
+    if (id === 'training') {
+      const title = t(`facilities.trainingIdentity.l${level}`);
+      const bonus = TRAINING_BONUS[level];
+      return { title, subtitle: bonus > 0 ? t('facilities.trainingBonus', { pct: pct(bonus) }) : null };
+    }
+    if (id === 'recovery') return { title: t('facilities.recoveryEffect', { pct: pct(RECOVERY_BONUS[level]) }), subtitle: null };
+    if (id === 'scouting') return { title: t(scoutingAccuracyLabelKey(level)), subtitle: null };
+    if (id === 'technical') return { title: t('facilities.technicalEffect', { pct: pct(TECHNICAL_RISK_REDUCTION[level]) }), subtitle: null };
+    return { title: t('facilities.teamCenterEffect', { riders: TEAM_CENTER_RIDER_CAPACITY[level], staff: TEAM_CENTER_STAFF_CAPACITY[level] }), subtitle: null };
   }
 
-  function effectText(id: FacilityId, level: FacilityLevel): string {
-    if (id === 'training') return t('facilities.trainingEffect', { pct: pct(TRAINING_BONUS[level]) });
-    if (id === 'recovery') return t('facilities.recoveryEffect', { pct: pct(RECOVERY_BONUS[level]) });
-    if (id === 'scouting') return t(scoutingAccuracyLabelKey(level));
-    if (id === 'technical') return t('facilities.technicalEffect', { pct: pct(TECHNICAL_RISK_REDUCTION[level]) });
-    return t('facilities.teamCenterEffect', { riders: TEAM_CENTER_RIDER_CAPACITY[level], staff: TEAM_CENTER_STAFF_CAPACITY[level] });
+  function effectFlat(id: FacilityId, level: FacilityLevel): string {
+    const { title, subtitle } = currentEffect(id, level);
+    return subtitle ? `${title} — ${subtitle}` : title;
   }
 
   const cardLabels = {
     levelLabel: t('facilities.levelLabel'),
     currentEffect: t('facilities.currentEffect'),
     nextEffect: t('facilities.nextEffect'),
+    levelTransition: t('facilities.levelTransition'),
     priceLabel: t('facilities.price'),
     priceProvisional: t('facilities.priceProvisional'),
     upgradeCta: t('facilities.upgradeCta'),
@@ -109,13 +98,14 @@ export default async function FacilitiesPage() {
   // never sees the Rookie-specific lock message.
   const rookieLockedForEveryone = league === 'rookie' && !admin;
 
-  const cards: FacilityCardProps[] = (Object.keys(FACILITY_META) as FacilityId[]).map((id) => {
+  const cards: FacilityCardProps[] = FACILITY_ORDER.map((id) => {
     const storedLevel = facilities[id];
     const effectiveLevel = effective[id];
     const cap = caps[id];
     const atMax = storedLevel >= 5;
     const locked = rookieLockedForEveryone || (!atMax && storedLevel >= cap);
     const name = t(FACILITY_META[id].nameKey);
+    const effect = currentEffect(id, effectiveLevel);
 
     // Which limit is actually binding right now: whichever of the two caps
     // is lower is why `cap` has the value it does (see computeFacilityCaps
@@ -144,8 +134,9 @@ export default async function FacilitiesPage() {
       storedLevel,
       effectiveLevel,
       cap,
-      currentEffectText: effectText(id, effectiveLevel),
-      nextEffectText: atMax ? null : effectText(id, (storedLevel + 1) as FacilityLevel),
+      currentEffectTitle: effect.title,
+      currentEffectSubtitle: effect.subtitle,
+      nextEffectText: atMax ? null : effectFlat(id, (storedLevel + 1) as FacilityLevel),
       price: atMax ? null : upgradePrice(id, storedLevel) ?? null,
       rookieLocked: rookieLockedForEveryone,
       lockedReason,
@@ -159,24 +150,12 @@ export default async function FacilitiesPage() {
 
   return (
     <AppShell activeId="facilities" locale={locale}>
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         <PageHeader icon={<Icon name="building" className="h-4.5 w-4.5" />} title={t('nav.facilities')} subtitle={t('facilities.subtitle')} />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {cards.map((card) => <FacilityCard key={card.id} {...card} />)}
-
-          <div className="flex flex-col justify-center rounded-card border border-line bg-surface p-4">
-            <p className="text-sm font-bold text-navy">{t('facilities.infoPanelTitle')}</p>
-            <p className="mt-1.5 text-xs leading-relaxed text-navy-soft">{t('facilities.infoPanelText')}</p>
-          </div>
         </div>
-
-        {bikeSection && (
-          <div>
-            <p className="mb-1.5 px-1 text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('facilities.bikeServiceTitle')}</p>
-            {bikeSection}
-          </div>
-        )}
       </div>
     </AppShell>
   );
