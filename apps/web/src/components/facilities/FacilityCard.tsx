@@ -105,9 +105,6 @@ export function FacilityCard({
             <p className="truncate text-[13px] font-bold leading-tight text-navy">{name}</p>
             <p className="text-2xs text-navy-muted">{labels.levelLabel} {effectiveLevel}/5</p>
           </div>
-          {devOverrideActive && (
-            <span className="shrink-0 rounded bg-warn/10 px-1 py-0.5 text-[9px] font-bold uppercase text-warn">{labels.devOverrideBadge}</span>
-          )}
         </div>
 
         <div className="flex items-center gap-1" aria-hidden="true">
