@@ -519,10 +519,17 @@
   "readiness.poor": "Baja",
   "readiness.veryPoor": "Muy baja",
   "facilities.trainingIdentity.l1": "Condiciones básicas de entrenamiento",
-  "facilities.trainingIdentity.l2": "Formación de ciclistas de 17–23 años",
-  "facilities.trainingIdentity.l3": "Desarrollo del rendimiento de ciclistas de 24–27 años",
-  "facilities.trainingIdentity.l4": "Preparación de máximo nivel para ciclistas de 28–31 años",
-  "facilities.trainingIdentity.l5": "Mantenimiento del rendimiento de ciclistas 32+",
-  "facilities.trainingBonus": "Bono de entrenamiento: +{pct}%",
-  "facilities.levelTransition": "Nivel {from} → {to}"
+  "facilities.trainingIdentity.l2": "Formación de ciclistas jóvenes",
+  "facilities.trainingIdentity.l3": "Desarrollo del rendimiento",
+  "facilities.trainingIdentity.l4": "Preparación de máximo nivel",
+  "facilities.trainingIdentity.l5": "Mantenimiento del rendimiento",
+  "facilities.levelTransition": "Nivel {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Mayor beneficio para ciclistas de 17–23 años.",
+  "facilities.trainingIdentitySub.l3": "Apoya el desarrollo de ciclistas de 24–27 años.",
+  "facilities.trainingIdentitySub.l4": "Apoya a ciclistas de 28–31 años.",
+  "facilities.trainingIdentitySub.l5": "Condiciones de primer nivel para ciclistas experimentados de 32+.",
+  "facilities.trainingUnlock.l1": "Desbloquea mejores condiciones de desarrollo para ciclistas de 17–23 años.",
+  "facilities.trainingUnlock.l2": "Amplía el apoyo a ciclistas de 24–27 años.",
+  "facilities.trainingUnlock.l3": "Amplía el apoyo a ciclistas de 28–31 años.",
+  "facilities.trainingUnlock.l4": "Desbloquea condiciones de élite para ciclistas experimentados y prepara el apoyo al mantenimiento del rendimiento."
 }

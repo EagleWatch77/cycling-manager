@@ -519,10 +519,17 @@
   "readiness.poor": "Slabá",
   "readiness.veryPoor": "Velmi slabá",
   "facilities.trainingIdentity.l1": "Základní tréninkové podmínky",
-  "facilities.trainingIdentity.l2": "Výchova jezdců 17–23 let",
-  "facilities.trainingIdentity.l3": "Výkonnostní rozvoj jezdců 24–27 let",
-  "facilities.trainingIdentity.l4": "Vrcholová příprava jezdců 28–31 let",
-  "facilities.trainingIdentity.l5": "Udržení výkonnosti jezdců 32+",
-  "facilities.trainingBonus": "Bonus tréninku: +{pct} %",
-  "facilities.levelTransition": "Úroveň {from} → {to}"
+  "facilities.trainingIdentity.l2": "Výchova mladých jezdců",
+  "facilities.trainingIdentity.l3": "Výkonnostní rozvoj",
+  "facilities.trainingIdentity.l4": "Vrcholová příprava",
+  "facilities.trainingIdentity.l5": "Udržení výkonnosti",
+  "facilities.levelTransition": "Úroveň {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Největší přínos pro jezdce ve věku 17–23 let.",
+  "facilities.trainingIdentitySub.l3": "Podpora rozvoje jezdců ve věku 24–27 let.",
+  "facilities.trainingIdentitySub.l4": "Podpora jezdců ve věku 28–31 let.",
+  "facilities.trainingIdentitySub.l5": "Špičkové podmínky pro zkušené jezdce ve věku 32+.",
+  "facilities.trainingUnlock.l1": "Odemkne lepší podmínky pro rozvoj jezdců ve věku 17–23 let.",
+  "facilities.trainingUnlock.l2": "Rozšíří podporu o jezdce ve věku 24–27 let.",
+  "facilities.trainingUnlock.l3": "Rozšíří podporu o jezdce ve věku 28–31 let.",
+  "facilities.trainingUnlock.l4": "Zpřístupní elitní podmínky pro zkušené jezdce a připraví podporu udržení výkonnosti."
 }

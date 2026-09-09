@@ -519,10 +519,17 @@
   "readiness.poor": "Faible",
   "readiness.veryPoor": "Très faible",
   "facilities.trainingIdentity.l1": "Conditions d'entraînement de base",
-  "facilities.trainingIdentity.l2": "Formation des coureurs de 17–23 ans",
-  "facilities.trainingIdentity.l3": "Développement de la performance pour les 24–27 ans",
-  "facilities.trainingIdentity.l4": "Préparation de pointe pour les 28–31 ans",
-  "facilities.trainingIdentity.l5": "Maintien de la performance pour les 32 ans et plus",
-  "facilities.trainingBonus": "Bonus d'entraînement : +{pct}%",
-  "facilities.levelTransition": "Niveau {from} → {to}"
+  "facilities.trainingIdentity.l2": "Formation des jeunes coureurs",
+  "facilities.trainingIdentity.l3": "Développement de la performance",
+  "facilities.trainingIdentity.l4": "Préparation de pointe",
+  "facilities.trainingIdentity.l5": "Maintien de la performance",
+  "facilities.levelTransition": "Niveau {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Bénéfice maximal pour les coureurs de 17–23 ans.",
+  "facilities.trainingIdentitySub.l3": "Soutient le développement des coureurs de 24–27 ans.",
+  "facilities.trainingIdentitySub.l4": "Soutient les coureurs de 28–31 ans.",
+  "facilities.trainingIdentitySub.l5": "Conditions de pointe pour les coureurs expérimentés de 32 ans et plus.",
+  "facilities.trainingUnlock.l1": "Débloque de meilleures conditions de développement pour les coureurs de 17–23 ans.",
+  "facilities.trainingUnlock.l2": "Étend le soutien aux coureurs de 24–27 ans.",
+  "facilities.trainingUnlock.l3": "Étend le soutien aux coureurs de 28–31 ans.",
+  "facilities.trainingUnlock.l4": "Débloque des conditions élite pour les coureurs expérimentés et prépare le soutien au maintien de la performance."
 }

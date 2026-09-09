@@ -519,10 +519,17 @@
   "readiness.poor": "Poor",
   "readiness.veryPoor": "Very poor",
   "facilities.trainingIdentity.l1": "Basic training conditions",
-  "facilities.trainingIdentity.l2": "Developing riders aged 17–23",
-  "facilities.trainingIdentity.l3": "Performance development for riders aged 24–27",
-  "facilities.trainingIdentity.l4": "Peak preparation for riders aged 28–31",
-  "facilities.trainingIdentity.l5": "Maintaining performance for riders 32+",
-  "facilities.trainingBonus": "Training bonus: +{pct}%",
-  "facilities.levelTransition": "Level {from} → {to}"
+  "facilities.trainingIdentity.l2": "Developing young riders",
+  "facilities.trainingIdentity.l3": "Performance development",
+  "facilities.trainingIdentity.l4": "Peak preparation",
+  "facilities.trainingIdentity.l5": "Maintaining performance",
+  "facilities.levelTransition": "Level {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Biggest benefit for riders aged 17–23.",
+  "facilities.trainingIdentitySub.l3": "Supports development for riders aged 24–27.",
+  "facilities.trainingIdentitySub.l4": "Supports riders aged 28–31.",
+  "facilities.trainingIdentitySub.l5": "Top-tier conditions for experienced riders 32+.",
+  "facilities.trainingUnlock.l1": "Unlocks better development conditions for riders aged 17–23.",
+  "facilities.trainingUnlock.l2": "Extends support to riders aged 24–27.",
+  "facilities.trainingUnlock.l3": "Extends support to riders aged 28–31.",
+  "facilities.trainingUnlock.l4": "Unlocks elite conditions for experienced riders and prepares performance-retention support."
 }

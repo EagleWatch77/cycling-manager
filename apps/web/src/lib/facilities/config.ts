@@ -16,10 +16,85 @@ export type FacilityLevel = 1 | 2 | 3 | 4 | 5;
 export const FACILITY_IDS: readonly FacilityId[] = ['training', 'recovery', 'scouting', 'technical', 'teamCenter'];
 export const FACILITY_LEVELS: readonly FacilityLevel[] = [1, 2, 3, 4, 5];
 
-/** Training Center — multiplier applied once to raw training progress (see lib/training/growth.ts). */
-export const TRAINING_BONUS: Record<FacilityLevel, number> = {
-  1: 0, 2: 0.03, 3: 0.06, 4: 0.09, 5: 0.12,
+/**
+ * Training Center V1 — FINAL canonical model (see the chat report,
+ * "TRAINING CENTER CLOSE-OUT"). Affects PERFORMANCE training ONLY (the 7
+ * canonical Performance attributes — see lib/training/config.ts's
+ * PERFORMANCE_FOCUS) — never Technical training, Technique, Tactics,
+ * Experience, Potential, Trainability, Professionalism, Recovery, or
+ * Energy/Fatigue. Not to be confused with the Technical Center facility
+ * (bike technical risk/service — a completely different system, see
+ * TECHNICAL_RISK_REDUCTION below).
+ *
+ * Cumulative but NON-ADDITIVE: each level unlocks one more age band's
+ * bonus, but a rider only ever receives the SINGLE multiplier for their
+ * OWN age band — bands are never summed, even at L5 where the facility has
+ * "unlocked" all four. A 20-year-old at L5 still gets exactly 1.15, not
+ * 1.15×1.10×1.05×1.03.
+ *
+ * These age bands (17-23/24-27/28-31/32+) are a SEPARATE layer from
+ * lib/training/config.ts's ageFactor() (the biological-age training curve,
+ * with its own different band boundaries) — the two must never be merged
+ * into one function (item 3 of the request). ageFactor = biological age;
+ * trainingCenterMultiplier = club infrastructure quality.
+ */
+export type PerformanceAgeBand = '17-23' | '24-27' | '28-31' | '32+';
+
+/** The multiplier a rider's own age band receives, once their effective Training Center level has unlocked it (see TRAINING_CENTER_AGE_BAND_UNLOCK_LEVEL). */
+export const TRAINING_CENTER_AGE_BAND_MULTIPLIER: Record<PerformanceAgeBand, number> = {
+  '17-23': 1.15,
+  '24-27': 1.10,
+  '28-31': 1.05,
+  '32+': 1.03,
 };
+
+/** The facility level at which each age band's bonus first becomes available. L1 grants none — "Základné tréningové podmienky". */
+export const TRAINING_CENTER_AGE_BAND_UNLOCK_LEVEL: Record<PerformanceAgeBand, FacilityLevel> = {
+  '17-23': 2,
+  '24-27': 3,
+  '28-31': 4,
+  '32+': 5,
+};
+
+export function performanceAgeBand(age: number): PerformanceAgeBand {
+  if (age <= 23) return '17-23';
+  if (age <= 27) return '24-27';
+  if (age <= 31) return '28-31';
+  return '32+';
+}
+
+/**
+ * The authoritative Training Center effect on Performance training raw
+ * growth (both primary AND secondary — see lib/training/growth.ts) — a
+ * single multiplier selected by (effective level, rider age), never summed
+ * across bands. Mirrors process_training_plan()'s SQL exactly (see
+ * supabase/schema.sql) — kept in sync by hand, see
+ * trainingCenterSql.test.ts's canary. Must be called with the rider's
+ * EFFECTIVE level (min(storedLevel, leagueCap) — see
+ * lib/facilities/capMath.ts), never the raw stored level, so a relegated
+ * player's gameplay effect is correctly clamped down without erasing their
+ * stored progress.
+ */
+export function trainingCenterMultiplier(level: FacilityLevel, age: number): number {
+  const band = performanceAgeBand(age);
+  return level >= TRAINING_CENTER_AGE_BAND_UNLOCK_LEVEL[band] ? TRAINING_CENTER_AGE_BAND_MULTIPLIER[band] : 1.00;
+}
+
+/**
+ * L5 RETENTION — PREPARED FUTURE INTEGRATION POINT, NOT WIRED UP ANYWHERE
+ * (see the chat report, item 7). Final game-design contract for a future
+ * natural age-related PERFORMANCE decline system: at effective Training
+ * Center L5, a 32+ rider's decline should be reduced by this fraction.
+ * Scope, per that same contract: PERFORMANCE decline only — never Energy,
+ * Fatigue, injury, Technique, Tactics, or race penalties.
+ *
+ * No decline system of any kind exists anywhere in this codebase yet
+ * (Weekly Training V1 only ever grows attributes) — this constant is NOT
+ * read by any function today. Recorded here only so a future decline
+ * system has one canonical place to look; do not wire it into anything
+ * until that system actually exists.
+ */
+export const TRAINING_CENTER_L5_PERFORMANCE_DECLINE_REDUCTION = 0.15;
 
 /** Recovery Center — relative improvement to energy recovery / fatigue reduction. Superseded for training's own condition math by RECOVERY_MULTIPLIER below (Unified Weekly Training V1 — see the chat report, item 16); kept for the Facilities page's own effect display. */
 export const RECOVERY_BONUS: Record<FacilityLevel, number> = {

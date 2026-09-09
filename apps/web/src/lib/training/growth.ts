@@ -76,10 +76,13 @@ export function calculatePerformanceRawGrowth(params: {
   age: number;
   potential: number;
   /**
-   * Training Center facility multiplier (1 + TRAINING_BONUS[level], see
-   * lib/facilities/config.ts) — applied here, once, to the SAME raw
-   * progress value both primaryRaw and secondaryRaw derive from.
-   * Defaults to 1 (no bonus).
+   * Training Center facility multiplier — the caller passes
+   * `trainingCenterMultiplier(effectiveLevel, age)` (see
+   * lib/facilities/config.ts, the age-banded FINAL Training Center V1
+   * model: e.g. 1.15/1.10/1.05/1.03 for a rider whose own age band has
+   * been unlocked, else 1.00) — applied here, once, to the SAME raw
+   * progress value both primaryRaw and secondaryRaw derive from. Defaults
+   * to 1 (no bonus).
    */
   facilityMultiplier?: number;
   /** Readiness effectiveness (lib/training/readiness.ts's readinessEffectiveness()) — defaults to 1 (fully rested) so existing callers/tests keep behaving identically. */

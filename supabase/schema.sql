@@ -1229,7 +1229,7 @@ grant execute on function public.readiness_effectiveness(numeric) to authenticat
  *   throughout this file for ATTR_MIN/MAX, league caps, and the
  *   training-bonus percentages. If you change BASE_TRAINING/
  *   TECHNICAL_BASE, SESSION_COUNT, trainabilityFactor/
- *   professionalismFactor/ageFactor, TRAINING_BONUS/RECOVERY_MULTIPLIER,
+ *   professionalismFactor/ageFactor, trainingCenterMultiplier()/RECOVERY_MULTIPLIER (Training Center V1 FINAL age-banded model — see the chat report "TRAINING CENTER CLOSE-OUT"),
  *   SECONDARY_ATTRIBUTE, ENERGY_COST/FATIGUE_GAIN/TECHNICAL_ENERGY_COST/
  *   TECHNICAL_FATIGUE_GAIN, PERFORMANCE_RECOVERY_DAYS/
  *   TECHNICAL_RECOVERY_DAYS/RECOVERY_DAY_ENERGY/RECOVERY_DAY_FATIGUE, the
@@ -1269,7 +1269,7 @@ declare
   v_technical_energy_cost constant numeric := 5; -- TECHNICAL_ENERGY_COST
   v_technical_fatigue_gain constant numeric := 5; -- TECHNICAL_FATIGUE_GAIN
   v_technical_recovery_days constant numeric := 6; -- TECHNICAL_RECOVERY_DAYS
-  -- ---- Kept in sync by hand with lib/facilities/config.ts (TRAINING_BONUS/RECOVERY_MULTIPLIER) ----
+  -- ---- Kept in sync by hand with lib/facilities/config.ts (trainingCenterMultiplier()/RECOVERY_MULTIPLIER) ----
   -- ---- Kept in sync by hand with lib/leagues.ts (maxFacilityLevel) ----
 
   v_plan_applied_at timestamptz;
@@ -1453,17 +1453,25 @@ begin
   v_effective_training_level := least(v_training_level, v_training_cap);
   v_effective_recovery_level := least(v_recovery_level, v_training_cap);
 
-  v_training_bonus := case v_effective_training_level
-    when 1 then 0
-    when 2 then 0.03
-    when 3 then 0.06
-    when 4 then 0.09
-    when 5 then 0.12
-    else 0
+  -- Training Center V1 FINAL model (see the chat report, "TRAINING CENTER
+  -- CLOSE-OUT"): age-banded, non-additive. Each level unlocks ONE more age
+  -- band's bonus but a rider only ever gets the single multiplier for
+  -- their OWN age band — bands never stack/sum even at L5, where the
+  -- facility has "unlocked" all four. Mirrors
+  -- lib/facilities/config.ts's trainingCenterMultiplier() exactly (own age
+  -- bands: 17-23/24-27/28-31/32+ — deliberately DIFFERENT boundaries from
+  -- v_age_factor's biological-age bands above; this is a separate
+  -- multiplicative layer, never merged with it — item 3 of the request).
+  v_training_bonus := case
+    when v_age <= 23 then case when v_effective_training_level >= 2 then 0.15 else 0 end
+    when v_age <= 27 then case when v_effective_training_level >= 3 then 0.10 else 0 end
+    when v_age <= 31 then case when v_effective_training_level >= 4 then 0.05 else 0 end
+    else case when v_effective_training_level >= 5 then 0.03 else 0 end
   end;
   -- Technical training deliberately has NO facility multiplier at all
-  -- (item 11 — Training Center support for Technical training is an
-  -- explicitly deferred decision).
+  -- (item 5/11 — Training Center only ever affects Performance training;
+  -- Technical Center, a completely different facility, is the one that
+  -- handles bike technical risk/service — never confuse the two).
   v_facility_multiplier := case when v_week_type = 'performance' then 1 + v_training_bonus else 1 end;
 
   v_recovery_multiplier := case v_effective_recovery_level

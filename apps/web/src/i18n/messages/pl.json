@@ -519,10 +519,17 @@
   "readiness.poor": "Słaba",
   "readiness.veryPoor": "Bardzo słaba",
   "facilities.trainingIdentity.l1": "Podstawowe warunki treningowe",
-  "facilities.trainingIdentity.l2": "Rozwój zawodników w wieku 17–23 lat",
-  "facilities.trainingIdentity.l3": "Rozwój wydajności zawodników 24–27 lat",
-  "facilities.trainingIdentity.l4": "Przygotowanie szczytowe zawodników 28–31 lat",
-  "facilities.trainingIdentity.l5": "Utrzymanie wydajności zawodników 32+",
-  "facilities.trainingBonus": "Bonus treningowy: +{pct}%",
-  "facilities.levelTransition": "Poziom {from} → {to}"
+  "facilities.trainingIdentity.l2": "Rozwój młodych zawodników",
+  "facilities.trainingIdentity.l3": "Rozwój wydajności",
+  "facilities.trainingIdentity.l4": "Przygotowanie szczytowe",
+  "facilities.trainingIdentity.l5": "Utrzymanie wydajności",
+  "facilities.levelTransition": "Poziom {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Największa korzyść dla zawodników w wieku 17–23 lat.",
+  "facilities.trainingIdentitySub.l3": "Wspiera rozwój zawodników w wieku 24–27 lat.",
+  "facilities.trainingIdentitySub.l4": "Wspiera zawodników w wieku 28–31 lat.",
+  "facilities.trainingIdentitySub.l5": "Najwyższej klasy warunki dla doświadczonych zawodników 32+.",
+  "facilities.trainingUnlock.l1": "Odblokowuje lepsze warunki rozwoju dla zawodników w wieku 17–23 lat.",
+  "facilities.trainingUnlock.l2": "Rozszerza wsparcie o zawodników w wieku 24–27 lat.",
+  "facilities.trainingUnlock.l3": "Rozszerza wsparcie o zawodników w wieku 28–31 lat.",
+  "facilities.trainingUnlock.l4": "Odblokowuje elitarne warunki dla doświadczonych zawodników i przygotowuje wsparcie utrzymania wydajności."
 }

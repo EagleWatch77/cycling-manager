@@ -2,7 +2,7 @@ import { getServerDictionary } from '@/i18n/server';
 import { isAdmin } from '@/lib/admin/auth';
 import { getMyFacilities, getFacilityCaps, getMyLeague, getEffectiveFacilities } from '@/lib/facilities/repository';
 import {
-  TRAINING_BONUS, RECOVERY_BONUS, TECHNICAL_RISK_REDUCTION, TEAM_CENTER_RIDER_CAPACITY, TEAM_CENTER_STAFF_CAPACITY,
+  RECOVERY_BONUS, TECHNICAL_RISK_REDUCTION, TEAM_CENTER_RIDER_CAPACITY, TEAM_CENTER_STAFF_CAPACITY,
   upgradePrice, type FacilityId, type FacilityLevel,
 } from '@/lib/facilities/config';
 import { scoutingAccuracyLabelKey } from '@/lib/facilities/scouting';
@@ -47,25 +47,38 @@ export default async function FacilitiesPage() {
   const effective = getEffectiveFacilities(facilities, caps);
 
   /**
-   * Current-effect title/subtitle per facility — Training Center uses the
-   * already-agreed age-focused identity per level (item 9 of the chat
-   * report: NEVER an invented percentage — the numeric subtitle is the
-   * SAME canonical TRAINING_BONUS this page always used, just paired with
-   * the identity text instead of a bare "+X%" line; L1 has a 0% bonus so
-   * no subtitle is shown there, only the identity). Every other facility
-   * keeps its existing single-line canonical effect text as the title,
-   * unchanged from before this redesign.
+   * Current-effect title/subtitle per facility — Training Center CLOSE-OUT
+   * (see the chat report): purely qualitative, level-driven identity text,
+   * NEVER the internal age-banded multiplier or any percentage (item 12 —
+   * "Neukazuj +15% / +10% / +5% / +3% / facilityMultiplier="). The subtitle
+   * names which age range that level specializes in — it is NOT the
+   * viewing player's own rider's age or their actual bonus, just the
+   * level's own identity, so this needs no rider data at all. L1 has no
+   * subtitle (no age specialization yet). Every other facility keeps its
+   * existing single-line canonical effect text as the title, unchanged.
    */
   function currentEffect(id: FacilityId, level: FacilityLevel): { title: string; subtitle: string | null } {
     if (id === 'training') {
       const title = t(`facilities.trainingIdentity.l${level}`);
-      const bonus = TRAINING_BONUS[level];
-      return { title, subtitle: bonus > 0 ? t('facilities.trainingBonus', { pct: pct(bonus) }) : null };
+      const subtitle = level === 1 ? null : t(`facilities.trainingIdentitySub.l${level}`);
+      return { title, subtitle };
     }
     if (id === 'recovery') return { title: t('facilities.recoveryEffect', { pct: pct(RECOVERY_BONUS[level]) }), subtitle: null };
     if (id === 'scouting') return { title: t(scoutingAccuracyLabelKey(level)), subtitle: null };
     if (id === 'technical') return { title: t('facilities.technicalEffect', { pct: pct(TECHNICAL_RISK_REDUCTION[level]) }), subtitle: null };
     return { title: t('facilities.teamCenterEffect', { riders: TEAM_CENTER_RIDER_CAPACITY[level], staff: TEAM_CENTER_STAFF_CAPACITY[level] }), subtitle: null };
+  }
+
+  /**
+   * Training Center's upgrade-modal "next effect" text is a dedicated
+   * per-transition "what this unlocks" sentence (item 13 of the chat
+   * report), not the generic currentEffect() of the target level — the
+   * modal may say what's unlocked without repeating the identity title.
+   * Every other facility keeps using the generic effectFlat() below,
+   * unchanged.
+   */
+  function trainingUnlockText(fromStoredLevel: FacilityLevel): string {
+    return t(`facilities.trainingUnlock.l${fromStoredLevel}`);
   }
 
   function effectFlat(id: FacilityId, level: FacilityLevel): string {
@@ -136,7 +149,7 @@ export default async function FacilitiesPage() {
       cap,
       currentEffectTitle: effect.title,
       currentEffectSubtitle: effect.subtitle,
-      nextEffectText: atMax ? null : effectFlat(id, (storedLevel + 1) as FacilityLevel),
+      nextEffectText: atMax ? null : (id === 'training' ? trainingUnlockText(storedLevel) : effectFlat(id, (storedLevel + 1) as FacilityLevel)),
       price: atMax ? null : upgradePrice(id, storedLevel) ?? null,
       rookieLocked: rookieLockedForEveryone,
       lockedReason,

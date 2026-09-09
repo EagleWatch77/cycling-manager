@@ -519,10 +519,17 @@
   "readiness.poor": "Schwach",
   "readiness.veryPoor": "Sehr schwach",
   "facilities.trainingIdentity.l1": "Grundlegende Trainingsbedingungen",
-  "facilities.trainingIdentity.l2": "Entwicklung von Fahrern im Alter von 17–23",
-  "facilities.trainingIdentity.l3": "Leistungsentwicklung für Fahrer 24–27",
-  "facilities.trainingIdentity.l4": "Spitzenvorbereitung für Fahrer 28–31",
-  "facilities.trainingIdentity.l5": "Leistungserhalt für Fahrer 32+",
-  "facilities.trainingBonus": "Trainingsbonus: +{pct}%",
-  "facilities.levelTransition": "Stufe {from} → {to}"
+  "facilities.trainingIdentity.l2": "Entwicklung junger Fahrer",
+  "facilities.trainingIdentity.l3": "Leistungsentwicklung",
+  "facilities.trainingIdentity.l4": "Spitzenvorbereitung",
+  "facilities.trainingIdentity.l5": "Leistungserhalt",
+  "facilities.levelTransition": "Stufe {from} → {to}",
+  "facilities.trainingIdentitySub.l2": "Größter Nutzen für Fahrer im Alter von 17–23.",
+  "facilities.trainingIdentitySub.l3": "Unterstützt die Entwicklung von Fahrern im Alter von 24–27.",
+  "facilities.trainingIdentitySub.l4": "Unterstützt Fahrer im Alter von 28–31.",
+  "facilities.trainingIdentitySub.l5": "Spitzenbedingungen für erfahrene Fahrer 32+.",
+  "facilities.trainingUnlock.l1": "Schaltet bessere Entwicklungsbedingungen für Fahrer im Alter von 17–23 frei.",
+  "facilities.trainingUnlock.l2": "Erweitert die Unterstützung auf Fahrer im Alter von 24–27.",
+  "facilities.trainingUnlock.l3": "Erweitert die Unterstützung auf Fahrer im Alter von 28–31.",
+  "facilities.trainingUnlock.l4": "Schaltet Elitebedingungen für erfahrene Fahrer frei und bereitet die Unterstützung zum Leistungserhalt vor."
 }
