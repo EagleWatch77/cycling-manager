@@ -7,6 +7,7 @@ import { fullDate } from '@/lib/format';
 import { ensureGameStateProcessed } from '@/lib/gameState';
 import { SidebarNavigation } from './SidebarNavigation';
 import { TopStatusBar } from './TopStatusBar';
+import { PageHeroBanner } from './PageHeroBanner';
 
 /**
  * Shared chrome for every page: left rail plus top status bar. Pages render
@@ -15,6 +16,13 @@ import { TopStatusBar } from './TopStatusBar';
  * Season/week/date come from the real server clock (lib/calendar/season),
  * never a hardcoded mock date — this is the one place that value is computed
  * for the whole app shell.
+ *
+ * PageHeroBanner (see the chat report) renders for every page EXCEPT Home —
+ * `activeId === 'home'` is the one and only exception, matching the
+ * dashboard page's own `<AppShell activeId="home">` call (app/dashboard/
+ * page.tsx). Every other caller passes a different activeId and gets the
+ * banner automatically — no per-page wiring needed. Home renders no banner
+ * and no gap for one: the conditional simply doesn't mount it.
  */
 export async function AppShell({
   activeId, children, locale,
@@ -42,7 +50,10 @@ export async function AppShell({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopStatusBar t={t} locale={active} player={PLAYER} />
-        <main className="flex-1 overflow-x-hidden p-4">{children}</main>
+        <main className="flex-1 overflow-x-hidden p-4">
+          {activeId !== 'home' && <PageHeroBanner />}
+          {children}
+        </main>
       </div>
     </div>
   );
