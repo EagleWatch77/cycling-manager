@@ -468,7 +468,6 @@
   "facilities.upgradeError": "The upgrade failed. Please try again.",
   "facilities.devOverrideBadge": "Dev override active",
   "facilities.trainingEffect": "+{pct}% training progress",
-  "facilities.recoveryEffect": "+{pct}% post-training recovery",
   "facilities.scoutingAccuracy1": "Basic accuracy",
   "facilities.scoutingAccuracy2": "Better accuracy",
   "facilities.scoutingAccuracy3": "Good accuracy",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Unlocks better development conditions for riders aged 17–23.",
   "facilities.trainingUnlock.l2": "Extends support to riders aged 24–27.",
   "facilities.trainingUnlock.l3": "Extends support to riders aged 28–31.",
-  "facilities.trainingUnlock.l4": "Unlocks elite conditions for experienced riders and prepares performance-retention support."
+  "facilities.trainingUnlock.l4": "Unlocks elite conditions for experienced riders and prepares performance-retention support.",
+  "facilities.recoveryIdentity.l1": "Basic recovery",
+  "facilities.recoveryIdentity.l2": "Improved recovery",
+  "facilities.recoveryIdentity.l3": "Advanced recovery",
+  "facilities.recoveryIdentity.l4": "Professional recovery",
+  "facilities.recoveryIdentity.l5": "Elite recovery",
+  "facilities.recoveryIdentitySub.l1": "Basic conditions for rider recovery.",
+  "facilities.recoveryIdentitySub.l2": "Riders recover more effectively between training and races.",
+  "facilities.recoveryIdentitySub.l3": "Better conditions for regaining energy and managing fatigue.",
+  "facilities.recoveryIdentitySub.l4": "A high level of care for a demanding schedule.",
+  "facilities.recoveryIdentitySub.l5": "Top-tier conditions for sustaining a heavy training and race load long-term.",
+  "facilities.recoveryUnlock.l1": "Improves the team's ability to restore energy and reduce fatigue between training and races.",
+  "facilities.recoveryUnlock.l2": "Unlocks more advanced recovery conditions.",
+  "facilities.recoveryUnlock.l3": "Raises recovery quality for a more demanding training and race schedule.",
+  "facilities.recoveryUnlock.l4": "Unlocks elite-level care for riders' recovery."
 }

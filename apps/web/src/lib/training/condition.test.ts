@@ -3,7 +3,7 @@
  * report, items 13-16). Run with:
  * npx tsx src/lib/training/condition.test.ts
  */
-import { weeklyConditionDelta, clamp100 } from './condition';
+import { weeklyConditionDelta, applyConditionDelta, clamp100 } from './condition';
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail = '') {
@@ -61,6 +61,20 @@ function check(name: string, cond: boolean, detail = '') {
 check('clamp100(150) = 100', clamp100(150) === 100);
 check('clamp100(-10) = 0', clamp100(-10) === 0);
 check('clamp100(42) = 42', clamp100(42) === 42);
+
+// 7. applyConditionDelta() — the one canonical rounding+clamp step (see the chat report, "REGENERAČNÉ CENTRUM CLOSE-OUT", items 12-13). Deliberately generic (current/delta only, no training/plan concept) so a future race/Tour recovery event can reuse it (item 11).
+{
+  const r = applyConditionDelta({ energy: 50, fatigue: 50 }, { energyDelta: 28.75, fatigueDelta: -22.5 });
+  check('applyConditionDelta rounds a fractional Recovery-Center-scaled delta to a whole Energy value', Number.isInteger(r.energy), `${r.energy}`);
+  check('applyConditionDelta rounds a fractional Recovery-Center-scaled delta to a whole Fatigue value', Number.isInteger(r.fatigue), `${r.fatigue}`);
+  check('50 + 28.75 rounds to 79 (round-half-up), then clamps (no-op here)', r.energy === 79, `${r.energy}`);
+  check('50 - 22.5 rounds to 28 (round-half-up: 27.5 rounds to 28)', r.fatigue === 28, `${r.fatigue}`);
+}
+{
+  const r = applyConditionDelta({ energy: 95, fatigue: 5 }, { energyDelta: 20, fatigueDelta: -20 });
+  check('applyConditionDelta clamps Energy at 100, never above', r.energy === 100, `${r.energy}`);
+  check('applyConditionDelta clamps Fatigue at 0, never below', r.fatigue === 0, `${r.fatigue}`);
+}
 
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

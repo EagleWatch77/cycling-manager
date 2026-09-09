@@ -468,7 +468,6 @@
   "facilities.upgradeError": "La mejora ha fallado. Inténtalo de nuevo.",
   "facilities.devOverrideBadge": "Dev override activo",
   "facilities.trainingEffect": "+{pct}% de progreso de entrenamiento",
-  "facilities.recoveryEffect": "+{pct}% de recuperación tras el entrenamiento",
   "facilities.scoutingAccuracy1": "Precisión básica",
   "facilities.scoutingAccuracy2": "Mejor precisión",
   "facilities.scoutingAccuracy3": "Buena precisión",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Desbloquea mejores condiciones de desarrollo para ciclistas de 17–23 años.",
   "facilities.trainingUnlock.l2": "Amplía el apoyo a ciclistas de 24–27 años.",
   "facilities.trainingUnlock.l3": "Amplía el apoyo a ciclistas de 28–31 años.",
-  "facilities.trainingUnlock.l4": "Desbloquea condiciones de élite para ciclistas experimentados y prepara el apoyo al mantenimiento del rendimiento."
+  "facilities.trainingUnlock.l4": "Desbloquea condiciones de élite para ciclistas experimentados y prepara el apoyo al mantenimiento del rendimiento.",
+  "facilities.recoveryIdentity.l1": "Recuperación básica",
+  "facilities.recoveryIdentity.l2": "Recuperación mejorada",
+  "facilities.recoveryIdentity.l3": "Recuperación avanzada",
+  "facilities.recoveryIdentity.l4": "Recuperación profesional",
+  "facilities.recoveryIdentity.l5": "Recuperación de élite",
+  "facilities.recoveryIdentitySub.l1": "Condiciones básicas para la recuperación de los ciclistas.",
+  "facilities.recoveryIdentitySub.l2": "Los ciclistas se recuperan más eficazmente entre entrenamientos y carreras.",
+  "facilities.recoveryIdentitySub.l3": "Mejores condiciones para recuperar energía y gestionar la fatiga.",
+  "facilities.recoveryIdentitySub.l4": "Un alto nivel de cuidado para un programa exigente.",
+  "facilities.recoveryIdentitySub.l5": "Condiciones de primer nivel para soportar a largo plazo la carga de entrenamiento y competición.",
+  "facilities.recoveryUnlock.l1": "Mejora la capacidad del equipo para restaurar energía y reducir la fatiga entre entrenamientos y carreras.",
+  "facilities.recoveryUnlock.l2": "Desbloquea condiciones de recuperación más avanzadas.",
+  "facilities.recoveryUnlock.l3": "Aumenta la calidad de la recuperación para un programa de entrenamiento y carreras más exigente.",
+  "facilities.recoveryUnlock.l4": "Desbloquea un nivel de cuidado de élite para la recuperación de los ciclistas."
 }

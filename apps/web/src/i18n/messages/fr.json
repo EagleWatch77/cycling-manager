@@ -468,7 +468,6 @@
   "facilities.upgradeError": "L'amélioration a échoué. Veuillez réessayer.",
   "facilities.devOverrideBadge": "Dev override actif",
   "facilities.trainingEffect": "+{pct}% de progression d'entraînement",
-  "facilities.recoveryEffect": "+{pct}% de récupération post-entraînement",
   "facilities.scoutingAccuracy1": "Précision de base",
   "facilities.scoutingAccuracy2": "Meilleure précision",
   "facilities.scoutingAccuracy3": "Bonne précision",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Débloque de meilleures conditions de développement pour les coureurs de 17–23 ans.",
   "facilities.trainingUnlock.l2": "Étend le soutien aux coureurs de 24–27 ans.",
   "facilities.trainingUnlock.l3": "Étend le soutien aux coureurs de 28–31 ans.",
-  "facilities.trainingUnlock.l4": "Débloque des conditions élite pour les coureurs expérimentés et prépare le soutien au maintien de la performance."
+  "facilities.trainingUnlock.l4": "Débloque des conditions élite pour les coureurs expérimentés et prépare le soutien au maintien de la performance.",
+  "facilities.recoveryIdentity.l1": "Récupération de base",
+  "facilities.recoveryIdentity.l2": "Récupération améliorée",
+  "facilities.recoveryIdentity.l3": "Récupération avancée",
+  "facilities.recoveryIdentity.l4": "Récupération professionnelle",
+  "facilities.recoveryIdentity.l5": "Récupération d’élite",
+  "facilities.recoveryIdentitySub.l1": "Conditions de base pour la récupération des coureurs.",
+  "facilities.recoveryIdentitySub.l2": "Les coureurs récupèrent plus efficacement entre entraînements et courses.",
+  "facilities.recoveryIdentitySub.l3": "Meilleures conditions pour récupérer de l'énergie et gérer la fatigue.",
+  "facilities.recoveryIdentitySub.l4": "Un niveau de soin élevé pour un programme exigeant.",
+  "facilities.recoveryIdentitySub.l5": "Conditions de pointe pour supporter durablement une lourde charge d’entraînement et de course.",
+  "facilities.recoveryUnlock.l1": "Améliore la capacité de l'équipe à restaurer l'énergie et réduire la fatigue entre entraînements et courses.",
+  "facilities.recoveryUnlock.l2": "Débloque des conditions de récupération plus avancées.",
+  "facilities.recoveryUnlock.l3": "Augmente la qualité de récupération pour un programme d'entraînement et de course plus exigeant.",
+  "facilities.recoveryUnlock.l4": "Débloque un niveau de soin élite pour la récupération des coureurs."
 }

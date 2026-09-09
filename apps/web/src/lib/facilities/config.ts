@@ -96,23 +96,46 @@ export function trainingCenterMultiplier(level: FacilityLevel, age: number): num
  */
 export const TRAINING_CENTER_L5_PERFORMANCE_DECLINE_REDUCTION = 0.15;
 
-/** Recovery Center — relative improvement to energy recovery / fatigue reduction. Superseded for training's own condition math by RECOVERY_MULTIPLIER below (Unified Weekly Training V1 — see the chat report, item 16); kept for the Facilities page's own effect display. */
-export const RECOVERY_BONUS: Record<FacilityLevel, number> = {
-  1: 0, 2: 0.05, 3: 0.10, 4: 0.15, 5: 0.20,
-};
-
 /**
- * Recovery Center — Unified Weekly Training V1 (see the chat report, item
- * 16). Applies ONLY to the new passive weekly recovery (RECOVERY_DAY_ENERGY/
- * RECOVERY_DAY_FATIGUE in lib/training/config.ts), never to training's own
- * raw growth or to the training energy/fatigue cost itself — a straight
- * multiplier (not a "reduction fraction" like RECOVERY_BONUS above), applied
- * inside process_training_plan() (supabase/schema.sql), the sole
- * authoritative source for condition changes now.
+ * Recovery Center V1 — FINAL canonical model (see the chat report,
+ * "REGENERAČNÉ CENTRUM CLOSE-OUT"). Affects PASSIVE RECOVERY ONLY — the
+ * Energy regained / Fatigue reduced on a training week's non-training days
+ * (RECOVERY_DAY_ENERGY/RECOVERY_DAY_FATIGUE in lib/training/config.ts).
+ * Never affects: Performance training gain, Technical training gain,
+ * Potential, Trainability, Professionalism, Experience, Form, Morale,
+ * Fitness, race performance, or the training Energy/Fatigue COST itself
+ * (ENERGY_COST/FATIGUE_GAIN/TECHNICAL_ENERGY_COST/TECHNICAL_FATIGUE_GAIN —
+ * those are fixed regardless of facility level). Also never changes the
+ * NUMBER of recovery days (PERFORMANCE_RECOVERY_DAYS/
+ * TECHNICAL_RECOVERY_DAYS) — the facility improves the QUALITY of each
+ * recovery day, not how many there are.
+ *
+ * A straight multiplier applied to the recovery day's own baseline amount —
+ * levels do NOT stack or multiply against each other; the rider's
+ * effective level simply looks up its own canonical value (same
+ * non-additive convention as Training Center's trainingCenterMultiplier()
+ * — see the chat report, item 2).
+ *
+ * Applied inside process_training_plan() (supabase/schema.sql), the sole
+ * authoritative source for condition changes — see recoveryCenterMultiplier()
+ * below, the TS mirror kept in sync by hand (see
+ * recoveryCenterSql.test.ts's canary).
  */
 export const RECOVERY_MULTIPLIER: Record<FacilityLevel, number> = {
   1: 1.00, 2: 1.05, 3: 1.10, 4: 1.15, 5: 1.20,
 };
+
+/**
+ * The authoritative Recovery Center effect on passive recovery — must be
+ * called with the rider's EFFECTIVE level (min(storedLevel, leagueCap) —
+ * see lib/facilities/capMath.ts), never the raw stored level, so a
+ * relegated player's gameplay effect is correctly clamped down without
+ * erasing their stored progress (same convention as Training Center's
+ * trainingCenterMultiplier()).
+ */
+export function recoveryCenterMultiplier(level: FacilityLevel): number {
+  return RECOVERY_MULTIPLIER[level];
+}
 
 /**
  * Scouting Dept — INTERNAL tuning only, the +/- window (in raw potential

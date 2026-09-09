@@ -1229,7 +1229,7 @@ grant execute on function public.readiness_effectiveness(numeric) to authenticat
  *   throughout this file for ATTR_MIN/MAX, league caps, and the
  *   training-bonus percentages. If you change BASE_TRAINING/
  *   TECHNICAL_BASE, SESSION_COUNT, trainabilityFactor/
- *   professionalismFactor/ageFactor, trainingCenterMultiplier()/RECOVERY_MULTIPLIER (Training Center V1 FINAL age-banded model — see the chat report "TRAINING CENTER CLOSE-OUT"),
+ *   professionalismFactor/ageFactor, trainingCenterMultiplier()/recoveryCenterMultiplier() (Training Center V1 FINAL age-banded model — see the chat report "TRAINING CENTER CLOSE-OUT"),
  *   SECONDARY_ATTRIBUTE, ENERGY_COST/FATIGUE_GAIN/TECHNICAL_ENERGY_COST/
  *   TECHNICAL_FATIGUE_GAIN, PERFORMANCE_RECOVERY_DAYS/
  *   TECHNICAL_RECOVERY_DAYS/RECOVERY_DAY_ENERGY/RECOVERY_DAY_FATIGUE, the
@@ -1269,7 +1269,7 @@ declare
   v_technical_energy_cost constant numeric := 5; -- TECHNICAL_ENERGY_COST
   v_technical_fatigue_gain constant numeric := 5; -- TECHNICAL_FATIGUE_GAIN
   v_technical_recovery_days constant numeric := 6; -- TECHNICAL_RECOVERY_DAYS
-  -- ---- Kept in sync by hand with lib/facilities/config.ts (trainingCenterMultiplier()/RECOVERY_MULTIPLIER) ----
+  -- ---- Kept in sync by hand with lib/facilities/config.ts (trainingCenterMultiplier()/recoveryCenterMultiplier()) ----
   -- ---- Kept in sync by hand with lib/leagues.ts (maxFacilityLevel) ----
 
   v_plan_applied_at timestamptz;
@@ -1626,8 +1626,14 @@ begin
   -- applied only here, never to raw growth or to the training cost).
   v_energy_delta := -v_training_energy_cost + v_recovery_days * v_recovery_day_energy * v_recovery_multiplier;
   v_fatigue_delta := v_training_fatigue_gain - v_recovery_days * v_recovery_day_fatigue * v_recovery_multiplier;
-  v_new_energy := least(100, greatest(0, v_energy + v_energy_delta));
-  v_new_fatigue := least(100, greatest(0, v_fatigue + v_fatigue_delta));
+  -- Rounding audit (see the chat report, "REGENERAČNÉ CENTRUM CLOSE-OUT",
+  -- item 12): the Recovery Center multiplier (1.05-1.20) makes this
+  -- genuinely fractional (e.g. 5 * 5 * 1.15 = 28.75) — round the new total
+  -- to the nearest whole number FIRST, THEN clamp, exactly mirroring
+  -- lib/training/condition.ts's applyConditionDelta() (Math.round then
+  -- clamp100) so the two can never diverge — see recoveryCenterSql.test.ts.
+  v_new_energy := least(100, greatest(0, round(v_energy + v_energy_delta)));
+  v_new_fatigue := least(100, greatest(0, round(v_fatigue + v_fatigue_delta)));
 
   v_condition_previous := v_condition;
   v_condition := jsonb_set(jsonb_set(v_condition, '{energy}', to_jsonb(v_new_energy)), '{fatigue}', to_jsonb(v_new_fatigue));

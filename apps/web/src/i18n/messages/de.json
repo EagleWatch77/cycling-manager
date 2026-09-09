@@ -468,7 +468,6 @@
   "facilities.upgradeError": "Der Ausbau ist fehlgeschlagen. Bitte erneut versuchen.",
   "facilities.devOverrideBadge": "Dev-Override aktiv",
   "facilities.trainingEffect": "+{pct}% Trainingsfortschritt",
-  "facilities.recoveryEffect": "+{pct}% Regeneration nach dem Training",
   "facilities.scoutingAccuracy1": "Grundgenauigkeit",
   "facilities.scoutingAccuracy2": "Bessere Genauigkeit",
   "facilities.scoutingAccuracy3": "Gute Genauigkeit",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Schaltet bessere Entwicklungsbedingungen für Fahrer im Alter von 17–23 frei.",
   "facilities.trainingUnlock.l2": "Erweitert die Unterstützung auf Fahrer im Alter von 24–27.",
   "facilities.trainingUnlock.l3": "Erweitert die Unterstützung auf Fahrer im Alter von 28–31.",
-  "facilities.trainingUnlock.l4": "Schaltet Elitebedingungen für erfahrene Fahrer frei und bereitet die Unterstützung zum Leistungserhalt vor."
+  "facilities.trainingUnlock.l4": "Schaltet Elitebedingungen für erfahrene Fahrer frei und bereitet die Unterstützung zum Leistungserhalt vor.",
+  "facilities.recoveryIdentity.l1": "Grundlegende Regeneration",
+  "facilities.recoveryIdentity.l2": "Verbesserte Regeneration",
+  "facilities.recoveryIdentity.l3": "Fortgeschrittene Regeneration",
+  "facilities.recoveryIdentity.l4": "Professionelle Regeneration",
+  "facilities.recoveryIdentity.l5": "Elite-Regeneration",
+  "facilities.recoveryIdentitySub.l1": "Grundlegende Bedingungen für die Erholung der Fahrer.",
+  "facilities.recoveryIdentitySub.l2": "Fahrer erholen sich zwischen Training und Rennen effektiver.",
+  "facilities.recoveryIdentitySub.l3": "Bessere Bedingungen zur Energiegewinnung und Ermüdungsbewältigung.",
+  "facilities.recoveryIdentitySub.l4": "Ein hohes Maß an Betreuung bei einem anspruchsvollen Programm.",
+  "facilities.recoveryIdentitySub.l5": "Spitzenbedingungen für die langfristige Bewältigung von Trainings- und Rennbelastung.",
+  "facilities.recoveryUnlock.l1": "Verbessert die Fähigkeit des Teams, zwischen Training und Rennen Energie wiederherzustellen und Ermüdung zu reduzieren.",
+  "facilities.recoveryUnlock.l2": "Schaltet fortgeschrittenere Regenerationsbedingungen frei.",
+  "facilities.recoveryUnlock.l3": "Erhöht die Regenerationsqualität bei einem anspruchsvolleren Trainings- und Rennprogramm.",
+  "facilities.recoveryUnlock.l4": "Schaltet ein Elite-Betreuungsniveau für die Regeneration der Fahrer frei."
 }

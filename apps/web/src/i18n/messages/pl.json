@@ -468,7 +468,6 @@
   "facilities.upgradeError": "Ulepszenie nie powiodło się. Spróbuj ponownie.",
   "facilities.devOverrideBadge": "Dev override aktywny",
   "facilities.trainingEffect": "+{pct}% postępu treningu",
-  "facilities.recoveryEffect": "+{pct}% regeneracji po treningu",
   "facilities.scoutingAccuracy1": "Podstawowa dokładność",
   "facilities.scoutingAccuracy2": "Lepsza dokładność",
   "facilities.scoutingAccuracy3": "Dobra dokładność",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Odblokowuje lepsze warunki rozwoju dla zawodników w wieku 17–23 lat.",
   "facilities.trainingUnlock.l2": "Rozszerza wsparcie o zawodników w wieku 24–27 lat.",
   "facilities.trainingUnlock.l3": "Rozszerza wsparcie o zawodników w wieku 28–31 lat.",
-  "facilities.trainingUnlock.l4": "Odblokowuje elitarne warunki dla doświadczonych zawodników i przygotowuje wsparcie utrzymania wydajności."
+  "facilities.trainingUnlock.l4": "Odblokowuje elitarne warunki dla doświadczonych zawodników i przygotowuje wsparcie utrzymania wydajności.",
+  "facilities.recoveryIdentity.l1": "Podstawowa regeneracja",
+  "facilities.recoveryIdentity.l2": "Ulepszona regeneracja",
+  "facilities.recoveryIdentity.l3": "Zaawansowana regeneracja",
+  "facilities.recoveryIdentity.l4": "Profesjonalna regeneracja",
+  "facilities.recoveryIdentity.l5": "Elitarna regeneracja",
+  "facilities.recoveryIdentitySub.l1": "Podstawowe warunki regeneracji zawodników.",
+  "facilities.recoveryIdentitySub.l2": "Zawodnicy skuteczniej regenerują się między treningami a wyścigami.",
+  "facilities.recoveryIdentitySub.l3": "Lepsze warunki odzyskiwania energii i radzenia sobie ze zmęczeniem.",
+  "facilities.recoveryIdentitySub.l4": "Wysoki poziom opieki przy wymagającym programie.",
+  "facilities.recoveryIdentitySub.l5": "Najwyższej klasy warunki do długotrwałego znoszenia obciążenia treningowego i wyścigowego.",
+  "facilities.recoveryUnlock.l1": "Poprawia zdolność zespołu do odzyskiwania energii i redukcji zmęczenia między treningami a wyścigami.",
+  "facilities.recoveryUnlock.l2": "Odblokowuje bardziej zaawansowane warunki regeneracji.",
+  "facilities.recoveryUnlock.l3": "Zwiększa jakość regeneracji przy bardziej wymagającym programie treningowym i wyścigowym.",
+  "facilities.recoveryUnlock.l4": "Odblokowuje elitarny poziom opieki nad regeneracją zawodników."
 }

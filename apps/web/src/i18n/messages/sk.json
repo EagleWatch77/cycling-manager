@@ -468,7 +468,6 @@
   "facilities.upgradeError": "Vylepšenie sa nepodarilo. Skús to znova.",
   "facilities.devOverrideBadge": "Dev override aktívny",
   "facilities.trainingEffect": "+{pct}% progres tréningu",
-  "facilities.recoveryEffect": "+{pct}% regenerácia po tréningu",
   "facilities.scoutingAccuracy1": "Základná presnosť",
   "facilities.scoutingAccuracy2": "Lepšia presnosť",
   "facilities.scoutingAccuracy3": "Dobrá presnosť",
@@ -531,5 +530,19 @@
   "facilities.trainingUnlock.l1": "Odomkne lepšie podmienky pre rozvoj jazdcov vo veku 17–23 rokov.",
   "facilities.trainingUnlock.l2": "Rozšíri podporu o jazdcov vo veku 24–27 rokov.",
   "facilities.trainingUnlock.l3": "Rozšíri podporu o jazdcov vo veku 28–31 rokov.",
-  "facilities.trainingUnlock.l4": "Sprístupní elitné podmienky pre skúsených jazdcov a pripraví podporu udržania výkonnosti."
+  "facilities.trainingUnlock.l4": "Sprístupní elitné podmienky pre skúsených jazdcov a pripraví podporu udržania výkonnosti.",
+  "facilities.recoveryIdentity.l1": "Základná regenerácia",
+  "facilities.recoveryIdentity.l2": "Zlepšená regenerácia",
+  "facilities.recoveryIdentity.l3": "Pokročilá regenerácia",
+  "facilities.recoveryIdentity.l4": "Profesionálna regenerácia",
+  "facilities.recoveryIdentity.l5": "Elitná regenerácia",
+  "facilities.recoveryIdentitySub.l1": "Základné podmienky na obnovu jazdcov.",
+  "facilities.recoveryIdentitySub.l2": "Jazdci sa medzi tréningami a pretekmi zotavujú účinnejšie.",
+  "facilities.recoveryIdentitySub.l3": "Lepšie podmienky na obnovu energie a zvládanie únavy.",
+  "facilities.recoveryIdentitySub.l4": "Vysoká úroveň starostlivosti pri náročnom programe.",
+  "facilities.recoveryIdentitySub.l5": "Špičkové podmienky pre dlhodobé zvládanie tréningovej a pretekovej záťaže.",
+  "facilities.recoveryUnlock.l1": "Zlepší schopnosť tímu obnovovať energiu a znižovať únavu medzi tréningami a pretekmi.",
+  "facilities.recoveryUnlock.l2": "Odomkne pokročilejšie regeneračné podmienky.",
+  "facilities.recoveryUnlock.l3": "Zvýši kvalitu regenerácie pri náročnejšom tréningovom a pretekovom programe.",
+  "facilities.recoveryUnlock.l4": "Sprístupní elitnú úroveň starostlivosti o regeneráciu jazdcov."
 }
