@@ -58,7 +58,12 @@ export async function getMySeasonRegistrations(tourIds: string[]): Promise<Store
     .eq('season_id', getCurrentSeasonInfo().seasonId)
     .in('tour_id', tourIds);
 
-  if (error || !data) return [];
+  if (error) {
+    // Typical cause: migration 01 (tour_registrations.season_id) not applied to THIS Supabase project.
+    console.error(`[registration] read tour_registrations failed: code=${error.code} message=${error.message}`);
+    return [];
+  }
+  if (!data) return [];
   return data.map(fromRow);
 }
 

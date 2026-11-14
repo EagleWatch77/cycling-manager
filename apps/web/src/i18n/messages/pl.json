@@ -564,5 +564,6 @@
   "ranking.divisionNoRank": "Klasyfikacja dywizji nie jest jeszcze dostępna. Punkty będą przyznawane po pierwszych wyścigach.",
   "ranking.divisionNone": "Nie jesteś jeszcze przypisany do dywizji.",
   "ranking.divisionEqual": "Dywizje w obrębie jednej ligi są równorzędne.",
-  "ranking.you": "Ty"
+  "ranking.you": "Ty",
+  "ranking.divisionMembersEmpty": "Lista zawodników tej dywizji jest na razie pusta."
 }

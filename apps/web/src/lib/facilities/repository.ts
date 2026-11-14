@@ -20,7 +20,8 @@ export async function getMyLeague(): Promise<LeagueId> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 'rookie';
 
-  const { data } = await supabase.from('profiles').select('league').eq('id', user.id).maybeSingle();
+  const { data, error } = await supabase.from('profiles').select('league').eq('id', user.id).maybeSingle();
+  if (error) console.error(`[facilities] read profiles.league failed: code=${error.code} message=${error.message}`);
   const league = data?.league as string | undefined;
   return (LEAGUES as readonly string[]).includes(league ?? '') ? (league as LeagueId) : 'rookie';
 }

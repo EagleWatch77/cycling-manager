@@ -564,5 +564,6 @@
   "ranking.divisionNoRank": "Pořadí v podlize zatím není k dispozici. Body se začnou přidělovat po prvních závodech.",
   "ranking.divisionNone": "Zatím nejsi zařazen do podligy.",
   "ranking.divisionEqual": "Podligy v rámci jedné ligy jsou rovnocenné.",
-  "ranking.you": "Ty"
+  "ranking.you": "Ty",
+  "ranking.divisionMembersEmpty": "Seznam jezdců podligy je zatím prázdný."
 }

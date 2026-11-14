@@ -564,5 +564,6 @@
   "ranking.divisionNoRank": "Division standings are not available yet. Points will be awarded after the first races.",
   "ranking.divisionNone": "You are not placed in a division yet.",
   "ranking.divisionEqual": "Divisions within a league are equal in strength.",
-  "ranking.you": "You"
+  "ranking.you": "You",
+  "ranking.divisionMembersEmpty": "The list of riders in this division is empty for now."
 }

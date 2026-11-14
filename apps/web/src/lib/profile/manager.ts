@@ -11,7 +11,8 @@ export async function getMyManagerName(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data } = await supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle();
+  const { data, error } = await supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle();
+  if (error) console.error(`[profile] read profiles.display_name failed: code=${error.code} message=${error.message}`);
   const name = (data?.display_name as string | null | undefined)?.trim();
   return name ? name : null;
 }

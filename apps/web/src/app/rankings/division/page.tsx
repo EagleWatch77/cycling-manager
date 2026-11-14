@@ -57,7 +57,7 @@ export default async function DivisionRankingsPage() {
         <p className="border-t border-line px-3.5 py-2 text-xs text-navy-soft">{t('ranking.divisionNoRank')}</p>
       </Card>
 
-      <DataTable columns={columns} rows={members} rowKey={(m) => m.riderId} emptyText={t('ranking.divisionNone')} />
+      <DataTable columns={columns} rows={members} rowKey={(m) => m.riderId} emptyText={t('ranking.divisionMembersEmpty')} />
     </div>
   );
 }

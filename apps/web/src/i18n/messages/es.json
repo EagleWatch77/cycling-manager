@@ -564,5 +564,6 @@
   "ranking.divisionNoRank": "La clasificación de la división aún no está disponible. Los puntos se otorgarán tras las primeras carreras.",
   "ranking.divisionNone": "Todavía no estás asignado a una división.",
   "ranking.divisionEqual": "Las divisiones de una liga son equivalentes.",
-  "ranking.you": "Tú"
+  "ranking.you": "Tú",
+  "ranking.divisionMembersEmpty": "La lista de corredores de esta división está vacía por ahora."
 }
