@@ -557,5 +557,12 @@
   "top.nextTour": "Najbližšia Tour",
   "top.profile": "Profil manažéra",
   "calendar.tourSlot": "Tour {n}",
-  "calendar.weekTooltip": "Týždeň {n}: {range}"
+  "calendar.weekTooltip": "Týždeň {n}: {range}",
+  "races.tourStarted": "Tour už začala",
+  "ranking.tabDivision": "Moja podliga",
+  "ranking.divisionMembers": "{n} / {max} hráčov",
+  "ranking.divisionNoRank": "Poradie v podlige ešte nie je dostupné. Body sa začnú prideľovať po prvých pretekoch.",
+  "ranking.divisionNone": "Zatiaľ nie si zaradený do podligy.",
+  "ranking.divisionEqual": "Podligy v rámci jednej ligy sú rovnocenné.",
+  "ranking.you": "Ty"
 }

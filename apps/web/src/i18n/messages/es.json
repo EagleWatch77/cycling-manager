@@ -557,5 +557,12 @@
   "top.nextTour": "Próximo Tour",
   "top.profile": "Perfil del mánager",
   "calendar.tourSlot": "Tour {n}",
-  "calendar.weekTooltip": "Semana {n}: {range}"
+  "calendar.weekTooltip": "Semana {n}: {range}",
+  "races.tourStarted": "El Tour ya ha comenzado",
+  "ranking.tabDivision": "Mi división",
+  "ranking.divisionMembers": "{n} / {max} jugadores",
+  "ranking.divisionNoRank": "La clasificación de la división aún no está disponible. Los puntos se otorgarán tras las primeras carreras.",
+  "ranking.divisionNone": "Todavía no estás asignado a una división.",
+  "ranking.divisionEqual": "Las divisiones de una liga son equivalentes.",
+  "ranking.you": "Tú"
 }

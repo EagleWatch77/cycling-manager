@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import { getDictionary, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/server';
-import { PLAYER } from '@/mock/dashboard';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { dateRange, fullDate } from '@/lib/format';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getMyLeague } from '@/lib/facilities/repository';
 import { getMyManagerName } from '@/lib/profile/manager';
+import { ensureMyDivision } from '@/lib/league/repository';
+import { divisionCode } from '@/lib/league/divisions';
 import { PRIMARY_NAV, SECONDARY_NAV, SETTINGS_NAV } from '@/lib/navigation';
 import { ensureGameStateProcessed } from '@/lib/gameState';
 import { SidebarNavigation } from './SidebarNavigation';
@@ -51,11 +52,15 @@ export async function AppShell({
   // that has not finished yet), their profile name and league. No Tour → the
   // bar falls back to the page title.
   const scheduled = getSeasonSchedule(season);
-  const [registrations, managerName, league] = await Promise.all([
+  // League + sub-league are real (league_memberships). If the sub-league
+  // tables are not deployed yet this falls back to the plain league.
+  const [registrations, managerName, division] = await Promise.all([
     getMySeasonRegistrations(scheduled.map((v) => v.tour.id)),
     getMyManagerName(),
-    getMyLeague(),
+    ensureMyDivision(),
   ]);
+  const league = division?.league ?? (await getMyLeague());
+  const leagueLabel = division ? `${t(`league.${division.league}`)} ${divisionCode(division.number)}` : t(`league.${league}`);
   const mine = new Set(registrations.map((r) => r.tourId));
   const next = scheduled
     .filter((v) => mine.has(v.tour.id) && v.weekEnd.getTime() >= season.now.getTime())
@@ -66,7 +71,7 @@ export async function AppShell({
     <div className="flex min-h-screen">
       <SidebarNavigation
         t={t}
-        league={PLAYER.league}
+        league={league}
         activeId={activeId}
         seasonLabel={`${t('races.season')} ${season.seasonNumber}`}
         weekLabel={`${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`}
@@ -82,7 +87,7 @@ export async function AppShell({
           week={season.currentWeek}
           totalWeeks={season.totalWeeks}
           managerName={managerName}
-          leagueLabel={t(`league.${league}`)}
+          leagueLabel={leagueLabel}
         />
         <main className="flex-1 overflow-x-hidden p-4">
           {activeId !== 'home' && <PageHeroBanner />}

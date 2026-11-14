@@ -52,7 +52,25 @@ Zdroj: `lib/facilities/config.ts`, jediný kanonický zdroj všetkých efektov. 
 - Premium: riadok v `premium_entitlements`, vždy overené na serveri, nikdy cez klientský príznak. Admin: `admin_users`, rovnaký vzor. `[KÓD]`
 
 ## 9. Dáta
-Tabuľky v `supabase/schema.sql` (12): profiles, riders, tour_registrations, training_plans, admin_users, market_riders, premium_entitlements, race_results, player_facilities, bike_condition, season_transition_processing, rider_training_progress.
+Tabuľky v `supabase/schema.sql` (14): league_divisions, league_memberships (podligy V1), profiles, riders, tour_registrations, training_plans, admin_users, market_riders, premium_entitlements, race_results, player_facilities, bike_condition, season_transition_processing, rider_training_progress.
+
+## 10. Ligy a podligy V1 `[SCHVÁLENÉ 2026-11-14]`
+- Päť líg: Rookie, Amateur, Continental, Pro, Elite. Podliga má max. 50 hráčov; označenie `Rookie 1.1`, `Rookie 1.2`, ... Podligy v lige sú rovnocenné, číslo nevyjadruje silu. Elite má najviac jednu podligu Elite 1.1. Ostatné podligy vznikajú podľa potreby, žiadne prázdne vopred.
+- Nový hráč začína v Rookie, v podlige s najnižším číslom, ktorá má voľné miesto; ak sú všetky plné, vznikne nová. Vstupuje do aktuálnej globálnej sezóny a týždňa. Do Tour, ktorá už začala, sa nemôže prihlásiť, pripravuje sa na ďalšiu.
+- Technicky: tabuľky `league_divisions` a `league_memberships`, zaradenie funkciou `assign_my_league_division` (lenivo cez `AppShell`), kapacita chránená v databáze. Migrácia musí byť nasadená. `[KÓD]` `supabase/migrations/20261114_league_divisions.sql`
+- Rebríčky → karta „Moja podliga“: len členovia, bez bodov a poradia (bodovanie neexistuje).
+- Zatiaľ neriešime: postupy/zostupy, neaktivitu a vyraďovanie, bodovanie a rovnosť bodov. `[CHÝBA]`
+
+## 11. Majstrovstvá sveta V1 `[SCHVÁLENÝ KONCEPT – NEIMPLEMENTOVANÉ]`
+Podrobné ID rozhodnutí: `DECISIONS.md` C-015 až C-021.
+- **Základ:** každú sezónu v 6. týždni, samostatné MS pre každú ligu. Jeden jednodňový pretek (nie Tour) s kombinovaným terénom (rovina, kopce, stúpania); profil sa môže meniť podľa sezóny. Nezapočítavajú sa do limitu ligových Tour. Účasť je dobrovoľná, len na pozvánku. Národnosť zatiaľ nič neovplyvňuje.
+- **Kvalifikácia:** koniec 4. týždňa, nemenný snapshot poradia podlíg (sezóna, liga, podliga, jazdec, manažér, poradie, body). Z každej podligy: 35 % oprávnených aktívnych jazdcov priamo + ďalších 15 % náhradníci, obe nahor; náhradníci max. do počtu zvyšných oprávnených. Príklady: 10→4+2, 20→7+3, 30→11+5, 40→14+6, 50→18+8.
+- **Pozvánky:** pondelok 5. týždňa. Priamy: prijatie = garantované miesto, odmietnutie uvoľní miesto. Náhradník: prijatie = štartuje, ak sa miesto uvoľní; voľné miesto dostane najvyšší náhradník v poradí, ktorý už prijal; nerozhodnutého vyššieho nikto nepredbehne pred uzávierkou (miesto sa rezervuje). Po povýšení netreba nové potvrdenie.
+- **Uzávierka:** piatok 5. týždňa, koniec dňa v UTC (presná hranica sa upresní pri implementácii). Nepotvrdené pozvánky vypršia = neúčasť; voľné miesta doplnia potvrdení náhradníci v poradí; ak ich je málo, štartovná listina ostane menšia. Nikto nejde bez súhlasu; odmietnutie ani nepotvrdenie sa nepenalizuje.
+- **Šampionáty:** jazdci podlíg jednej ligy pretekajú spolu. Nad konfigurovateľnou kapacitou (predbežne 100) sa MS delia na MS Rookie A, B, C... rovnomerne podľa počtu aj poradia (80→1; 120→2×60; 250→3×83–84; 500→5×100). Každý šampionát má vlastného víťaza a titul; spoločné finále nie. Elite = 1 šampionát. Kapacita race enginu neoverená `[CHÝBA]`.
+- **Dashboard:** pred kvalifikáciou (MS, týždeň 6, kvalifikácia na konci 4. týždňa) → priama pozvánka (gratulácia, poradie, termín, Prijať/Odmietnuť) → pozvánka náhradníka (poradie, podmienky, Prijať/Odmietnuť, „Čakáš na voľné miesto“) → po povýšení („Účasť potvrdená“) → po uzávierke (pridelený šampionát a termín, alebo „MS sa nezúčastníš“). MS sa zobrazujú v kalendári aj hráčom bez pozvánky.
+- **Mimo rozsah:** simulácia MS, výsledky a tituly, dúhové dresy, odmeny/body, nové mechaniky tréningu/energie/regenerácie, olympiáda a ďalšie špeciálne preteky.
+- **Závisí od:** líg a podlíg (V1 rozpracované), bodovania a rebríčkov, definície „oprávnený aktívny jazdec“, plánovaných úloh (cron) a overenia kapacity race enginu.
 
 ## Čo treba doplniť (potrebujeme od vlastníka)
 1. Ktoré rozhodnutia zo špecifikácie v9 sa neskôr zmenili (a ako).

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { RegisterResult, UnregisterResult } from '@/lib/races/registration';
 import { Icon } from '../ui/Icon';
 
-type SelectionState = 'available' | 'selected' | 'overlap' | 'season-limit';
+type SelectionState = 'available' | 'selected' | 'overlap' | 'season-limit' | 'started';
 
 /**
  * Client wrapper around the register/unregister server actions.
@@ -33,6 +33,7 @@ export function TourRegistrationButton({
     cancelling: string;
     overlap: string;
     seasonLimit: string;
+    started: string;
     genericError: string;
   };
   registerAction: (tourId: string) => Promise<RegisterResult>;
@@ -46,6 +47,7 @@ export function TourRegistrationButton({
   function messageFor(reason: string): string {
     if (reason === 'date-overlap') return labels.overlap;
     if (reason === 'season-limit') return labels.seasonLimit;
+    if (reason === 'tour-started') return labels.started;
     return labels.genericError;
   }
 
@@ -89,11 +91,11 @@ export function TourRegistrationButton({
     });
   }
 
-  if (state === 'overlap' || state === 'season-limit') {
+  if (state === 'overlap' || state === 'season-limit' || state === 'started') {
     return (
       <button type="button" disabled
         className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-teal-rail px-3 py-2 text-sm font-semibold text-navy-muted/70">
-        {state === 'overlap' ? labels.overlap : labels.seasonLimit}
+        {state === 'overlap' ? labels.overlap : state === 'started' ? labels.started : labels.seasonLimit}
       </button>
     );
   }

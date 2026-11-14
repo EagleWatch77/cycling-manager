@@ -21,6 +21,7 @@ export default async function RankingsLayout({ children }: { children: ReactNode
 
         <RankingsTabs labels={{
           riders: t('ranking.tabRiders'),
+          division: t('ranking.tabDivision'),
           nations: t('ranking.tabNations'),
           achievements: t('ranking.tabAchievements'),
         }} />

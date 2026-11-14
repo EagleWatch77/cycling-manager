@@ -9,9 +9,15 @@ import { EmptyState } from './ui/EmptyState';
  * rows (no race has been processed yet) it shows an empty state instead of
  * any invented standing.
  */
-export function StandingsCard({ t, rows, className = '' }: { t: T; rows: StandingRow[]; className?: string }) {
+export function StandingsCard({
+  t, rows, subtitle = null, className = '',
+}: { t: T; rows: StandingRow[]; /** e.g. "Rookie 1.1" — the player's real sub-league. */ subtitle?: string | null; className?: string }) {
   return (
-    <Card title={t('standings.title')} dense className={className}>
+    <Card
+      title={subtitle ? <>{t('standings.title')} <span className="font-medium normal-case text-navy-soft">· {subtitle}</span></> : t('standings.title')}
+      dense
+      className={className}
+    >
       {rows.length === 0 ? (
         <EmptyState compact icon="trophy" title={t('ranking.emptyTitle')} text={t('ranking.emptyText')} />
       ) : (

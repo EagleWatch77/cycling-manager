@@ -64,7 +64,7 @@ export async function getMySeasonRegistrations(tourIds: string[]): Promise<Store
 
 export type RegisterResult =
   | { ok: true }
-  | { ok: false; reason: 'no-rider' | 'already-registered' | 'date-overlap' | 'season-limit' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'already-registered' | 'date-overlap' | 'season-limit' | 'tour-started' | 'error' };
 
 /**
  * Registers the current player's Rider for a Tour ("Tour selection").
@@ -86,6 +86,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   if (state === 'selected') return { ok: false, reason: 'already-registered' };
   if (state === 'overlap') return { ok: false, reason: 'date-overlap' };
   if (state === 'season-limit') return { ok: false, reason: 'season-limit' };
+  if (state === 'started') return { ok: false, reason: 'tour-started' };
 
   const supabase = await createClient();
   const { error } = await supabase

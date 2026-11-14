@@ -6,6 +6,8 @@ import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { getMyBikeCondition } from '@/lib/facilities/bike';
+import { ensureMyDivision } from '@/lib/league/repository';
+import { divisionCode } from '@/lib/league/divisions';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
 import { dateRange, fullDate } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
@@ -34,9 +36,12 @@ import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
 export default async function DashboardPage() {
   const { t, locale } = await getServerDictionary();
   const rider = await ensureStarterRider();
-  // Every new account starts in Rookie; league lives on the profile, not the
-  // rider, and there is no promotion yet.
-  const league = 'rookie';
+  // Real league + sub-league (league_memberships). Every new account starts
+  // in Rookie; there is no promotion yet. Falls back to Rookie only if the
+  // sub-league tables are not deployed.
+  const division = await ensureMyDivision();
+  const league = division?.league ?? 'rookie';
+  const divisionLabel = division ? `${t(`league.${division.league}`)} ${divisionCode(division.number)}` : null;
 
   const season = getCurrentSeasonInfo();
   const scheduled = getSeasonSchedule(season);
@@ -94,7 +99,7 @@ export default async function DashboardPage() {
   }
   const canPickTour =
     events.length < maxSlots &&
-    scheduled.some((v) => v.schedule.registrationOpen && !selectedTourIds.has(v.tour.id));
+    scheduled.some((v) => v.schedule.registrationOpen && v.startsInDays > 0 && !selectedTourIds.has(v.tour.id));
   if (rider && canPickTour) {
     tasks.push({ id: 'tours', text: t('dashboard.taskPickTours', { n: events.length, max: maxSlots }), href: '/races' });
   }
@@ -125,7 +130,7 @@ export default async function DashboardPage() {
             <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
           </div>
           <div className="flex flex-col gap-3 md:col-span-2 md:grid md:grid-cols-2 md:items-start lg:col-span-1 lg:flex lg:flex-col">
-            <StandingsCard t={t} rows={[]} />
+            <StandingsCard t={t} rows={[]} subtitle={divisionLabel} />
             <EquipmentCard t={t} items={bikeItems} />
           </div>
         </div>

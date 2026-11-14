@@ -1,32 +1,24 @@
 # CURRENT_TASK
 
 ## Status (2026-11-14)
-Dashboard ("Domov") layout finished, uncommitted until the user commits via GitHub Desktop.
+Leagues & sub-leagues V1 implemented (uncommitted until the owner commits via GitHub Desktop). World Championships (MS) are an APPROVED CONCEPT only — see DECISIONS C-015..C-021, GAME_DESIGN §11; not implemented.
 
-## Top bar (2026-11-14)
-TopStatusBar reworked: left = next registered Tour + real dates (else page title); right = season/week, bell (no badge), language, profile menu (name, league, sign-out). Budget/energy/form/mock notifications removed. AppShell reads registrations, profiles.display_name, league. Keys top.budget/energy/form removed; top.nextTour, top.profile added.
-Not done: bell has no notification system behind it; sidebar still uses mock PLAYER.league and shows season info; sidebar is not responsive on mobile.
+## Done today
+- Dashboard layout, compact top bar (next Tour / page title, season+week, bell, language, profile menu), calendar card with 10-week axis + Tour 1..3 slots.
+- Tour schedule = weekly template for every season; `tour_registrations.season_id` (migration at end of schema.sql — already needed before deploy of that change).
+- Sub-leagues: `league_divisions`, `league_memberships`, `assign_my_league_division(season_id)`, `division_members` view. Real "Rookie 1.1" in top bar profile menu and dashboard standings card; Rankings → tab "Moja podliga" (members only, no points/ranks).
+- Started Tours cannot be joined (state `started`).
 
-## Game time + calendar card (2026-11-14)
-Game time = server UTC date vs SEASON_ONE_START (2026-08-17), 10 weeks x 7 days, same for all players; lib/calendar/season.ts unchanged. format.ts now pins timeZone UTC. SeasonCalendarCard: date, season, week x/10, 10-week axis (current highlighted, tooltip date ranges, tour markers), Tour 1..3 slots from real registrations.
-DECIDED (owner): Tour schedule = weekly template valid for every season (data/tourSchedule.ts, no seasonId; unused registrationDeadline dropped). tour_registrations gets season_id, unique(rider_id, season_id, tour_id) — migration block at the end of supabase/schema.sql, MUST be run in Supabase BEFORE deploying. Season-1 rows backfilled as 'season-1'. Bike wear still only processes current-season registrations (behaviour unchanged; unprocessed S1 leftovers stay unprocessed).
+## MUST deploy (Supabase SQL editor), in this order
+1. last block of `supabase/schema.sql` titled "Tour schedule as a weekly template + per-season registrations" (adds tour_registrations.season_id).
+2. `supabase/migrations/20261114_league_divisions.sql` (same text is appended to schema.sql). Idempotent. Without it the app degrades: no sub-league label, Rankings tab shows "not placed yet".
 
-## Done in dashboard task
-- Top row: compact Season calendar (4/12) + wider Next races with ElevationProfile (8/12).
-- Bottom: Rider | Manager tasks + Training overview | Standings + Bike equipment (1/2/3 cols responsive).
-- Cards take `className`; `CardLink` got `href`; `EmptyState` got `compact`.
-- New: `ManagerTasksCard`, `TrainingOverviewCard`. `EquipmentCard` now shows real bike condition.
-- 12 new i18n keys + `tour.next` / `standings.title` renamed, all 7 locales.
+## Tests
+- `npx tsx` on every `*.test.ts` (web) — all pass.
+- SQL (real Postgres, concurrency): `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/league_divisions.test.sh` (needs non-root OS user) — 44 checks pass.
 
-## Real data
-Training plan/last training (training_plans), bike condition, season calendar, rider card.
-Manager tasks = reminders derived from that state (no task system exists).
-
-## Still not wired
-- Standings: empty state (no processed race results yet).
-- Next race card: DANUBE_TOUR mock (shared content); weather is static.
-- Visual check in browser not done (sandbox: no build, Google Fonts blocked).
-
-## Next
-- Check dashboard on Vercel preview (desktop/tablet/mobile).
-- Decide: keep derived Manager tasks or pure empty state.
+## Not wired / open
+- No promotion/relegation, inactivity rules, scoring, tie-breaks, cron, MS (DECISIONS O-006).
+- `profiles.league` is player-updatable under RLS (O-007) — must become server-only.
+- Existing accounts get joined_season_id 'season-1' (placeholder; progress reset before launch).
+- Sidebar is not responsive on mobile; bell has no notification system.

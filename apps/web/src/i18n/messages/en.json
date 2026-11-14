@@ -557,5 +557,12 @@
   "top.nextTour": "Next Tour",
   "top.profile": "Manager profile",
   "calendar.tourSlot": "Tour {n}",
-  "calendar.weekTooltip": "Week {n}: {range}"
+  "calendar.weekTooltip": "Week {n}: {range}",
+  "races.tourStarted": "Tour already started",
+  "ranking.tabDivision": "My division",
+  "ranking.divisionMembers": "{n} / {max} players",
+  "ranking.divisionNoRank": "Division standings are not available yet. Points will be awarded after the first races.",
+  "ranking.divisionNone": "You are not placed in a division yet.",
+  "ranking.divisionEqual": "Divisions within a league are equal in strength.",
+  "ranking.you": "You"
 }

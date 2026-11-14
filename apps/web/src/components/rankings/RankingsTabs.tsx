@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const TAB_HREFS = ['/rankings', '/rankings/nations', '/rankings/achievements'] as const;
+const TAB_HREFS = ['/rankings', '/rankings/division', '/rankings/nations', '/rankings/achievements'] as const;
 
 export interface RankingsTabLabels {
   riders: string;
+  division: string;
   nations: string;
   achievements: string;
 }
@@ -21,12 +22,13 @@ export interface RankingsTabLabels {
  */
 export function RankingsTabs({ labels }: { labels: RankingsTabLabels }) {
   const pathname = usePathname();
-  const tabs = TAB_HREFS.map((href) => ({
-    href,
-    label: href === '/rankings' ? labels.riders
-      : href === '/rankings/nations' ? labels.nations
-      : labels.achievements,
-  }));
+  const LABEL: Record<(typeof TAB_HREFS)[number], string> = {
+    '/rankings': labels.riders,
+    '/rankings/division': labels.division,
+    '/rankings/nations': labels.nations,
+    '/rankings/achievements': labels.achievements,
+  };
+  const tabs = TAB_HREFS.map((href) => ({ href, label: LABEL[href] }));
 
   return (
     <div className="flex gap-1 border-b border-line px-1">

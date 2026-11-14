@@ -88,7 +88,7 @@ function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): bool
  * the caller supplies which Tour ids are already selected (from the
  * Rider's persisted registrations), so this has no I/O of its own.
  */
-export type TourSelectionState = 'available' | 'selected' | 'overlap' | 'season-limit';
+export type TourSelectionState = 'available' | 'selected' | 'overlap' | 'season-limit' | 'started';
 
 export function getSelectionState(
   tourId: string,
@@ -100,6 +100,11 @@ export function getSelectionState(
 
   const target = seasonViews.find((v) => v.tour.id === tourId);
   if (!target) return 'available';
+
+  // A Tour whose week has started (or already passed) can no longer be joined;
+  // the player prepares for the next available Tour. startsInDays is 0 exactly
+  // once the week's start has been reached.
+  if (target.startsInDays === 0) return 'started';
 
   const overlapsSelected = seasonViews.some(
     (v) => selectedTourIds.has(v.tour.id)

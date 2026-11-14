@@ -38,7 +38,7 @@ check('Danube and Coastal share the same real date range (intentional overlap)',
   const selected = new Set(['danube-tour']);
   check('Danube selected -> Danube reports "selected"', getSelectionState('danube-tour', views, selected) === 'selected');
   check('Danube selected -> Coastal becomes "overlap"', getSelectionState('coastal-tour', views, selected) === 'overlap');
-  check('Danube selected -> Highlands stays "available"', getSelectionState('highlands-tour', views, selected) === 'available');
+  check('Danube selected -> Highlands (week 2, already started on 2026-09-06) is "started"', getSelectionState('highlands-tour', views, selected) === 'started');
 }
 
 // Symmetric: selecting Coastal instead blocks Danube.
@@ -63,6 +63,18 @@ check('Danube and Coastal share the same real date range (intentional overlap)',
 }
 
 void silverHorizon;
+
+// A Tour whose week started cannot be joined late; the next Tour stays open.
+{
+  const none = new Set<string>();
+  check('past Tour (Highlands, week 2) -> "started" with nothing selected', getSelectionState('highlands-tour', views, none) === 'started');
+  const monday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-14T00:00:01Z')));
+  check('Danube on its first day (Mon of week 5) -> "started"', getSelectionState('danube-tour', monday, none) === 'started');
+  const sunday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-13T23:00:00Z')));
+  check('Danube the evening before it starts -> still "available"', getSelectionState('danube-tour', sunday, none) === 'available');
+  check('a Rider who already selected a Tour keeps "selected" after it starts',
+    getSelectionState('danube-tour', monday, new Set(['danube-tour'])) === 'selected');
+}
 
 // Weekly template: season 2 runs the same 5 Tours in the same weeks, with its own real dates.
 {

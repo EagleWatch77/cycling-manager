@@ -26,6 +26,7 @@ const STATE_BADGE: Record<Exclude<TourSelectionState, 'available'>, { className:
   selected: { className: 'bg-teal text-white', key: 'races.selected' },
   overlap: { className: 'bg-card/90 text-navy-muted', key: 'races.dateOverlap' },
   'season-limit': { className: 'bg-card/90 text-navy-muted', key: 'races.limitReached' },
+  started: { className: 'bg-card/90 text-navy-muted', key: 'races.tourStarted' },
 };
 
 /**
@@ -156,7 +157,7 @@ export function TourCard({
             {t('races.selected')}
           </a>
         )}
-        {(state === 'overlap' || state === 'season-limit') && (
+        {(state === 'overlap' || state === 'season-limit' || state === 'started') && (
           <a href={`/races/${tour.id}`}
             className="mt-3 flex w-full items-center justify-center gap-1 rounded-lg bg-teal-rail px-3 py-2 text-xs font-semibold text-navy-muted/70">
             {t(STATE_BADGE[state].key)}
