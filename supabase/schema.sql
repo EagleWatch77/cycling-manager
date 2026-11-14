@@ -1654,3 +1654,32 @@ $$;
 
 revoke all on function public.process_training_plan(uuid) from public;
 grant execute on function public.process_training_plan(uuid) to authenticated;
+
+-- ============================================================================
+-- Tour schedule as a weekly template + per-season registrations.
+--
+-- data/tourSchedule.ts now repeats the same Tours in the same weeks every
+-- season (real dates come from lib/calendar/season.ts), so a registration must
+-- say WHICH season it belongs to; otherwise last season's Danube Tour pick
+-- would show as selected in every later season and block re-registering.
+--
+-- Every row that exists today was made during season 1 (no Tours were
+-- scheduled for any later season), hence the one-time 'season-1' backfill.
+-- The default is dropped right after, so new inserts must name their season.
+-- Idempotent: safe to run again.
+-- ============================================================================
+alter table public.tour_registrations add column if not exists season_id text not null default 'season-1';
+alter table public.tour_registrations alter column season_id drop default;
+
+alter table public.tour_registrations drop constraint if exists tour_registrations_rider_id_tour_id_key;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.tour_registrations'::regclass
+      and conname = 'tour_registrations_rider_season_tour_key'
+  ) then
+    alter table public.tour_registrations
+      add constraint tour_registrations_rider_season_tour_key unique (rider_id, season_id, tour_id);
+  end if;
+end $$;

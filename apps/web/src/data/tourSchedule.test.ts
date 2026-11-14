@@ -63,5 +63,17 @@ check('Danube and Coastal share the same real date range (intentional overlap)',
 }
 
 void silverHorizon;
+
+// Weekly template: season 2 runs the same 5 Tours in the same weeks, with its own real dates.
+{
+  const s2 = getCurrentSeasonInfo(new Date('2026-11-14T12:00:00Z'));
+  const v2 = getSeasonSchedule(s2);
+  const d2 = v2.find((v) => v.tour.id === 'danube-tour')!;
+  check('season 2 is current on 2026-11-14', s2.seasonId === 'season-2', s2.seasonId);
+  check('season 2 has the same 5 Tours', v2.length === 5, `${v2.length}`);
+  check('season 2 Danube is week 5', d2.schedule.weekNumber === 5);
+  check('season 2 Danube starts 2026-11-23', d2.weekStart.toISOString().slice(0, 10) === '2026-11-23', d2.weekStart.toISOString());
+  check('season 2 Danube ends 2026-11-29', d2.weekEnd.toISOString().slice(0, 10) === '2026-11-29', d2.weekEnd.toISOString());
+}
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

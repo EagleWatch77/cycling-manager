@@ -61,6 +61,7 @@ export async function processCompletedBikeWear(riderId: string, season: SeasonIn
     .from('tour_registrations')
     .select('id, tour_id')
     .eq('rider_id', riderId)
+    .eq('season_id', season.seasonId)
     .is('wear_processed_at', null);
 
   if (error || !pending || pending.length === 0) return;
@@ -73,7 +74,7 @@ export async function processCompletedBikeWear(riderId: string, season: SeasonIn
   let condition = bikeRow ?? { tires: 100, brakes: 100, drivetrain: 100 };
 
   for (const reg of pending) {
-    const schedule = getScheduleForTour(reg.tour_id as string, season);
+    const schedule = getScheduleForTour(reg.tour_id as string);
     // No schedule entry, or this Tour's week hasn't happened yet — leave
     // wear_processed_at null, nothing to apply.
     if (!schedule || schedule.weekNumber >= season.currentWeek) continue;

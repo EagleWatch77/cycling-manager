@@ -9,7 +9,7 @@ Not done: bell has no notification system behind it; sidebar still uses mock PLA
 
 ## Game time + calendar card (2026-11-14)
 Game time = server UTC date vs SEASON_ONE_START (2026-08-17), 10 weeks x 7 days, same for all players; lib/calendar/season.ts unchanged. format.ts now pins timeZone UTC. SeasonCalendarCard: date, season, week x/10, 10-week axis (current highlighted, tooltip date ranges, tour markers), Tour 1..3 slots from real registrations.
-OPEN: data/tourSchedule.ts has season-1 entries only -> from 2026-10-26 (season 2) no Tours are scheduled, slots stay empty. tour_registrations is unique(rider_id, tour_id) without season, so reusing tours in season 2 needs a decision (schema change). Awaiting owner decision.
+DECIDED (owner): Tour schedule = weekly template valid for every season (data/tourSchedule.ts, no seasonId; unused registrationDeadline dropped). tour_registrations gets season_id, unique(rider_id, season_id, tour_id) — migration block at the end of supabase/schema.sql, MUST be run in Supabase BEFORE deploying. Season-1 rows backfilled as 'season-1'. Bike wear still only processes current-season registrations (behaviour unchanged; unprocessed S1 leftovers stay unprocessed).
 
 ## Done in dashboard task
 - Top row: compact Season calendar (4/12) + wider Next races with ElevationProfile (8/12).

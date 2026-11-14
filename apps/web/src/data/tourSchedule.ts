@@ -5,18 +5,20 @@ import { maxSeasonTours } from '@/lib/leagues';
 /**
  * Tour schedule foundation V1 — explicit test scheduling data.
  *
- * Assigns a Tour to a season week. No automatic seasonal generator yet: a
- * new season needs its own entries added here by hand. Kept separate from
+ * Assigns a Tour to a week of the season. This is a WEEK TEMPLATE: every
+ * season (1, 2, 3, ...) runs the same Tours in the same weeks, and the real
+ * dates come from lib/calendar/season.ts for whichever season is current.
+ * No per-season data has to be added by hand. Kept separate from
  * `data/tours.ts` so the same Tour content could later run in a different
- * week/season without touching the Tour itself.
+ * week without touching the Tour itself.
+ *
+ * (The old per-entry registrationDeadline was never read anywhere; every
+ * value was the Thursday of the Tour's own week.)
  */
 export interface ScheduledTour {
   tourId: string;
-  seasonId: string;
   weekNumber: number;
   registrationOpen: boolean;
-  /** ISO date (YYYY-MM-DD). Registration is expected to close by this date. */
-  registrationDeadline: string;
 }
 
 /**
@@ -27,15 +29,16 @@ export interface ScheduledTour {
 export const MAX_SEASON_TOUR_SELECTIONS = maxSeasonTours('rookie');
 
 /**
- * Rookie season — 5 Tour choices. Danube and Coastal intentionally share
- * week 5 (same real date range): a Rider may enter either, never both.
+ * Rookie season — 5 Tour choices, repeated every season. Danube and Coastal
+ * intentionally share week 5 (same real date range): a Rider may enter
+ * either, never both.
  */
 export const TOUR_SCHEDULE: ScheduledTour[] = [
-  { tourId: 'highlands-tour', seasonId: 'season-1', weekNumber: 2, registrationOpen: true, registrationDeadline: '2026-08-27' },
-  { tourId: 'danube-tour', seasonId: 'season-1', weekNumber: 5, registrationOpen: true, registrationDeadline: '2026-09-17' },
-  { tourId: 'coastal-tour', seasonId: 'season-1', weekNumber: 5, registrationOpen: true, registrationDeadline: '2026-09-17' },
-  { tourId: 'northern-crown-tour', seasonId: 'season-1', weekNumber: 7, registrationOpen: true, registrationDeadline: '2026-10-01' },
-  { tourId: 'silver-horizon-tour', seasonId: 'season-1', weekNumber: 9, registrationOpen: true, registrationDeadline: '2026-10-15' },
+  { tourId: 'highlands-tour', weekNumber: 2, registrationOpen: true },
+  { tourId: 'danube-tour', weekNumber: 5, registrationOpen: true },
+  { tourId: 'coastal-tour', weekNumber: 5, registrationOpen: true },
+  { tourId: 'northern-crown-tour', weekNumber: 7, registrationOpen: true },
+  { tourId: 'silver-horizon-tour', weekNumber: 9, registrationOpen: true },
 ];
 
 /** A schedule entry joined with its Tour content and real calendar dates. */
@@ -49,11 +52,10 @@ export interface ScheduledTourView {
   startsInDays: number;
 }
 
-/** Every scheduled Tour for the given season, joined and sorted by week. */
+/** Every scheduled Tour of the given season (the same weekly template each season), joined and sorted by week. */
 export function getSeasonSchedule(info: SeasonInfo): ScheduledTourView[] {
   const msPerDay = 86_400_000;
   return TOUR_SCHEDULE
-    .filter((s) => s.seasonId === info.seasonId)
     .map((schedule): ScheduledTourView | null => {
       const tour = TOURS.find((t) => t.id === schedule.tourId);
       if (!tour) return null;
@@ -71,9 +73,9 @@ export function getSeasonSchedule(info: SeasonInfo): ScheduledTourView[] {
     .sort((a, b) => a.schedule.weekNumber - b.schedule.weekNumber);
 }
 
-/** The schedule entry for one Tour in the given season, if any. */
-export function getScheduleForTour(tourId: string, info: SeasonInfo): ScheduledTour | undefined {
-  return TOUR_SCHEDULE.find((s) => s.tourId === tourId && s.seasonId === info.seasonId);
+/** The schedule entry for one Tour, if any. The template is the same in every season. */
+export function getScheduleForTour(tourId: string): ScheduledTour | undefined {
+  return TOUR_SCHEDULE.find((s) => s.tourId === tourId);
 }
 
 function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {

@@ -11,6 +11,7 @@ import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
 
 export interface StoredRegistration {
   id: string;
+  seasonId: string;
   riderId: string;
   tourId: string;
   registeredAt: string;
@@ -19,6 +20,7 @@ export interface StoredRegistration {
 function fromRow(row: Record<string, unknown>): StoredRegistration {
   return {
     id: row.id as string,
+    seasonId: row.season_id as string,
     riderId: row.rider_id as string,
     tourId: row.tour_id as string,
     registeredAt: row.registered_at as string,
@@ -35,6 +37,7 @@ export async function getMyRegistration(tourId: string): Promise<StoredRegistrat
     .from('tour_registrations')
     .select('*')
     .eq('rider_id', rider.id)
+    .eq('season_id', getCurrentSeasonInfo().seasonId)
     .eq('tour_id', tourId)
     .maybeSingle();
 
@@ -52,6 +55,7 @@ export async function getMySeasonRegistrations(tourIds: string[]): Promise<Store
     .from('tour_registrations')
     .select('*')
     .eq('rider_id', rider.id)
+    .eq('season_id', getCurrentSeasonInfo().seasonId)
     .in('tour_id', tourIds);
 
   if (error || !data) return [];
@@ -86,7 +90,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   const supabase = await createClient();
   const { error } = await supabase
     .from('tour_registrations')
-    .insert({ rider_id: rider.id, tour_id: tourId });
+    .insert({ rider_id: rider.id, season_id: info.seasonId, tour_id: tourId });
 
   if (error) {
     // Postgres unique_violation — a concurrent request won the same race.
@@ -111,6 +115,7 @@ export async function unregisterFromTour(tourId: string): Promise<UnregisterResu
     .from('tour_registrations')
     .delete({ count: 'exact' })
     .eq('rider_id', rider.id)
+    .eq('season_id', getCurrentSeasonInfo().seasonId)
     .eq('tour_id', tourId);
 
   if (error) {
@@ -130,12 +135,13 @@ export interface StartListEntry {
   registeredAt: string;
 }
 
-/** Every Rider registered for a Tour, oldest registration first. AI riders are never included in V1. */
+/** Every Rider registered for a Tour in the current season, oldest registration first. AI riders are never included in V1. */
 export async function listStartList(tourId: string): Promise<StartListEntry[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('tour_registrations')
     .select('registered_at, riders!inner(id, first_name, surname, country_name, age)')
+    .eq('season_id', getCurrentSeasonInfo().seasonId)
     .eq('tour_id', tourId)
     .order('registered_at', { ascending: true });
 
