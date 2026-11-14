@@ -42,7 +42,7 @@
   "calendar.days": "in {n} Tagen",
   "calendar.inProgress": "Läuft",
   "calendar.emptySlot": "Noch nicht ausgewählt",
-  "tour.next": "Nächstes Rennen",
+  "tour.next": "Nächste Rennen",
   "tour.startsIn": "Beginnt in",
   "tour.stages": "Etappen",
   "tour.focus": "Schwerpunkt",
@@ -544,5 +544,17 @@
   "facilities.recoveryUnlock.l1": "Verbessert die Fähigkeit des Teams, zwischen Training und Rennen Energie wiederherzustellen und Ermüdung zu reduzieren.",
   "facilities.recoveryUnlock.l2": "Schaltet fortgeschrittenere Regenerationsbedingungen frei.",
   "facilities.recoveryUnlock.l3": "Erhöht die Regenerationsqualität bei einem anspruchsvolleren Trainings- und Rennprogramm.",
-  "facilities.recoveryUnlock.l4": "Schaltet ein Elite-Betreuungsniveau für die Regeneration der Fahrer frei."
+  "facilities.recoveryUnlock.l4": "Schaltet ein Elite-Betreuungsniveau für die Regeneration der Fahrer frei.",
+  "dashboard.tasksTitle": "Manager-Aufgaben",
+  "dashboard.tasksEmpty": "Im Moment gibt es nichts zu erledigen.",
+  "dashboard.taskPlanTraining": "Training für Woche {n} planen",
+  "dashboard.taskPickTours": "Tour wählen: {n} von {max} Saisonplätzen belegt",
+  "dashboard.trainingTitle": "Trainingsübersicht",
+  "dashboard.trainingWeek": "Woche {n}",
+  "dashboard.trainingNone": "Für Woche {n} ist kein Training geplant.",
+  "dashboard.trainingPlanCta": "Training planen",
+  "dashboard.trainingLast": "Zuletzt abgeschlossenes Training",
+  "dashboard.trainingLastNone": "Noch kein abgeschlossenes Training.",
+  "equipment.bikeTitle": "Fahrradausrüstung",
+  "equipment.bikeEmpty": "Der Zustand des Fahrrads wird angezeigt, sobald ein Fahrer erstellt ist."
 }

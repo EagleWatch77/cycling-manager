@@ -4,6 +4,8 @@ import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
+import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
+import { getMyBikeCondition } from '@/lib/facilities/bike';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
 import { dateRange } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
@@ -11,15 +13,19 @@ import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalen
 import { TourPreviewCard } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
 import { StandingsCard } from '@/components/StandingsCard';
-import { EquipmentCard } from '@/components/EquipmentCard';
+import { EquipmentCard, type BikeEquipmentItem } from '@/components/EquipmentCard';
+import { ManagerTasksCard, type ManagerTask } from '@/components/ManagerTasksCard';
+import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
 
 /**
  * Home dashboard for a signed-in player.
  *
  * The rider is real: on first load ensureStarterRider() generates one starter
  * Rookie and persists it, and every later load reads that same rider back.
- * Everything else on the board is a genuine empty state until those systems
- * exist — no mock races, standings, analysis or equipment for a real account.
+ * Training overview and bike equipment read real persisted data; manager
+ * tasks are derived from that same real state. Standings stay a genuine empty
+ * state until a race has been processed — no mock races, standings or
+ * analysis for a real account.
  *
  * DANUBE_TOUR stays: it is shared game content (the stage/profile art for
  * this card), not per-player data. Its schedule position (startsInDays) is
@@ -54,16 +60,58 @@ export default async function DashboardPage() {
   const danubeSchedule = scheduled.find((v) => v.tour.id === DANUBE_TOUR.id);
   const danubeTour = { ...DANUBE_TOUR, startsInDays: danubeSchedule?.startsInDays ?? 0 };
 
+  // Same plannable-week rule as the Training page (see
+  // lib/training/repository.ts): training is planned one week ahead. This
+  // page only reads; it never processes plans (that stays on the Training page).
+  const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
+  const [plan, recent, bike] = await Promise.all([
+    getTrainingPlan(season.seasonId, plannableWeek),
+    listRecentCompletedTrainings(1),
+    rider ? getMyBikeCondition(rider.id) : Promise.resolve(null),
+  ]);
+
+  const bikeItems: BikeEquipmentItem[] | null = bike
+    ? [
+        { id: 'overall', labelKey: 'facilities.bikeOverall', icon: 'frame', condition: bike.overall },
+        { id: 'tires', labelKey: 'facilities.bikeTires', icon: 'wheel', condition: bike.tires },
+        { id: 'brakes', labelKey: 'facilities.bikeBrakes', icon: 'cog', condition: bike.brakes },
+        { id: 'drivetrain', labelKey: 'facilities.bikeDrivetrain', icon: 'chain', condition: bike.drivetrain },
+      ]
+    : null;
+
+  // Manager tasks: only reminders that follow from real state, no task system.
+  const tasks: ManagerTask[] = [];
+  if (rider && !plan) {
+    tasks.push({ id: 'training', text: t('dashboard.taskPlanTraining', { n: plannableWeek }), href: '/rider/training' });
+  }
+  const canPickTour =
+    events.length < maxSlots &&
+    scheduled.some((v) => v.schedule.registrationOpen && !selectedTourIds.has(v.tour.id));
+  if (rider && canPickTour) {
+    tasks.push({ id: 'tours', text: t('dashboard.taskPickTours', { n: events.length, max: maxSlots }), href: '/races' });
+  }
+
   return (
     <AppShell activeId="home" locale={locale}>
-      <div className="grid grid-cols-12 gap-3">
-        <SeasonCalendarCard t={t} events={events} maxSlots={maxSlots} />
-        <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} />
+      <div className="space-y-3">
+        {/* Top row: compact season calendar + wider upcoming race with elevation profile. */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+          <SeasonCalendarCard t={t} events={events} maxSlots={maxSlots} className="lg:col-span-4" />
+          <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} className="lg:col-span-8" />
+        </div>
 
-        <RiderSummaryCard t={t} rider={rider} />
-        <StandingsCard t={t} rows={[]} />
-
-        <EquipmentCard t={t} items={[]} />
+        {/* Bottom: rider | tasks + training | standings + bike. items-start keeps cards content-height. */}
+        <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <RiderSummaryCard t={t} rider={rider} />
+          <div className="flex flex-col gap-3">
+            <ManagerTasksCard t={t} tasks={tasks} />
+            <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
+          </div>
+          <div className="flex flex-col gap-3 md:col-span-2 md:grid md:grid-cols-2 md:items-start lg:col-span-1 lg:flex lg:flex-col">
+            <StandingsCard t={t} rows={[]} />
+            <EquipmentCard t={t} items={bikeItems} />
+          </div>
+        </div>
       </div>
     </AppShell>
   );

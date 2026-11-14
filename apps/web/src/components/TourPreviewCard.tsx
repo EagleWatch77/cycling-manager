@@ -15,9 +15,10 @@ import { Icon } from './ui/Icon';
  * promotion reveals them as new content rather than removing a padlock.
  */
 export function TourPreviewCard({
-  t, locale, league, tour,
+  t, locale, league, tour, className = '',
 }: {
   t: T;
+  className?: string;
   locale: Locale;
   league: LeagueId;
   tour: { name: string; heroImage?: string; startsInDays: number; focusKey: string; weather: string; masterStages: TourStage[] };
@@ -33,9 +34,9 @@ export function TourPreviewCard({
     }));
 
   return (
-    <Card className="col-span-12 lg:col-span-7" dense>
+    <Card className={className} dense>
       {tour.heroImage ? (
-        <div className="relative h-28 w-full overflow-hidden rounded-t-card">
+        <div className="relative h-24 w-full overflow-hidden rounded-t-card">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={tour.heroImage} alt="" className="h-full w-full object-cover object-right" />
           {/* Fade the left edge into the card so the title sits on clean white. */}
@@ -66,7 +67,7 @@ export function TourPreviewCard({
         <Facet icon="cloud" label={t('tour.weather')} value={tour.weather} />
       </dl>
 
-      <div className="px-3.5 pt-3">
+      <div className="px-3.5 py-3">
         <ElevationProfile samples={combined} height={72} markers={markers} showEnds />
         <ol className="mt-1 grid gap-px" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0,1fr))` }}>
           {stages.map((s) => (

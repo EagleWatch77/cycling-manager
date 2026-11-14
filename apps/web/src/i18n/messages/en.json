@@ -42,7 +42,7 @@
   "calendar.days": "in {n} days",
   "calendar.inProgress": "Live",
   "calendar.emptySlot": "Not selected yet",
-  "tour.next": "Next race",
+  "tour.next": "Upcoming races",
   "tour.startsIn": "Starts in",
   "tour.stages": "Stages",
   "tour.focus": "Focus",
@@ -544,5 +544,17 @@
   "facilities.recoveryUnlock.l1": "Improves the team's ability to restore energy and reduce fatigue between training and races.",
   "facilities.recoveryUnlock.l2": "Unlocks more advanced recovery conditions.",
   "facilities.recoveryUnlock.l3": "Raises recovery quality for a more demanding training and race schedule.",
-  "facilities.recoveryUnlock.l4": "Unlocks elite-level care for riders' recovery."
+  "facilities.recoveryUnlock.l4": "Unlocks elite-level care for riders' recovery.",
+  "dashboard.tasksTitle": "Manager tasks",
+  "dashboard.tasksEmpty": "Nothing to do right now.",
+  "dashboard.taskPlanTraining": "Plan training for week {n}",
+  "dashboard.taskPickTours": "Pick a Tour: {n} of {max} season slots used",
+  "dashboard.trainingTitle": "Training overview",
+  "dashboard.trainingWeek": "Week {n}",
+  "dashboard.trainingNone": "No training planned for week {n}.",
+  "dashboard.trainingPlanCta": "Plan training",
+  "dashboard.trainingLast": "Last completed training",
+  "dashboard.trainingLastNone": "No completed training yet.",
+  "equipment.bikeTitle": "Bike equipment",
+  "equipment.bikeEmpty": "Bike condition appears once a rider is created."
 }

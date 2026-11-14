@@ -42,7 +42,7 @@
   "calendar.days": "za {n} dni",
   "calendar.inProgress": "Trwa",
   "calendar.emptySlot": "Jeszcze nie wybrano",
-  "tour.next": "Kolejny wyścig",
+  "tour.next": "Najbliższe wyścigi",
   "tour.startsIn": "Start za",
   "tour.stages": "Etapy",
   "tour.focus": "Charakter",
@@ -544,5 +544,17 @@
   "facilities.recoveryUnlock.l1": "Poprawia zdolność zespołu do odzyskiwania energii i redukcji zmęczenia między treningami a wyścigami.",
   "facilities.recoveryUnlock.l2": "Odblokowuje bardziej zaawansowane warunki regeneracji.",
   "facilities.recoveryUnlock.l3": "Zwiększa jakość regeneracji przy bardziej wymagającym programie treningowym i wyścigowym.",
-  "facilities.recoveryUnlock.l4": "Odblokowuje elitarny poziom opieki nad regeneracją zawodników."
+  "facilities.recoveryUnlock.l4": "Odblokowuje elitarny poziom opieki nad regeneracją zawodników.",
+  "dashboard.tasksTitle": "Zadania menedżera",
+  "dashboard.tasksEmpty": "Na razie nie ma nic do zrobienia.",
+  "dashboard.taskPlanTraining": "Zaplanować trening na tydzień {n}",
+  "dashboard.taskPickTours": "Wybrać Tour: zajęte {n} z {max} miejsc w sezonie",
+  "dashboard.trainingTitle": "Przegląd treningu",
+  "dashboard.trainingWeek": "Tydzień {n}",
+  "dashboard.trainingNone": "Na tydzień {n} nie zaplanowano treningu.",
+  "dashboard.trainingPlanCta": "Zaplanuj trening",
+  "dashboard.trainingLast": "Ostatni zakończony trening",
+  "dashboard.trainingLastNone": "Brak zakończonych treningów.",
+  "equipment.bikeTitle": "Wyposażenie roweru",
+  "equipment.bikeEmpty": "Stan roweru pojawi się po utworzeniu zawodnika."
 }

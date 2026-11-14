@@ -21,11 +21,11 @@ const FLAGS: Record<string, string> = {
  * The player's own rider, loaded from Supabase. When the player has no rider
  * yet it shows a create prompt instead of any mock data.
  */
-export function RiderSummaryCard({ t, rider }: { t: T; rider: StoredRider | null }) {
+export function RiderSummaryCard({ t, rider, className = '' }: { t: T; rider: StoredRider | null; className?: string }) {
   if (!rider) {
     return (
-      <Card title={t('rider.title')} className="col-span-12 lg:col-span-3 row-span-2">
-        <div className="flex h-full flex-col items-center justify-center gap-3 py-8 text-center">
+      <Card title={t('rider.title')} className={className}>
+        <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-teal-rail text-teal">
             <Icon name="rider" className="h-8 w-8" />
           </span>
@@ -50,7 +50,7 @@ export function RiderSummaryCard({ t, rider }: { t: T; rider: StoredRider | null
   ];
 
   return (
-    <Card title={t('rider.title')} dense className="col-span-12 lg:col-span-3 row-span-2">
+    <Card title={t('rider.title')} dense className={className}>
       <div className="flex items-center gap-3 p-3.5 pb-3">
         <RiderAvatar seed={rider.id} size="md" />
         <div className="min-w-0">
@@ -90,7 +90,7 @@ export function RiderSummaryCard({ t, rider }: { t: T; rider: StoredRider | null
           ))}
         </ul>
       </div>
-      <CardLink label={t('nav.rider')} />
+      <CardLink label={t('nav.rider')} href="/rider" />
       <span className="hidden">{SKILL_ATTRIBUTES.length}</span>
     </Card>
   );

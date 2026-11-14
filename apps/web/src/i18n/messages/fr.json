@@ -42,7 +42,7 @@
   "calendar.days": "dans {n} jours",
   "calendar.inProgress": "En cours",
   "calendar.emptySlot": "Pas encore choisie",
-  "tour.next": "Course suivante",
+  "tour.next": "Prochaines courses",
   "tour.startsIn": "Débute dans",
   "tour.stages": "Étapes",
   "tour.focus": "Profil",
@@ -544,5 +544,17 @@
   "facilities.recoveryUnlock.l1": "Améliore la capacité de l'équipe à restaurer l'énergie et réduire la fatigue entre entraînements et courses.",
   "facilities.recoveryUnlock.l2": "Débloque des conditions de récupération plus avancées.",
   "facilities.recoveryUnlock.l3": "Augmente la qualité de récupération pour un programme d'entraînement et de course plus exigeant.",
-  "facilities.recoveryUnlock.l4": "Débloque un niveau de soin élite pour la récupération des coureurs."
+  "facilities.recoveryUnlock.l4": "Débloque un niveau de soin élite pour la récupération des coureurs.",
+  "dashboard.tasksTitle": "Tâches du manager",
+  "dashboard.tasksEmpty": "Rien à faire pour le moment.",
+  "dashboard.taskPlanTraining": "Planifier l'entraînement de la semaine {n}",
+  "dashboard.taskPickTours": "Choisir un Tour : {n} places sur {max} occupées",
+  "dashboard.trainingTitle": "Aperçu de l'entraînement",
+  "dashboard.trainingWeek": "Semaine {n}",
+  "dashboard.trainingNone": "Aucun entraînement planifié pour la semaine {n}.",
+  "dashboard.trainingPlanCta": "Planifier l'entraînement",
+  "dashboard.trainingLast": "Dernier entraînement terminé",
+  "dashboard.trainingLastNone": "Aucun entraînement terminé pour l'instant.",
+  "equipment.bikeTitle": "Équipement du vélo",
+  "equipment.bikeEmpty": "L'état du vélo s'affichera une fois le coureur créé."
 }
