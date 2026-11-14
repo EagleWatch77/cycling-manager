@@ -555,5 +555,7 @@
   "equipment.bikeTitle": "Fahrradausrüstung",
   "equipment.bikeEmpty": "Der Zustand des Fahrrads wird angezeigt, sobald ein Fahrer erstellt ist.",
   "top.nextTour": "Nächste Tour",
-  "top.profile": "Manager-Profil"
+  "top.profile": "Manager-Profil",
+  "calendar.tourSlot": "Tour {n}",
+  "calendar.weekTooltip": "Woche {n}: {range}"
 }

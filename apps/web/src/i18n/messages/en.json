@@ -555,5 +555,7 @@
   "equipment.bikeTitle": "Bike equipment",
   "equipment.bikeEmpty": "Bike condition appears once a rider is created.",
   "top.nextTour": "Next Tour",
-  "top.profile": "Manager profile"
+  "top.profile": "Manager profile",
+  "calendar.tourSlot": "Tour {n}",
+  "calendar.weekTooltip": "Week {n}: {range}"
 }

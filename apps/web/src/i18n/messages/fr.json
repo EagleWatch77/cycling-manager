@@ -555,5 +555,7 @@
   "equipment.bikeTitle": "Équipement du vélo",
   "equipment.bikeEmpty": "L'état du vélo s'affichera une fois le coureur créé.",
   "top.nextTour": "Prochain Tour",
-  "top.profile": "Profil du manager"
+  "top.profile": "Profil du manager",
+  "calendar.tourSlot": "Tour {n}",
+  "calendar.weekTooltip": "Semaine {n} : {range}"
 }

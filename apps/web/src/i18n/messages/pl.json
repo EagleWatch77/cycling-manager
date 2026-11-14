@@ -555,5 +555,7 @@
   "equipment.bikeTitle": "Wyposażenie roweru",
   "equipment.bikeEmpty": "Stan roweru pojawi się po utworzeniu zawodnika.",
   "top.nextTour": "Najbliższy Tour",
-  "top.profile": "Profil menedżera"
+  "top.profile": "Profil menedżera",
+  "calendar.tourSlot": "Tour {n}",
+  "calendar.weekTooltip": "Tydzień {n}: {range}"
 }

@@ -2,12 +2,12 @@ import { getServerDictionary } from '@/i18n/server';
 import { DANUBE_TOUR } from '@/mock/dashboard';
 import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
-import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { getMyBikeCondition } from '@/lib/facilities/bike';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
-import { dateRange } from '@/lib/format';
+import { dateRange, fullDate } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
 import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalendarCard';
 import { TourPreviewCard } from '@/components/TourPreviewCard';
@@ -52,10 +52,18 @@ export default async function DashboardPage() {
   const events: CalendarEvent[] = selectedTours.map((v) => ({
     id: v.tour.id,
     name: v.tour.name,
+    weekNumber: v.schedule.weekNumber,
     stageCount: visibleStages(v.tour.masterStages, league as never).length,
     dateRange: dateRange(v.weekStart, v.weekEnd, locale),
   }));
   const maxSlots = maxSeasonTours(league as never);
+
+  // Week axis for the calendar card: real UTC date range per season week.
+  const weeks = Array.from({ length: season.totalWeeks }, (_, i) => {
+    const week = i + 1;
+    const { start, end } = getWeekDateRange(season, week);
+    return { week, range: dateRange(start, end, locale) };
+  });
 
   const danubeSchedule = scheduled.find((v) => v.tour.id === DANUBE_TOUR.id);
   const danubeTour = { ...DANUBE_TOUR, startsInDays: danubeSchedule?.startsInDays ?? 0 };
@@ -96,7 +104,16 @@ export default async function DashboardPage() {
       <div className="space-y-3">
         {/* Top row: compact season calendar + wider upcoming race with elevation profile. */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-          <SeasonCalendarCard t={t} events={events} maxSlots={maxSlots} className="lg:col-span-4" />
+          <SeasonCalendarCard
+            t={t}
+            events={events}
+            maxSlots={maxSlots}
+            todayLabel={fullDate(season.now, locale)}
+            seasonNumber={season.seasonNumber}
+            currentWeek={season.currentWeek}
+            weeks={weeks}
+            className="lg:col-span-4"
+          />
           <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} className="lg:col-span-8" />
         </div>
 

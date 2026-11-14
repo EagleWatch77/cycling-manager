@@ -555,5 +555,7 @@
   "equipment.bikeTitle": "Vybavenie bicykla",
   "equipment.bikeEmpty": "Stav bicykla sa zobrazí po vytvorení jazdca.",
   "top.nextTour": "Najbližšia Tour",
-  "top.profile": "Profil manažéra"
+  "top.profile": "Profil manažéra",
+  "calendar.tourSlot": "Tour {n}",
+  "calendar.weekTooltip": "Týždeň {n}: {range}"
 }

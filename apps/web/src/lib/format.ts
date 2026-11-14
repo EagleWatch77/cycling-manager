@@ -34,11 +34,11 @@ export function elapsed(seconds: number): string {
  * hand-maintained translation table.
  */
 export function fullDate(date: Date, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 
 /** Short "16 Aug – 22 Aug" style range for a calendar week. */
 export function dateRange(start: Date, end: Date, locale: Locale): string {
-  const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
+  const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' });
   return `${fmt.format(start)} – ${fmt.format(end)}`;
 }

@@ -4,69 +4,116 @@ import { Card, CardLink } from './ui/Card';
 export interface CalendarEvent {
   id: string;
   name: string;
+  /** Season week the Tour runs in (1-based), for the week axis marker. */
+  weekNumber: number;
   stageCount: number;
   dateRange: string;
 }
 
+export interface CalendarWeek {
+  week: number;
+  /** Real date range of the week, already formatted (UTC calendar days). */
+  range: string;
+}
+
 /**
- * Season Calendar card — the Rider's own season program, not the Tour
- * selection list. Always renders exactly `maxSlots` timeline rows (the
- * league's season Tour limit, see lib/leagues.ts maxSeasonTours()): one
- * filled row per selected Tour (ascending by date), the rest empty
- * placeholders. Never shows more rows than the league allows and never
- * invents a Tour to fill a gap.
+ * Season Calendar card. Shows the shared game date, the season and week, a
+ * 10-week axis (current week highlighted, real date range on hover/tap-hold
+ * via title, and always printed for the current week) and the Rider's own
+ * Tour slots, "Tour 1..N" (N = the league's season Tour limit, see
+ * lib/leagues.ts maxSeasonTours()).
  *
- * Kept deliberately compact: Tour name, date, stage count only. Reward
- * amounts live on the Tour detail page, never in this compact preview.
+ * A slot is filled only by a Tour the Rider actually selected, in date order;
+ * the rest stay empty. Nothing is invented to fill a slot. All dates come
+ * from the server-time season calendar (lib/calendar/season), so every
+ * player sees the same values regardless of their device clock.
  */
 export function SeasonCalendarCard({
-  t, events, maxSlots, className = '',
+  t, events, maxSlots, todayLabel, seasonNumber, currentWeek, weeks, className = '',
 }: {
   t: T;
   events: CalendarEvent[];
   maxSlots: number;
+  todayLabel: string;
+  seasonNumber: number;
+  currentWeek: number;
+  weeks: CalendarWeek[];
   className?: string;
 }) {
   const slots: (CalendarEvent | null)[] = Array.from({ length: maxSlots }, (_, i) => events[i] ?? null);
+  const tourWeeks = new Set(events.map((e) => e.weekNumber));
+  const current = weeks.find((w) => w.week === currentWeek);
 
   return (
     <Card title={t('calendar.title')} dense className={className}>
       <div className="flex h-full flex-col">
-        <ul className="flex-1 px-3.5 py-2.5">
-          {slots.map((slot, i) => {
-            const isLast = i === slots.length - 1;
-            return (
-              <li key={slot?.id ?? `empty-${i}`} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span
-                    className={
-                      slot
-                        ? 'mt-1 h-3 w-3 shrink-0 rounded-full border-2 border-teal bg-teal'
-                        : 'mt-1 h-3 w-3 shrink-0 rounded-full border-2 border-dashed border-line bg-card'
-                    }
-                  />
-                  {!isLast && <span className="w-px flex-1 bg-line" />}
-                </div>
-                <div className={`flex min-w-0 flex-1 items-start justify-between gap-2 ${isLast ? 'pb-0.5' : 'pb-3'}`}>
-                  {slot ? (
-                    <>
-                      <span className="truncate text-sm font-bold text-navy">{slot.name}</span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-xs font-semibold text-navy-soft">{slot.dateRange}</span>
-                        {slot.stageCount > 0 && (
-                          <span className="block text-2xs text-navy-muted">
-                            {t('calendar.stages', { n: slot.stageCount })}
-                          </span>
-                        )}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-xs italic text-navy-muted/60">{t('calendar.emptySlot')}</span>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+        <div className="space-y-2.5 px-3.5 py-3">
+          <div>
+            <p className="text-2xs text-navy-muted">{todayLabel}</p>
+            <p className="text-sm font-bold text-navy">
+              {t('races.season')} {seasonNumber}
+              <span className="font-medium text-navy-soft"> · {t('races.week')} {currentWeek}/{weeks.length}</span>
+            </p>
+          </div>
+
+          <div>
+            <ol className="grid grid-cols-10 gap-1" aria-label={t('calendar.title')}>
+              {weeks.map((w) => {
+                const isCurrent = w.week === currentWeek;
+                const isPast = w.week < currentWeek;
+                const hasTour = tourWeeks.has(w.week);
+                const tone = isCurrent
+                  ? 'bg-teal font-bold text-white'
+                  : isPast
+                    ? 'bg-surface text-navy-muted'
+                    : 'border border-line text-navy-soft';
+                return (
+                  <li
+                    key={w.week}
+                    title={t('calendar.weekTooltip', { n: w.week, range: w.range })}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    className={`relative flex h-7 items-center justify-center rounded text-2xs tabular-nums ${tone}`}
+                  >
+                    {w.week}
+                    {hasTour && (
+                      <span
+                        aria-hidden="true"
+                        className={`absolute bottom-0.5 h-1 w-1 rounded-full ${isCurrent ? 'bg-white' : 'bg-teal'}`}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+            {current && (
+              <p className="mt-1.5 text-2xs text-navy-muted">
+                {t('calendar.weekTooltip', { n: current.week, range: current.range })}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <ul className="flex-1 divide-y divide-line border-t border-line">
+          {slots.map((slot, i) => (
+            <li key={slot?.id ?? `empty-${i}`} className="flex items-center gap-3 px-3.5 py-2">
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full border-2 ${
+                  slot ? 'border-teal bg-teal' : 'border-dashed border-line bg-card'
+                }`}
+              />
+              <span className="w-12 shrink-0 text-2xs font-semibold uppercase tracking-wide text-navy-muted">
+                {t('calendar.tourSlot', { n: i + 1 })}
+              </span>
+              {slot ? (
+                <span className="flex min-w-0 flex-1 items-baseline justify-between gap-2">
+                  <span className="truncate text-xs font-bold text-navy">{slot.name}</span>
+                  <span className="shrink-0 text-xs font-semibold tabular-nums text-navy-soft">{slot.dateRange}</span>
+                </span>
+              ) : (
+                <span className="text-xs italic text-navy-muted/60">{t('calendar.emptySlot')}</span>
+              )}
+            </li>
+          ))}
         </ul>
         <CardLink label={t('nav.calendar')} href="/calendar" />
       </div>
