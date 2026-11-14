@@ -17,9 +17,6 @@
   "nav.group.core": "Racing",
   "nav.group.later": "Team and career",
   "nav.soon": "soon",
-  "top.budget": "Budget",
-  "top.energy": "Energy",
-  "top.form": "Form",
   "top.league": "League",
   "top.notifications": "Notifications",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Last completed training",
   "dashboard.trainingLastNone": "No completed training yet.",
   "equipment.bikeTitle": "Bike equipment",
-  "equipment.bikeEmpty": "Bike condition appears once a rider is created."
+  "equipment.bikeEmpty": "Bike condition appears once a rider is created.",
+  "top.nextTour": "Next Tour",
+  "top.profile": "Manager profile"
 }

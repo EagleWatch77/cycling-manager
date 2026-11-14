@@ -17,9 +17,6 @@
   "nav.group.core": "Preteky",
   "nav.group.later": "Tím a kariéra",
   "nav.soon": "čoskoro",
-  "top.budget": "Rozpočet",
-  "top.energy": "Energia",
-  "top.form": "Forma",
   "top.league": "Liga",
   "top.notifications": "Upozornenia",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Posledný dokončený tréning",
   "dashboard.trainingLastNone": "Zatiaľ žiadny dokončený tréning.",
   "equipment.bikeTitle": "Vybavenie bicykla",
-  "equipment.bikeEmpty": "Stav bicykla sa zobrazí po vytvorení jazdca."
+  "equipment.bikeEmpty": "Stav bicykla sa zobrazí po vytvorení jazdca.",
+  "top.nextTour": "Najbližšia Tour",
+  "top.profile": "Profil manažéra"
 }

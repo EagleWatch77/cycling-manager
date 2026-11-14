@@ -3,7 +3,12 @@ import { getDictionary, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/server';
 import { PLAYER } from '@/mock/dashboard';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { fullDate } from '@/lib/format';
+import { dateRange, fullDate } from '@/lib/format';
+import { getSeasonSchedule } from '@/data/tourSchedule';
+import { getMySeasonRegistrations } from '@/lib/races/registration';
+import { getMyLeague } from '@/lib/facilities/repository';
+import { getMyManagerName } from '@/lib/profile/manager';
+import { PRIMARY_NAV, SECONDARY_NAV, SETTINGS_NAV } from '@/lib/navigation';
 import { ensureGameStateProcessed } from '@/lib/gameState';
 import { SidebarNavigation } from './SidebarNavigation';
 import { TopStatusBar } from './TopStatusBar';
@@ -12,6 +17,9 @@ import { PageHeroBanner } from './PageHeroBanner';
 /**
  * Shared chrome for every page: left rail plus top status bar. Pages render
  * only their own content, so the shell stays in one place.
+ *
+ * The top bar shows the next registered Tour (real dates) or the page title,
+ * plus season/week, notifications, language and the profile menu.
  *
  * Season/week/date come from the real server clock (lib/calendar/season),
  * never a hardcoded mock date — this is the one place that value is computed
@@ -38,6 +46,22 @@ export async function AppShell({
   // lib/gameState.ts. Runs here, not in any one page/layout, so it fires
   // regardless of which authenticated page a player opens first.
   await ensureGameStateProcessed();
+
+  // Top bar data — all real: the player's own registered Tours (earliest one
+  // that has not finished yet), their profile name and league. No Tour → the
+  // bar falls back to the page title.
+  const scheduled = getSeasonSchedule(season);
+  const [registrations, managerName, league] = await Promise.all([
+    getMySeasonRegistrations(scheduled.map((v) => v.tour.id)),
+    getMyManagerName(),
+    getMyLeague(),
+  ]);
+  const mine = new Set(registrations.map((r) => r.tourId));
+  const next = scheduled
+    .filter((v) => mine.has(v.tour.id) && v.weekEnd.getTime() >= season.now.getTime())
+    .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime())[0];
+  const navItem = [...PRIMARY_NAV, ...SECONDARY_NAV, SETTINGS_NAV].find((n) => n.id === activeId);
+  const pageTitle = navItem ? t(navItem.labelKey) : t('app.name');
   return (
     <div className="flex min-h-screen">
       <SidebarNavigation
@@ -49,7 +73,17 @@ export async function AppShell({
         dateLabel={fullDate(season.now, active)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopStatusBar t={t} locale={active} player={PLAYER} />
+        <TopStatusBar
+          t={t}
+          locale={active}
+          pageTitle={pageTitle}
+          nextTour={next ? { name: next.tour.name, dateRange: dateRange(next.weekStart, next.weekEnd, active) } : null}
+          seasonNumber={season.seasonNumber}
+          week={season.currentWeek}
+          totalWeeks={season.totalWeeks}
+          managerName={managerName}
+          leagueLabel={t(`league.${league}`)}
+        />
         <main className="flex-1 overflow-x-hidden p-4">
           {activeId !== 'home' && <PageHeroBanner />}
           {children}

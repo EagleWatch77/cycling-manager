@@ -17,9 +17,6 @@
   "nav.group.core": "Závody",
   "nav.group.later": "Tým a kariéra",
   "nav.soon": "brzy",
-  "top.budget": "Rozpočet",
-  "top.energy": "Energie",
-  "top.form": "Forma",
   "top.league": "Liga",
   "top.notifications": "Upozornění",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Poslední dokončený trénink",
   "dashboard.trainingLastNone": "Zatím žádný dokončený trénink.",
   "equipment.bikeTitle": "Vybavení kola",
-  "equipment.bikeEmpty": "Stav kola se zobrazí po vytvoření závodníka."
+  "equipment.bikeEmpty": "Stav kola se zobrazí po vytvoření závodníka.",
+  "top.nextTour": "Nejbližší Tour",
+  "top.profile": "Profil manažera"
 }

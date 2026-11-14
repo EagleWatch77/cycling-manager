@@ -17,9 +17,6 @@
   "nav.group.core": "Competición",
   "nav.group.later": "Equipo y carrera",
   "nav.soon": "pronto",
-  "top.budget": "Presupuesto",
-  "top.energy": "Energía",
-  "top.form": "Forma",
   "top.league": "Liga",
   "top.notifications": "Notificaciones",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Último entrenamiento completado",
   "dashboard.trainingLastNone": "Aún no hay entrenamientos completados.",
   "equipment.bikeTitle": "Equipamiento de la bici",
-  "equipment.bikeEmpty": "El estado de la bici se mostrará cuando se cree el corredor."
+  "equipment.bikeEmpty": "El estado de la bici se mostrará cuando se cree el corredor.",
+  "top.nextTour": "Próximo Tour",
+  "top.profile": "Perfil del mánager"
 }

@@ -17,9 +17,6 @@
   "nav.group.core": "Rennbetrieb",
   "nav.group.later": "Team und Karriere",
   "nav.soon": "bald",
-  "top.budget": "Budget",
-  "top.energy": "Energie",
-  "top.form": "Form",
   "top.league": "Liga",
   "top.notifications": "Benachrichtigungen",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Zuletzt abgeschlossenes Training",
   "dashboard.trainingLastNone": "Noch kein abgeschlossenes Training.",
   "equipment.bikeTitle": "Fahrradausrüstung",
-  "equipment.bikeEmpty": "Der Zustand des Fahrrads wird angezeigt, sobald ein Fahrer erstellt ist."
+  "equipment.bikeEmpty": "Der Zustand des Fahrrads wird angezeigt, sobald ein Fahrer erstellt ist.",
+  "top.nextTour": "Nächste Tour",
+  "top.profile": "Manager-Profil"
 }

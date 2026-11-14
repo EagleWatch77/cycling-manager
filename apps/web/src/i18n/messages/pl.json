@@ -17,9 +17,6 @@
   "nav.group.core": "Ściganie",
   "nav.group.later": "Zespół i kariera",
   "nav.soon": "wkrótce",
-  "top.budget": "Budżet",
-  "top.energy": "Energia",
-  "top.form": "Forma",
   "top.league": "Liga",
   "top.notifications": "Powiadomienia",
   "league.rookie": "Rookie",
@@ -556,5 +553,7 @@
   "dashboard.trainingLast": "Ostatni zakończony trening",
   "dashboard.trainingLastNone": "Brak zakończonych treningów.",
   "equipment.bikeTitle": "Wyposażenie roweru",
-  "equipment.bikeEmpty": "Stan roweru pojawi się po utworzeniu zawodnika."
+  "equipment.bikeEmpty": "Stan roweru pojawi się po utworzeniu zawodnika.",
+  "top.nextTour": "Najbliższy Tour",
+  "top.profile": "Profil menedżera"
 }
