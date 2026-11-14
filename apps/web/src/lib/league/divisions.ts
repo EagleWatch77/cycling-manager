@@ -1,5 +1,4 @@
 import { LEAGUES, type LeagueId } from '../leagues';
-import { getCurrentSeasonInfo } from '../calendar/season';
 
 /**
  * Leagues & sub-leagues V1 — pure rules (no I/O), mirrored 1:1 by the SQL in
@@ -60,12 +59,4 @@ export function planDivisionAssignment(league: LeagueId, divisions: readonly Div
 
   const next = divisions.reduce((max, d) => Math.max(max, d.number), 0) + 1;
   return { kind: 'create', number: next };
-}
-
-/**
- * The season a NEW player joins: always the current GLOBAL season computed
- * from server time (lib/calendar/season.ts) — never a personal "Season 1".
- */
-export function seasonIdForNewMember(now: Date = new Date()): string {
-  return getCurrentSeasonInfo(now).seasonId;
 }

@@ -9,16 +9,19 @@ Leagues & sub-leagues V1 implemented (uncommitted until the owner commits via Gi
 - Sub-leagues: `league_divisions`, `league_memberships`, `assign_my_league_division(season_id)`, `division_members` view. Real "Rookie 1.1" in top bar profile menu and dashboard standings card; Rankings → tab "Moja podliga" (members only, no points/ranks).
 - Started Tours cannot be joined (state `started`).
 
-## MUST deploy (Supabase SQL editor), in this order
-1. last block of `supabase/schema.sql` titled "Tour schedule as a weekly template + per-season registrations" (adds tour_registrations.season_id).
-2. `supabase/migrations/20261114_league_divisions.sql` (same text is appended to schema.sql). Idempotent. Without it the app degrades: no sub-league label, Rankings tab shows "not placed yet".
+## MUST deploy (Supabase SQL editor, in order) — see supabase/migrations/README.md
+1. `supabase/migrations/20261114_01_tour_season_registrations.sql`
+2. `supabase/migrations/20261114_02_league_divisions.sql`
+3. `supabase/migrations/20261114_03_profiles_lockdown.sql` (security fix O-007)
+Idempotent. `schema.sql` holds the same text for fresh databases only.
 
 ## Tests
 - `npx tsx` on every `*.test.ts` (web) — all pass.
-- SQL (real Postgres, concurrency): `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/league_divisions.test.sh` (needs non-root OS user) — 44 checks pass.
+- SQL (real Postgres, concurrency): `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/league_divisions.test.sh` (needs non-root OS user) — 84 checks: A = production schema + legacy rows + 3 migrations (twice), B = fresh schema.sql, catalogs equal; placement, concurrency, security).
 
 ## Not wired / open
 - No promotion/relegation, inactivity rules, scoring, tie-breaks, cron, MS (DECISIONS O-006).
-- `profiles.league` is player-updatable under RLS (O-007) — must become server-only.
+- O-007 fixed in migration 03 (deploy it). O-008: other tables are owner-writable under RLS (riders, bike_condition, training_plans, tour_registrations) — needs hardening.
+- Sub-league balancing at season end = approved concept only (C-027); activity definition (28 days?) NOT approved (P-005).
 - Existing accounts get joined_season_id 'season-1' (placeholder; progress reset before launch).
 - Sidebar is not responsive on mobile; bell has no notification system.

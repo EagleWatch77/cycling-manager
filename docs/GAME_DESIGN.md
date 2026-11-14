@@ -59,7 +59,13 @@ Tabuľky v `supabase/schema.sql` (14): league_divisions, league_memberships (pod
 - Nový hráč začína v Rookie, v podlige s najnižším číslom, ktorá má voľné miesto; ak sú všetky plné, vznikne nová. Vstupuje do aktuálnej globálnej sezóny a týždňa. Do Tour, ktorá už začala, sa nemôže prihlásiť, pripravuje sa na ďalšiu.
 - Technicky: tabuľky `league_divisions` a `league_memberships`, zaradenie funkciou `assign_my_league_division` (lenivo cez `AppShell`), kapacita chránená v databáze. Migrácia musí byť nasadená. `[KÓD]` `supabase/migrations/20261114_league_divisions.sql`
 - Rebríčky → karta „Moja podliga“: len členovia, bez bodov a poradia (bodovanie neexistuje).
+- Bezpečnosť: liga, podliga a sezóna vstupu sú len pod serverovou kontrolou (hráč ich nemôže meniť ani podvrhnúť); `league_memberships` je hlavný zdroj, `profiles.league` je synchronizovaná kópia. Hráč môže meniť len meno a jazyk. `[KÓD]` migrácie 01–03
 - Zatiaľ neriešime: postupy/zostupy, neaktivitu a vyraďovanie, bodovanie a rovnosť bodov. `[CHÝBA]`
+
+### Vyvažovanie podlíg na konci sezóny `[SCHVÁLENÝ KONCEPT – NEIMPLEMENTOVANÉ]`
+- Na konci sezóny sa podligy jednej ligy vyvažujú podľa počtu aktívnych a neaktívnych hráčov. Príklad: Rookie 1.1 má 20 aktívnych + 30 neaktívnych, Rookie 1.2 má 40 aktívnych + 10 neaktívnych → po vyvážení má každá 30 aktívnych + 20 neaktívnych.
+- Pravidlá: kapacita podligy ostáva 50. Účty ani členstvo sa nemažú len pre neaktivitu; hráč sa môže kedykoľvek vrátiť. Počas sezóny sa hráči medzi podligami nepresúvajú. Vyvažuje sa až po skončení sezóny, po postupoch a zostupoch. Cieľ: čo najrovnomernejší počet aktívnych hráčov pri čo najmenšom počte presunov. Platí pre Rookie, Amateur, Continental a Pro; Elite (jedna podliga) sa nevyvažuje.
+- **Aktivita nie je definovaná.** Predbežný návrh (neschválený, neimplementovaný): 28 dní bez prihlásenia. `[CHÝBA]` Algoritmus vyvažovania zatiaľ neexistuje.
 
 ## 11. Majstrovstvá sveta V1 `[SCHVÁLENÝ KONCEPT – NEIMPLEMENTOVANÉ]`
 Podrobné ID rozhodnutí: `DECISIONS.md` C-015 až C-021.

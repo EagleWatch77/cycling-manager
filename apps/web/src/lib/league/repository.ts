@@ -2,7 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import type { LeagueId } from '@/lib/leagues';
-import { isLeagueId, seasonIdForNewMember } from './divisions';
+import { isLeagueId } from './divisions';
 
 /**
  * The signed-in player's sub-league (league_memberships + league_divisions,
@@ -58,15 +58,16 @@ async function readMyDivision(): Promise<{ division: MyDivision | null; signedIn
 /**
  * The player's sub-league; a player without one is placed now into Rookie
  * (lowest-numbered sub-league with a free spot, else a new one) in the
- * CURRENT GLOBAL season. The RPC is idempotent and concurrency-safe in the
- * database. Cached per request, so AppShell and the page share one lookup.
+ * CURRENT GLOBAL season. The RPC takes NO arguments: league (Rookie), player
+ * (auth.uid()) and season (server time in SQL) cannot be supplied by a client.
+ * It is idempotent and concurrency-safe in the database. Cached per request, so AppShell and the page share one lookup.
  */
 export const ensureMyDivision = cache(async (): Promise<MyDivision | null> => {
   const first = await readMyDivision();
   if (first.division || !first.signedIn) return first.division;
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc('assign_my_league_division', { p_season_id: seasonIdForNewMember() });
+  const { error } = await supabase.rpc('assign_my_league_division');
   if (error) {
     console.error('[ensureMyDivision] assignment failed', error);
     return null;

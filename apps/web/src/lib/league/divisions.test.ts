@@ -1,11 +1,11 @@
 /**
- * Leagues & sub-leagues V1 — allocation rule, labels, global season.
+ * Leagues & sub-leagues V1 — allocation rule and labels.
  * Run with: npx tsx src/lib/league/divisions.test.ts
  * (The concurrency / constraint guarantees live in the database and are tested
  * against a real Postgres: supabase/tests/league_divisions.test.sh.)
  */
 import {
-  DIVISION_CAPACITY, divisionCode, isLeagueId, maxDivisionsFor, planDivisionAssignment, seasonIdForNewMember,
+  DIVISION_CAPACITY, divisionCode, isLeagueId, maxDivisionsFor, planDivisionAssignment,
   type DivisionSlot,
 } from './divisions';
 import type { LeagueId } from '../leagues';
@@ -93,15 +93,8 @@ check('label: Rookie 1.12', divisionCode(12) === '1.12');
   check('Elite stays at one sub-league of 50', more.divisions.length === 1 && more.divisions[0].memberCount === 50);
 }
 
-// 7. A new player enters the CURRENT GLOBAL season.
-{
-  check('2026-11-14 -> season-2 (not a personal season-1)', seasonIdForNewMember(new Date('2026-11-14T10:00:00Z')) === 'season-2');
-  check('2026-09-01 -> season-1', seasonIdForNewMember(new Date('2026-09-01T10:00:00Z')) === 'season-1');
-  check('two players joining the same day get the same season',
-    seasonIdForNewMember(new Date('2026-11-14T01:00:00Z')) === seasonIdForNewMember(new Date('2026-11-14T23:00:00Z')));
-  check('season rolls over globally at the boundary (2026-10-26)',
-    seasonIdForNewMember(new Date('2026-10-25T23:59:00Z')) === 'season-1' && seasonIdForNewMember(new Date('2026-10-26T00:00:00Z')) === 'season-2');
-}
+// (The season a new member joins is computed in SQL from server time — covered by
+// supabase/tests/league_divisions.test.sh and lib/calendar/seasonSql.test.ts.)
 
 check('isLeagueId accepts all five, rejects others',
   ['rookie', 'amateur', 'continental', 'pro', 'elite'].every(isLeagueId) && !isLeagueId('legend'));

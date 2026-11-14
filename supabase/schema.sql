@@ -1655,21 +1655,50 @@ $$;
 revoke all on function public.process_training_plan(uuid) from public;
 grant execute on function public.process_training_plan(uuid) to authenticated;
 
+
+-- >>>>>>>> 20261114_01_tour_season_registrations.sql (same text as supabase/migrations/20261114_01_tour_season_registrations.sql) >>>>>>>>
 -- ============================================================================
--- Tour schedule as a weekly template + per-season registrations.
+-- Migration 01 — game season in SQL + per-season Tour registrations (2026-11-14).
 --
--- data/tourSchedule.ts now repeats the same Tours in the same weeks every
--- season (real dates come from lib/calendar/season.ts), so a registration must
--- say WHICH season it belongs to; otherwise last season's Danube Tour pick
--- would show as selected in every later season and block re-registering.
+-- (a) public.season_id_at() / current_season_id(): the game season computed
+--     from SERVER time inside the database, so a client can never name its own
+--     season. Kept in sync by hand with lib/calendar/season.ts (anchor and
+--     season length below); a unit test (lib/calendar/seasonSql.test.ts)
+--     compares them so they cannot drift silently.
 --
--- Every row that exists today was made during season 1 (no Tours were
--- scheduled for any later season), hence the one-time 'season-1' backfill.
--- The default is dropped right after, so new inserts must name their season.
--- Idempotent: safe to run again.
+-- (b) data/tourSchedule.ts is now a weekly template repeated every season, so
+--     a registration must say WHICH season it belongs to; otherwise last
+--     season's pick would show as selected in every later season. Every row
+--     that exists today was made in season 1 (no Tours were scheduled for any
+--     later season) — hence the one-time 'season-1' backfill. Afterwards the
+--     column defaults to the CURRENT season and the INSERT policy only accepts
+--     the current season, so it cannot be forged either.
+--
+-- Idempotent: safe to run again. Run BEFORE migrations 02 and 03.
 -- ============================================================================
+
+-- Season 1 began on this UTC Monday; every season is 10 weeks = 70 days.
+create or replace function public.season_id_at(p_at timestamptz)
+returns text
+language sql
+immutable
+as $$
+  select 'season-' || (greatest(0, floor(((p_at at time zone 'utc')::date - date '2026-08-17')::numeric / 70)) + 1)::int;
+$$;
+
+create or replace function public.current_season_id()
+returns text
+language sql
+stable
+as $$
+  select public.season_id_at(now());
+$$;
+
+grant execute on function public.season_id_at(timestamptz) to authenticated;
+grant execute on function public.current_season_id() to authenticated;
+
 alter table public.tour_registrations add column if not exists season_id text not null default 'season-1';
-alter table public.tour_registrations alter column season_id drop default;
+alter table public.tour_registrations alter column season_id set default public.current_season_id();
 
 alter table public.tour_registrations drop constraint if exists tour_registrations_rider_id_tour_id_key;
 do $$
@@ -1684,6 +1713,20 @@ begin
   end if;
 end $$;
 
+-- A player may only register their OWN rider, and only for the current season.
+drop policy if exists "tour_registrations_insert_own_rider" on public.tour_registrations;
+create policy "tour_registrations_insert_own_rider"
+  on public.tour_registrations for insert
+  with check (
+    season_id = public.current_season_id()
+    and exists (
+      select 1 from public.riders r
+      where r.id = rider_id and r.player_id = auth.uid()
+    )
+  );
+
+
+-- >>>>>>>> 20261114_02_league_divisions.sql (same text as supabase/migrations/20261114_02_league_divisions.sql) >>>>>>>>
 -- ============================================================================
 -- Leagues & sub-leagues V1 (2026-11-14).
 --
@@ -1705,7 +1748,10 @@ end $$;
 -- profiles.league stays (existing readers: facilities, caps). It is now kept
 -- in sync from the membership by a trigger.
 --
--- Idempotent: safe to run again. NOT run automatically on any database.
+-- The season a player joins is NEVER taken from the client: it is the current
+-- game season computed in the database (public.current_season_id(), migration
+-- 01). Run AFTER migration 01 and BEFORE migration 03. Idempotent.
+-- NOT run automatically on any database.
 -- ============================================================================
 
 create table if not exists public.league_divisions (
@@ -1840,9 +1886,15 @@ $$;
 
 revoke all on function public.allocate_league_division(text) from public;
 
--- ---- A new (or not-yet-placed) player joins Rookie. Idempotent: an existing
--- member just gets their current sub-league back.
-create or replace function public.assign_my_league_division(p_season_id text)
+-- ---- A new (or not-yet-placed) player joins Rookie, always as THEMSELVES
+-- (auth.uid()), always into Rookie, always in the current game season: the
+-- function takes no parameters, so a client cannot forge league, sub-league,
+-- player or season. Idempotent: an existing member just gets their current
+-- sub-league back.
+-- Earlier draft took the season from the client; that signature must not exist.
+drop function if exists public.assign_my_league_division(text);
+
+create or replace function public.assign_my_league_division()
 returns uuid
 language plpgsql
 security definer set search_path = public
@@ -1855,10 +1907,6 @@ begin
   if v_player is null then
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
-  if p_season_id is null or p_season_id !~ '^season-[0-9]+$' then
-    raise exception 'invalid_season' using errcode = 'P0001';
-  end if;
-
   select division_id into v_existing from public.league_memberships where player_id = v_player;
   if v_existing is not null then
     return v_existing;
@@ -1869,15 +1917,15 @@ begin
   -- ON CONFLICT: two simultaneous calls for the same player cannot create two
   -- memberships (PK) and the loser does not touch the counter.
   insert into public.league_memberships (player_id, division_id, league, joined_season_id)
-  values (v_player, v_div, 'rookie', p_season_id)
+  values (v_player, v_div, 'rookie', public.current_season_id())
   on conflict (player_id) do nothing;
 
   return (select division_id from public.league_memberships where player_id = v_player);
 end;
 $$;
 
-revoke all on function public.assign_my_league_division(text) from public;
-grant execute on function public.assign_my_league_division(text) to authenticated;
+revoke all on function public.assign_my_league_division() from public;
+grant execute on function public.assign_my_league_division() to authenticated;
 
 -- ---- Members of the CALLER's own sub-league: public identity only, no
 -- attributes or hidden fields. Same deliberate "no security_invoker" pattern
@@ -1924,3 +1972,59 @@ begin
     on conflict (player_id) do nothing;
   end loop;
 end $$;
+
+
+-- >>>>>>>> 20261114_03_profiles_lockdown.sql (same text as supabase/migrations/20261114_03_profiles_lockdown.sql) >>>>>>>>
+-- ============================================================================
+-- Migration 03 — security fix O-007: a player must not edit their own league.
+--
+-- Before: `grant select, update on public.profiles to authenticated` plus an
+-- UPDATE policy without WITH CHECK let any signed-in player run
+-- `update profiles set league = 'elite'` from the browser (the anon key is
+-- public). league_memberships (migration 02) is now the authoritative source
+-- of a player's league and sub-league; profiles.league is a copy kept in sync
+-- by the trusted trigger league_membership_sync_profile.
+--
+-- After:
+--   * players may UPDATE only display_name and preferred_language (their own row);
+--   * no INSERT/DELETE for players at all (rows come from the sign-up trigger);
+--   * a guard trigger rejects any change of league made by a client role, so a
+--     future careless GRANT cannot reopen the hole;
+--   * the sync trigger (SECURITY DEFINER, runs as the table owner) still works.
+--
+-- Run AFTER migrations 01 and 02. Idempotent. The app never writes profiles
+-- from the browser (sign-up passes metadata to the trigger), so nothing breaks.
+-- ============================================================================
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own"
+  on public.profiles for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
+grant update (display_name, preferred_language) on public.profiles to authenticated;
+
+create or replace function public.profiles_league_guard_trg()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- current_user is the CALLER's role for a plain UPDATE (a client) and the
+  -- function owner inside the SECURITY DEFINER sync trigger.
+  if new.league is distinct from old.league and current_user in ('anon', 'authenticated') then
+    raise exception 'league_is_server_controlled' using errcode = '42501';
+  end if;
+  if new.id is distinct from old.id and current_user in ('anon', 'authenticated') then
+    raise exception 'profile_id_is_immutable' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_league_guard on public.profiles;
+create trigger profiles_league_guard
+  before update on public.profiles
+  for each row execute function public.profiles_league_guard_trg();

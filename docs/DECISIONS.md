@@ -35,6 +35,8 @@ World Championships (MS) V1. Approved by owner 2026-11-14; implementation postpo
 - C-023 — A new player always starts in Rookie, placed in the lowest-numbered Rookie sub-league with a free spot; if all are full a new one is created. The player joins the CURRENT global season and week (no personal "Season 1"). A Tour that already started cannot be joined late; the player prepares for the next available Tour.
 - C-024 — Test accounts may be assigned to sub-leagues; game progress is reset before the official launch.
 - C-026 — Tour selection: a Tour whose week has started (or passed) cannot be joined; already-selected Tours stay selected. Enforced in `getSelectionState` and `registerForTour`. Source: owner 2026-11-14.
+- C-027 — Season-end sub-league balancing (approved CONCEPT, NOT IMPLEMENTED; no algorithm yet). At the end of a season sub-leagues of a league are balanced by the number of ACTIVE vs INACTIVE players. Example: Rookie 1.1 has 20 active + 30 inactive, Rookie 1.2 has 40 active + 10 inactive → after balancing both have 30 active + 20 inactive. Rules: capacity stays 50; accounts and memberships are never deleted merely for inactivity; a player can return to the game at any time; existing players are NOT moved between sub-leagues during a season; balancing runs after the season ends, AFTER promotions and relegations; goal = as even a number of active players as possible with the fewest moves; applies to Rookie, Amateur, Continental and Pro; Elite has a single sub-league and is never balanced. Source: owner 2026-11-14.
+- C-028 — Security: league, sub-league and joined season are server-controlled. `league_memberships` is the authoritative placement; `profiles.league` is a copy synced by a trusted trigger. Players may update only `display_name` and `preferred_language` on `profiles`; the placement function takes no client input and derives the season from server time in SQL. Implemented in migrations 01–03; resolves O-007 once deployed. Source: owner 2026-11-14.
 - C-025 — Not decided / out of scope for league V1: promotion and relegation (and counts), inactivity and removal rules, scoring and tie-breaks, MS, cron/automatic race processing, race engine.
 
 ## Engine pointers (read there, do not copy)
@@ -46,6 +48,7 @@ Index of reports: `packages/race-engine/README.md`.
 - P-002 — Review and, if agreed, remove temporary UI (`avatar-test-temp`, `RiderAvatarTest`, `admin/test-peloton`). Not touched so far.
 - P-003 — Plugins for this project: keep claude-md-management, superpowers, code-review; enable context7; Playwright on demand; disable claude-memory (duplicates CLAUDE.md/docs), productivity and website-design; skip Serena. Estimate, not measured.
 - P-004 — Enforce i18n keys for all existing text too (currently only required for new text).
+- P-005 — Definition of an ACTIVE player (needed by C-027 and MS eligibility): preliminary proposal = logged in within the last 28 days. NOT approved and NOT implemented as a rule; do not hard-code it. Source: owner 2026-11-14.
 
 ## OPEN
 - O-001 — Which v9 spec decisions changed later, and what is the current rule?
@@ -54,4 +57,6 @@ Index of reports: `packages/race-engine/README.md`.
 - O-004 — Is `race-engine` already wired into the web race flow? Not verified.
 - O-005 — Wiring `breakawaySkill` and `wetHandling` into engine math (separate engine-side change, per code comment).
 - O-006 — MS prerequisites not defined: who counts as an "eligible active" rider; behaviour on tied points and riders without results at qualification; whether the race engine supports 100-rider fields; real scheduled-job mechanism (none exists, only lazy `AppShell` processing); exact deadline boundary.
-- O-007 — `profiles` is updatable by the player under RLS including the `league` column (no column restriction). League must become server-controlled before leagues matter for gameplay.
+- O-007 — RESOLVED in code 2026-11-14 (see C-028), takes effect when migrations 01–03 are deployed. Was: `profiles` updatable by the player including `league`.
+- O-008 — Audit finding, NOT fixed: other tables let the owner write directly under RLS (`riders` insert/update incl. attributes/condition/potential, `bike_condition` insert/update, `training_plans` update incl. applied gains, `tour_registrations` insert/delete without the Tour limit/overlap check). Exploitability not verified; needs a separate hardening task (server-side functions like `upgrade_facility`) before real competition.
+- O-009 — Activity definition for balancing/MS (see P-005) and the balancing algorithm itself.
