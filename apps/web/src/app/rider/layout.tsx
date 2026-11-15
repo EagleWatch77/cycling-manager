@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
+import { getMyLeagueLabel } from '@/lib/league/label';
+import { resolveAvatarSrc } from '@/lib/rider/avatarPool';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { RiderProfileHeader } from '@/components/rider/RiderProfileHeader';
@@ -34,10 +36,12 @@ export default async function RiderLayout({ children }: { children: ReactNode })
     );
   }
 
+  const { leagueLabel } = await getMyLeagueLabel(t);
+
   return (
     <AppShell activeId="rider" locale={locale}>
       <div className="space-y-3">
-        <RiderProfileHeader t={t} rider={rider} />
+        <RiderProfileHeader t={t} rider={rider} leagueLabel={leagueLabel} portraitSrc={resolveAvatarSrc(rider.id)} />
         <RiderProfileTabs labels={{
           overview: t('profile.overview'),
           training: t('profile.training'),

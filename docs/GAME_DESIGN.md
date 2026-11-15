@@ -45,8 +45,8 @@ Zdroj: `lib/facilities/config.ts`, jediný kanonický zdroj všetkých efektov. 
 ## 6. Sezóny
 - Prechod sezóny (starnutie) sa spracuje lenivo: pri prvom požiadavku po hranici sezóny cez `AppShell` → `ensureGameStateProcessed()`. Je idempotentný. `[KÓD]` `lib/gameState.ts`
 
-### Celkové skóre a radar jazdca `[SCHVÁLENÉ 2026-11-14]`
-- Jazdec má jediné skóre: Celkové skóre (vážený priemer skupín; Rozvoj a stav nie sú jeho súčasťou). Samostatné skóre „Výkon" sa nezobrazuje.
+### Celkové hodnotenie a radar jazdca `[SCHVÁLENÉ 2026-11-14/15]`
+- Jazdec má jediné hodnotenie: Celkové hodnotenie (OVR) = Výkon × 0,50 + Taktika × 0,25 + Technika × 0,20 + Skúsenosti × 0,05, z nezaokrúhlených priemerov skupín, zaokrúhlené až na konci (škála atribútov, napr. 129). Rozvoj a stav jazdca doň nevstupujú. Samostatné skóre „Výkon" sa nezobrazuje. `[KÓD]` `overallRating()` v `lib/rider/score.ts`. Staré 0–100 skóre (`riderOverall`) sa už nezobrazuje.
 - Radar na Jazdec → Prehľad: osi Výkon, Taktika, Technika, Skúsenosti, Rozvoj. Skupiny Výkon/Taktika/Technika/Rozvoj sa dajú rozbaliť (naraz jedna) na jednotlivé atribúty; Skúsenosti sú jeden bod.
 - Rozvoj ukazuje iba odhad (rozsah) zo skautingu a označenie „odhad"; kým odhady neexistujú, je „Neznámy". Skutočné skryté hodnoty sa hráčovi neodhaľujú. `[KÓD]` `lib/rider/radar.ts`, `lib/rider/developmentEstimates.ts`
 - Čaká na implementáciu: číselné skautingové rozsahy pre Potenciál, Trénovateľnosť, Profesionalitu a Regeneráciu (dnes iba hviezdičky pre Potenciál).

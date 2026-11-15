@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { potentialToStars, type SegmentLevel } from '@/lib/rider/development';
 import { POTENTIAL_MIN, POTENTIAL_MAX, type SkillAttribute } from '@/lib/rider/config';
-import { riderOverall } from '@/lib/rider/score';
+import { overallRating } from '@/lib/rider/score';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import type { MarketTier } from './repository';
 
@@ -37,7 +37,7 @@ export interface MarketRiderView {
    * reach the browser through the Free Market (see the chat report, items
    * 19-22) — a Free player learns "this rider is overall 78", never why.
    */
-  riderOverall: number;
+  overallRating: number;
 }
 
 export interface MarketRiderDetail extends MarketRiderView {
@@ -84,7 +84,7 @@ function toView(row: Record<string, unknown>): MarketRiderView {
     age: row.age as number,
     archetype: row.inferred_archetype as string,
     potentialStars: potentialToStars(row.potential as number, POTENTIAL_MIN, POTENTIAL_MAX),
-    riderOverall: riderOverall(attributes),
+    overallRating: overallRating(attributes),
   };
 }
 

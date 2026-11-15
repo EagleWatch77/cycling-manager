@@ -95,7 +95,7 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
         ))}
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[480px]" role="img" aria-label={labels.aria}>
+      <svg viewBox={`0 10 ${W} ${H - 22}`} className="w-full max-w-[560px]" role="img" aria-label={labels.aria}>
         {[0.25, 0.5, 0.75, 1].map((ring) => (
           <polygon key={ring} fill="none" stroke="#e4e9ec" strokeWidth="1"
             points={groups.map((_, i) => pt(angleOf(i), R * ring).map(f1).join(',')).join(' ')} />

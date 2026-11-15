@@ -140,7 +140,28 @@ export function meanOf(attributes: Record<SkillAttribute, number>, keys: readonl
 }
 
 /**
- * "Celkové skóre" — player-facing 0-100 "how good is this rider TODAY".
+ * "Celkové hodnotenie" (OVR) — the ONE player-facing rider rating, on the
+ * attribute scale (~100-200), approved weights 50/25/20/5. Uses the
+ * UNROUNDED group means and rounds only the final value. Shown on the rider
+ * profile header and the market. Includes Performance/Tactics/Technique/
+ * Experience only — never Potential, Trainability, Professionalism,
+ * Recovery or Condition.
+ */
+export const OVERALL_RATING_WEIGHTS = { performance: 0.50, tactics: 0.25, technique: 0.20, experience: 0.05 } as const;
+
+export function overallRating(attributes: Record<SkillAttribute, number>): number {
+  return Math.round(
+    overallPerformance(attributes) * OVERALL_RATING_WEIGHTS.performance
+    + meanOf(attributes, TACTICS_ATTRIBUTES) * OVERALL_RATING_WEIGHTS.tactics
+    + meanOf(attributes, TECHNIQUE_ATTRIBUTES) * OVERALL_RATING_WEIGHTS.technique
+    + attributes.experience * OVERALL_RATING_WEIGHTS.experience,
+  );
+}
+
+/**
+ * LEGACY normalised 0-100 score (weights 65/15/15/5). No longer shown to
+ * players — the UI uses overallRating() above. Kept unchanged for internal
+ * logic/tests that may rely on it. Original doc: "Celkové skóre" — player-facing 0-100 "how good is this rider TODAY".
  * Includes Performance/Tactics/Technique/Experience ONLY. Deliberately
  * excludes Potential, Trainability, Professionalism, Recovery (development
  * TRAITS — what the rider could become) and Energy/Fatigue/Form/Fitness/

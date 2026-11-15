@@ -3,10 +3,8 @@ import { getMyRider } from '@/lib/rider/repository';
 import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
-import { riderOverall } from '@/lib/rider/score';
+import { meanOf } from '@/lib/rider/score';
 import { Card } from '@/components/ui/Card';
-import { Icon } from '@/components/ui/Icon';
-import { SummaryCard } from '@/components/ui/SummaryCard';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
@@ -20,20 +18,11 @@ import { getSkillStatIcon, getDevStatIcon } from '@/lib/rider/statIcons';
  * attributes the engine actually has. Performance / Tactics / Technique split
  * the 19 canonical skills into readable families; Experience sits on its own.
  */
-const GROUPS: { titleKey: string; icon: string; keys: readonly SkillAttribute[] }[] = [
-  { titleKey: 'group.performance', icon: 'chart', keys: PERFORMANCE_FOCUS },
-  { titleKey: 'group.tactics', icon: 'bolt', keys: TACTICS_ATTRIBUTES },
-  { titleKey: 'group.technique', icon: 'wheel', keys: TECHNIQUE_ATTRIBUTES },
-  { titleKey: 'group.other', icon: 'trophy', keys: ['experience'] },
-];
-
-/** The five main areas, shown with a one-line explanation like the reference. */
-const AREAS = [
-  { key: 'areas.performance', titleKey: 'group.performance', icon: 'chart' },
-  { key: 'areas.tactics', titleKey: 'group.tactics', icon: 'bolt' },
-  { key: 'areas.technique', titleKey: 'group.technique', icon: 'wheel' },
-  { key: 'areas.development', titleKey: 'group.development', icon: 'trophy' },
-  { key: 'areas.condition', titleKey: 'group.condition', icon: 'heart' },
+const GROUPS: { titleKey: string; descKey: string; icon: string; keys: readonly SkillAttribute[]; showAverage: boolean }[] = [
+  { titleKey: 'group.performance', descKey: 'groupDesc.performance', icon: 'chart', keys: PERFORMANCE_FOCUS, showAverage: true },
+  { titleKey: 'group.tactics', descKey: 'groupDesc.tactics', icon: 'bolt', keys: TACTICS_ATTRIBUTES, showAverage: true },
+  { titleKey: 'group.technique', descKey: 'groupDesc.technique', icon: 'wheel', keys: TECHNIQUE_ATTRIBUTES, showAverage: true },
+  { titleKey: 'group.experience', descKey: 'groupDesc.experience', icon: 'trophy', keys: ['experience'], showAverage: false },
 ];
 
 /**
@@ -53,21 +42,10 @@ export default async function RiderOverviewPage() {
 
   return (
     <>
-      {/* Celkové skóre / Výkon — item 23: a simple, separate summary, never
-          mixed with Rozvoj (Potential/Trainability/Professionalism/Recovery
-          — what the rider COULD become) or Stav jazdca (Energy/Fatigue/
-          Form/Fitness/Morale — today's readiness). Both are 0-100,
-          computed server-side from real persisted attributes only —
-          Potential/Trainability/Professionalism/Recovery/condition never
-          enter this calculation (see lib/rider/score.ts). */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryCard icon={<Icon name="trophy" className="h-4.5 w-4.5" />} label={t('score.overall')} value={riderOverall(rider.attributes)} />
-      </div>
-
-      {/* Radar + areas explainer */}
+      {/* Radar + strengths. The overall rating lives in the profile header. */}
       <div className="grid grid-cols-12 gap-3">
         <Card title={t('profile.radarTitle')} dense className="col-span-12 lg:col-span-7">
-          <div className="p-3.5">
+          <div className="p-2">
             <AbilityRadar
               model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
               labels={{
@@ -77,35 +55,9 @@ export default async function RiderOverviewPage() {
           </div>
         </Card>
 
-        <Card title={t('areas.title')} dense className="col-span-12 lg:col-span-5">
-          <ul className="p-3.5">
-            {AREAS.map((a) => (
-              <li key={a.key} className="flex items-start gap-2.5 border-b border-line py-2 last:border-0">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal-rail text-teal">
-                  <Icon name={a.icon} className="h-3.5 w-3.5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-bold text-navy">{t(a.titleKey)}</span>
-                  <span className="block text-2xs leading-snug text-navy-soft">{t(a.key)}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-
-      {/* Attribute groups */}
-      <div className="grid grid-cols-12 gap-3">
-        {GROUPS.map((g) => (
-          <AttributeGroup key={g.titleKey} t={t} titleKey={g.titleKey} icon={g.icon}
-            keys={g.keys} attributes={rider.attributes}
-            showStatIcons={g.titleKey === 'group.performance'}
-            className="col-span-12 sm:col-span-6 xl:col-span-3" />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-12 gap-3">
-        <Card title={<span className="text-sm">{t('profile.strengths')}</span>} dense className="col-span-12 lg:col-span-6">
+        {/* "Silné stránky jazdca" — the card is in place; its final content is the next task.
+            For now it keeps the existing top-5 attribute list so no function is lost. */}
+        <Card title={t('profile.strengths')} dense className="col-span-12 lg:col-span-5">
           <ul className="p-3.5">
             {strengths.map((s) => (
               <li key={s.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
@@ -118,10 +70,23 @@ export default async function RiderOverviewPage() {
             ))}
           </ul>
         </Card>
+      </div>
 
+      {/* Attribute groups */}
+      <div className="grid grid-cols-12 gap-3">
+        {GROUPS.map((g) => (
+          <AttributeGroup key={g.titleKey} t={t} titleKey={g.titleKey} icon={g.icon}
+            keys={g.keys} attributes={rider.attributes}
+            descriptionKey={g.descKey} average={g.showAverage ? Math.round(meanOf(rider.attributes, g.keys)) : undefined}
+            showStatIcons={g.titleKey === 'group.performance'}
+            className="col-span-12 sm:col-span-6 xl:col-span-3" />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-12 gap-3">
         <Card title={<span className="text-sm">{t('group.development')}</span>} dense className="col-span-12 lg:col-span-6">
-          <p className="px-3.5 pt-3.5 text-sm leading-snug text-navy-soft">{t('profile.potentialNote')}</p>
-          <ul className="p-3.5 pt-2">
+          <p className="px-3.5 pt-3 text-xs leading-snug text-navy-soft">{t('groupDesc.development')}</p>
+          <ul className="px-3.5 pb-1 pt-1">
             <DevAttributeRow variant="stars" icon={getDevStatIcon('potential')} label={t('dev.potential')}
               level={potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX)} />
             <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')}

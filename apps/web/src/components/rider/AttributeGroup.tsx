@@ -30,6 +30,7 @@ import { RiderStatIcon } from './RiderStatIcon';
  */
 export function AttributeGroup({
   t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28, bonuses,
+  descriptionKey, average,
 }: {
   t: T;
   titleKey: string;
@@ -41,16 +42,23 @@ export function AttributeGroup({
   showBars?: boolean;
   statIconSize?: number;
   bonuses?: Partial<Record<SkillAttribute, number>>;
+  /** Short explanation shown under the heading, before the list. */
+  descriptionKey?: string;
+  /** Group average shown in the heading, e.g. "Výkon · 128". */
+  average?: number;
 }) {
   return (
     <Card dense className={className}
       title={
         <span className="flex items-center gap-1.5 text-sm text-teal-dark">
           <Icon name={icon} className="h-3.5 w-3.5 text-teal" />
-          {t(titleKey)}
+          {t(titleKey)}{average != null && ` · ${average}`}
         </span>
       }>
-      <ul className="p-3.5">
+      {descriptionKey && (
+        <p className="px-3.5 pt-3 text-xs leading-snug text-navy-soft">{t(descriptionKey)}</p>
+      )}
+      <ul className={descriptionKey ? 'px-3.5 pb-3.5 pt-1' : 'p-3.5'}>
         {keys.map((k) => (
           showBars ? (
             <li key={k} className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
