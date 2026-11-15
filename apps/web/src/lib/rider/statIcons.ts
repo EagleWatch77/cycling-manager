@@ -15,9 +15,9 @@ export type DevRatingKey = 'potential' | 'trainability' | 'professionalism' | 'r
  * Callers must fall back to a neutral placeholder (RiderStatIcon does this
  * automatically) and must never reuse another attribute's icon.
  *
- * Confirmed missing as of this mapping (no file in public/ride-icon for):
- * positioning, attackTiming, reaction, energyManagement, breakawaySkill,
- * descending, bikeHandling, cornering, packRiding, roughSurface, wetHandling.
+ * As of the Tactics/Technique icon set (2026-11-15) every one of the 19
+ * skill attributes has its own icon; the placeholder remains only as a
+ * safety net for future attributes.
  */
 const SKILL_ICON: Partial<Record<SkillAttribute, string>> = {
   climbing: '/ride-icon/stupanie.png',
@@ -28,6 +28,19 @@ const SKILL_ICON: Partial<Record<SkillAttribute, string>> = {
   endurance: '/ride-icon/vytrvalost.png',
   acceleration: '/ride-icon/akceleracia.png',
   experience: '/ride-icon/skusenosti.png',
+  // Taktika
+  positioning: '/ride-icon/pozicia.png',
+  attackTiming: '/ride-icon/nacasovanie-utoku.png',
+  reaction: '/ride-icon/reakcia.png',
+  energyManagement: '/ride-icon/manazment-energie.png',
+  breakawaySkill: '/ride-icon/unik.png',
+  // Technika
+  descending: '/ride-icon/zjazd.png',
+  bikeHandling: '/ride-icon/ovladanie-bicykla.png',
+  cornering: '/ride-icon/zatacky.png',
+  packRiding: '/ride-icon/jazda-v-baliku.png',
+  wetHandling: '/ride-icon/jazda-v-dazdi.png',
+  roughSurface: '/ride-icon/nerovny-povrch.png',
 };
 
 const CONDITION_ICON: Record<ConditionKey, string> = {

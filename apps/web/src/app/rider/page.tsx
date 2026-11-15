@@ -65,7 +65,7 @@ export default async function RiderOverviewPage() {
           <AttributeGroup key={g.titleKey} t={t} titleKey={g.titleKey} icon={g.icon}
             keys={g.keys} attributes={rider.attributes}
             descriptionKey={g.descKey} average={g.showAverage ? Math.round(meanOf(rider.attributes, g.keys)) : undefined}
-            showStatIcons={g.titleKey === 'group.performance'}
+            showStatIcons statIconSize={24}
             className="col-span-12 sm:col-span-6 xl:col-span-3" />
         ))}
       </div>

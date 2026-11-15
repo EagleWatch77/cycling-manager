@@ -25,7 +25,7 @@ export function StrengthsCard({
       <ul className="px-3.5 pt-1.5">
         {strengths.map((s) => (
           <li key={s.key} className="flex items-start gap-2.5 border-b border-line py-2.5 last:border-0">
-            <RiderStatIcon src={getSkillStatIcon(s.key)} alt="" size={26} className="mt-0.5" />
+            <RiderStatIcon src={getSkillStatIcon(s.key)} alt="" size={30} className="mt-0.5" />
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-semibold text-navy">{t(`attr.${s.key}`)}</span>
               <span className="mt-0.5 block text-xs leading-snug text-navy-soft">{t(`attrDesc.${s.key}`)}</span>

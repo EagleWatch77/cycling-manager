@@ -53,6 +53,12 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - `RiderProfileHeader`: portrait (`RiderPortrait`, 3:4, `bg-surface`, silhouette placeholder, `onError` fallback; only displays an image, never generates/assigns) · name · nationality · age · style · league label · Celkové hodnotenie tile (`bg-teal-rail`); condition meters right (2x2 / 4 cols on mobile, inline on desktop).
 - `AttributeGroup` optional props `descriptionKey` (small secondary text under the heading) and `average` (heading `Výkon · 128`).
 
+## Attribute icons (CONFIRMED 2026-11-15)
+- Single source: `lib/rider/statIcons.ts` (`getSkillStatIcon`, `getConditionStatIcon`, `getDevStatIcon`) → PNGs in `apps/web/public/ride-icon/`. Rendered only through `RiderStatIcon` (fixed square box, `object-contain`, never recoloured/wrapped).
+- All 19 skill attributes now have their own icon. Výkon + Rozvoj + condition icons: original 1254 px assets (unchanged). Taktika + Technika icons: 128×128 RGBA, transparent, symbol ≤112 px: `pozicia, nacasovanie-utoku, reakcia, manazment-energie, unik` (Taktika); `zjazd, ovladanie-bicykla, zatacky, jazda-v-baliku, jazda-v-dazdi, nerovny-povrch` (Technika). `skusenosti.png` (medal) was already present and is kept.
+- Sizes: detail attribute rows 24 px (Rider page and Training page alike), Silné stránky 30 px. Fixed box → no layout shift. The neutral placeholder dot stays only as a fallback for a future attribute without an asset.
+- New icon sets: transparent PNG, keep the soft-gradient look, ≥8 px (of 128) padding, similar optical size; add the file + one line in `SKILL_ICON`, never reuse another attribute's icon.
+
 ## StrengthsCard (rider/StrengthsCard, CONFIRMED 2026-11-15)
 - `Card dense`, title "Silné stránky jazdca"; 3 rows: stat icon (`RiderStatIcon`, neutral dot when no asset), name + small `text-xs text-navy-soft` description, value right-aligned (`text-lg font-bold`), `border-line` dividers. Below: `bg-teal-rail` box "Pretekársky profil" (style name `text-teal-dark` + description). No bars/charts/images. Sits right of the radar on desktop (`lg:col-span-5`), under it on mobile.
 
