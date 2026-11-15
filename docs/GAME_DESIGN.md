@@ -51,6 +51,11 @@ Zdroj: `lib/facilities/config.ts`, jediný kanonický zdroj všetkých efektov. 
 - Rozvoj ukazuje iba odhad (rozsah) zo skautingu a označenie „odhad"; kým odhady neexistujú, je „Neznámy". Skutočné skryté hodnoty sa hráčovi neodhaľujú. `[KÓD]` `lib/rider/radar.ts`, `lib/rider/developmentEstimates.ts`
 - Čaká na implementáciu: číselné skautingové rozsahy pre Potenciál, Trénovateľnosť, Profesionalitu a Regeneráciu (dnes iba hviezdičky pre Potenciál).
 
+### Silné stránky jazdca `[SCHVÁLENÉ 2026-11-15]`
+- Informačná karta na Jazdec → Prehľad: tri najvyššie viditeľné atribúty z Výkonu, Taktiky a Techniky (skutočné hodnoty, pri zhode stále poradie skupín), každý s krátkym vysvetlením pre preteky. Bez bonusov a bez porovnania s inými jazdcami.
+- Nezapočítavajú sa: Skúsenosti, priemery, Celkové hodnotenie, skryté rozvojové atribúty, stav jazdca, vybavenie.
+- Pretekársky profil = existujúci štýl jazdca + popis (vhodné typy tratí). Výpočet vhodnosti pre disciplíny v projekte neexistuje. `[KÓD]` `lib/rider/strengths.ts`, `components/rider/StrengthsCard.tsx`
+
 ## 7. Trh jazdcov, rebríčky, financie, tím
 - Trh (`market_riders`, stránky `/transfers`), rebríčky (`/rankings`), Tím, Scouting, Financie, Personál: v kóde existujú stránky alebo tabuľky, **pravidlá neprečítané** `[CHÝBA]`. Systém Financie je podľa komentárov ešte pred dokončením.
 

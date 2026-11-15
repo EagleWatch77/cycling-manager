@@ -1,6 +1,6 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
+import { POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
 import { meanOf } from '@/lib/rider/score';
@@ -9,9 +9,9 @@ import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
-import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
+import { StrengthsCard } from '@/components/rider/StrengthsCard';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
-import { getSkillStatIcon, getDevStatIcon } from '@/lib/rider/statIcons';
+import { getDevStatIcon } from '@/lib/rider/statIcons';
 
 /**
  * Attribute groups, following the reference layout, filled ONLY with the
@@ -35,14 +35,9 @@ export default async function RiderOverviewPage() {
   const { t } = await getServerDictionary();
   const rider = (await getMyRider())!;
 
-  const strengths = [...SKILL_ATTRIBUTES]
-    .map((k) => ({ key: k, value: rider.attributes[k] }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
-
   return (
     <>
-      {/* Radar + strengths. The overall rating lives in the profile header. */}
+      {/* Radar + Silné stránky jazdca. The overall rating lives in the profile header. */}
       <div className="grid grid-cols-12 gap-3">
         <Card title={t('profile.radarTitle')} dense className="col-span-12 lg:col-span-7">
           <div className="p-2">
@@ -55,21 +50,7 @@ export default async function RiderOverviewPage() {
           </div>
         </Card>
 
-        {/* "Silné stránky jazdca" — the card is in place; its final content is the next task.
-            For now it keeps the existing top-5 attribute list so no function is lost. */}
-        <Card title={t('profile.strengths')} dense className="col-span-12 lg:col-span-5">
-          <ul className="p-3.5">
-            {strengths.map((s) => (
-              <li key={s.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
-                <span className="flex min-w-0 items-center gap-2.5 text-[15px] text-navy-soft">
-                  <RiderStatIcon src={getSkillStatIcon(s.key)} alt={t(`attr.${s.key}`)} size={26} />
-                  <span className="truncate" title={t(`attr.${s.key}`)}>{t(`attr.${s.key}`)}</span>
-                </span>
-                <span className="shrink-0 text-base font-bold tabular-nums text-navy">{s.value}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} className="col-span-12 lg:col-span-5" />
       </div>
 
       {/* Attribute groups */}

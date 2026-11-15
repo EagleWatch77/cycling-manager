@@ -53,6 +53,9 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - `RiderProfileHeader`: portrait (`RiderPortrait`, 3:4, `bg-surface`, silhouette placeholder, `onError` fallback; only displays an image, never generates/assigns) · name · nationality · age · style · league label · Celkové hodnotenie tile (`bg-teal-rail`); condition meters right (2x2 / 4 cols on mobile, inline on desktop).
 - `AttributeGroup` optional props `descriptionKey` (small secondary text under the heading) and `average` (heading `Výkon · 128`).
 
+## StrengthsCard (rider/StrengthsCard, CONFIRMED 2026-11-15)
+- `Card dense`, title "Silné stránky jazdca"; 3 rows: stat icon (`RiderStatIcon`, neutral dot when no asset), name + small `text-xs text-navy-soft` description, value right-aligned (`text-lg font-bold`), `border-line` dividers. Below: `bg-teal-rail` box "Pretekársky profil" (style name `text-teal-dark` + description). No bars/charts/images. Sits right of the radar on desktop (`lg:col-span-5`), under it on mobile.
+
 ## Ability radar (rider/AbilityRadar, CONFIRMED 2026-11-14)
 - Client SVG component, props = pre-translated model (`lib/rider/radar.ts`) + labels; never receives hidden true values.
 - Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy".

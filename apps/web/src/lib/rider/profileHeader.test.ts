@@ -66,7 +66,7 @@ const page = readFileSync('src/app/rider/page.tsx', 'utf8');
 check('standalone Celkové skóre card removed from the page', !/SummaryCard|score\.overall|riderOverall/.test(page));
 check('"Hlavné oblasti" card removed', !/areas\./.test(page));
 check('"Ostatné" renamed to Skúsenosti', /group\.experience/.test(page) && !/group\.other/.test(page));
-check('Silné stránky card present', /profile\.strengths/.test(page));
+check('Silné stránky card present', /StrengthsCard/.test(page));
 check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) && /AttributeGroup/.test(page) && /DevAttributeRow/.test(page));
 check('Rozvoj card still uses existing level display (no raw hidden numbers)', !/rider\.(potential|trainability)\}/.test(page));
 
