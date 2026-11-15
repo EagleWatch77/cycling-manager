@@ -180,12 +180,6 @@
   "attr.reaction": "Reakce",
   "attr.breakawaySkill": "Schopnost úniku",
   "attr.wetHandling": "Jízda v dešti",
-  "radar.mountains": "Hory",
-  "radar.flat": "Rovina",
-  "radar.sprint": "Sprint",
-  "radar.endurance": "Vytrvalost",
-  "radar.technique": "Technika",
-  "radar.positioning": "Peloton",
   "profile.overview": "Přehled",
   "profile.stats": "Statistiky",
   "profile.results": "Výsledky",
@@ -497,7 +491,6 @@
   "facilities.technicalDesc": "Snižuje technické problémy a náklady spojené se servisem.",
   "facilities.teamCenterDesc": "Určuje kapacitu jezdců a personálu v týmu.",
   "score.overall": "Celkové skóre",
-  "score.performance": "Výkon",
   "trainingPage.typePerformance": "Výkonnostní",
   "trainingPage.typeTechnical": "Technický",
   "trainingPage.technicalSessionNote": "1 technická tréninková jednotka za týden",
@@ -565,5 +558,11 @@
   "ranking.divisionNone": "Zatím nejsi zařazen do podligy.",
   "ranking.divisionEqual": "Podligy v rámci jedné ligy jsou rovnocenné.",
   "ranking.you": "Ty",
-  "ranking.divisionMembersEmpty": "Seznam jezdců podligy je zatím prázdný."
+  "ranking.divisionMembersEmpty": "Seznam jezdců podligy je zatím prázdný.",
+  "radar.overview": "Přehled",
+  "radar.estimate": "odhad",
+  "radar.unknown": "Neznámý",
+  "radar.devNote": "Rozvoj je jen odhad. Skutečné skryté hodnoty zůstávají neodhaleny a do celkového skóre se nezapočítávají.",
+  "radar.devNoteUnknown": "Rozvoj zatím není prozkoumán. Skutečné skryté hodnoty nejsou odhaleny a do celkového skóre se nezapočítávají.",
+  "radar.aria": "Radar schopností jezdce"
 }

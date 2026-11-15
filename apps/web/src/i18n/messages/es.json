@@ -180,12 +180,6 @@
   "attr.reaction": "Reacción",
   "attr.breakawaySkill": "Habilidad de fuga",
   "attr.wetHandling": "Conducción en mojado",
-  "radar.mountains": "Montaña",
-  "radar.flat": "Llano",
-  "radar.sprint": "Sprint",
-  "radar.endurance": "Resistencia",
-  "radar.technique": "Técnica",
-  "radar.positioning": "Pelotón",
   "profile.overview": "Resumen",
   "profile.stats": "Estadísticas",
   "profile.results": "Resultados",
@@ -497,7 +491,6 @@
   "facilities.technicalDesc": "Reduce los problemas técnicos y los costes relacionados con el servicio.",
   "facilities.teamCenterDesc": "Determina la capacidad de ciclistas y personal del equipo.",
   "score.overall": "Puntuación global",
-  "score.performance": "Rendimiento",
   "trainingPage.typePerformance": "Rendimiento",
   "trainingPage.typeTechnical": "Técnico",
   "trainingPage.technicalSessionNote": "1 unidad de entrenamiento técnico por semana",
@@ -565,5 +558,11 @@
   "ranking.divisionNone": "Todavía no estás asignado a una división.",
   "ranking.divisionEqual": "Las divisiones de una liga son equivalentes.",
   "ranking.you": "Tú",
-  "ranking.divisionMembersEmpty": "La lista de corredores de esta división está vacía por ahora."
+  "ranking.divisionMembersEmpty": "La lista de corredores de esta división está vacía por ahora.",
+  "radar.overview": "Resumen",
+  "radar.estimate": "estimación",
+  "radar.unknown": "Desconocido",
+  "radar.devNote": "El desarrollo es solo una estimación. Los valores ocultos reales no se revelan y no cuentan para la puntuación global.",
+  "radar.devNoteUnknown": "El desarrollo aún no se ha explorado. Los valores ocultos reales no se revelan y no cuentan para la puntuación global.",
+  "radar.aria": "Radar de habilidades del corredor"
 }

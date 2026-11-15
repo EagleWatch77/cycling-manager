@@ -45,6 +45,12 @@ Zdroj: `lib/facilities/config.ts`, jediný kanonický zdroj všetkých efektov. 
 ## 6. Sezóny
 - Prechod sezóny (starnutie) sa spracuje lenivo: pri prvom požiadavku po hranici sezóny cez `AppShell` → `ensureGameStateProcessed()`. Je idempotentný. `[KÓD]` `lib/gameState.ts`
 
+### Celkové skóre a radar jazdca `[SCHVÁLENÉ 2026-11-14]`
+- Jazdec má jediné skóre: Celkové skóre (vážený priemer skupín; Rozvoj a stav nie sú jeho súčasťou). Samostatné skóre „Výkon" sa nezobrazuje.
+- Radar na Jazdec → Prehľad: osi Výkon, Taktika, Technika, Skúsenosti, Rozvoj. Skupiny Výkon/Taktika/Technika/Rozvoj sa dajú rozbaliť (naraz jedna) na jednotlivé atribúty; Skúsenosti sú jeden bod.
+- Rozvoj ukazuje iba odhad (rozsah) zo skautingu a označenie „odhad"; kým odhady neexistujú, je „Neznámy". Skutočné skryté hodnoty sa hráčovi neodhaľujú. `[KÓD]` `lib/rider/radar.ts`, `lib/rider/developmentEstimates.ts`
+- Čaká na implementáciu: číselné skautingové rozsahy pre Potenciál, Trénovateľnosť, Profesionalitu a Regeneráciu (dnes iba hviezdičky pre Potenciál).
+
 ## 7. Trh jazdcov, rebríčky, financie, tím
 - Trh (`market_riders`, stránky `/transfers`), rebríčky (`/rankings`), Tím, Scouting, Financie, Personál: v kóde existujú stránky alebo tabuľky, **pravidlá neprečítané** `[CHÝBA]`. Systém Financie je podľa komentárov ešte pred dokončením.
 

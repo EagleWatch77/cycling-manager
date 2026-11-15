@@ -135,7 +135,7 @@ export function performanceScore(attributes: Record<SkillAttribute, number>): nu
 
 const RIDER_OVERALL_WEIGHTS = { performance: 0.65, tactics: 0.15, technique: 0.15, experience: 0.05 } as const;
 
-function meanOf(attributes: Record<SkillAttribute, number>, keys: readonly SkillAttribute[]): number {
+export function meanOf(attributes: Record<SkillAttribute, number>, keys: readonly SkillAttribute[]): number {
   return keys.reduce((s, k) => s + attributes[k], 0) / keys.length;
 }
 

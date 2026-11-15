@@ -22,7 +22,7 @@ const src = fs.readFileSync(path.join(__dirname, 'playerRepository.ts'), 'utf8')
 const viewInterface = src.match(/export interface MarketRiderView \{([\s\S]*?)\n\}/)?.[1] ?? '';
 check('MarketRiderView interface exists', viewInterface.length > 0);
 check('MarketRiderView includes riderOverall', /riderOverall:\s*number/.test(viewInterface));
-check('MarketRiderView includes performanceScore', /performanceScore:\s*number/.test(viewInterface));
+check('MarketRiderView has the single overall score only (no separate performanceScore)', !/performanceScore/.test(viewInterface));
 
 // 2. MarketRiderView must NOT declare any of the forbidden raw fields directly.
 const forbiddenInView = ['potential:', 'trainability:', 'professionalism:', 'recovery:', 'attributes:'];
@@ -38,7 +38,7 @@ for (const field of forbiddenInView) {
 const toViewFn = src.match(/function toView\(row: Record<string, unknown>\): MarketRiderView \{([\s\S]*?)\n\}/)?.[1] ?? '';
 check('toView() exists', toViewFn.length > 0);
 check('toView() computes riderOverall(attributes)', /riderOverall\(attributes\)/.test(toViewFn));
-check('toView() computes performanceScore(attributes)', /performanceScore\(attributes\)/.test(toViewFn));
+check('toView() does not compute a separate performanceScore', !/performanceScore/.test(toViewFn));
 check('toView()\'s returned object does not include a bare `attributes:` field (only potentialStars, a derived star bucket, is allowed)',
   !/\n\s*attributes,?\s*\n/.test(toViewFn) && !/attributes:\s*(row\.attributes|attributes)\s*,/.test(toViewFn.replace(/const attributes = row\.attributes.*?;/, '')));
 check('toView() never returns raw trainability/professionalism/recovery fields',
@@ -49,7 +49,7 @@ check('toView() never returns the raw potential number (only potentialStars, a 1
 // 4. The scores are computed server-side (imported from lib/rider/score, a
 // 'server-only'-free pure module, but only ever called from this
 // 'server-only' repository file — never from a client component).
-check('riderOverall/performanceScore are imported from lib/rider/score', /from '@\/lib\/rider\/score'/.test(src));
+check('riderOverall is imported from lib/rider/score', /from '@\/lib\/rider\/score'/.test(src));
 check('playerRepository.ts is marked server-only', /import 'server-only'/.test(src));
 
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);

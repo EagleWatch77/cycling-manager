@@ -180,12 +180,6 @@
   "attr.reaction": "Réaction",
   "attr.breakawaySkill": "Aptitude à l'échappée",
   "attr.wetHandling": "Conduite sous la pluie",
-  "radar.mountains": "Montagne",
-  "radar.flat": "Plat",
-  "radar.sprint": "Sprint",
-  "radar.endurance": "Endurance",
-  "radar.technique": "Technique",
-  "radar.positioning": "Peloton",
   "profile.overview": "Aperçu",
   "profile.stats": "Statistiques",
   "profile.results": "Résultats",
@@ -497,7 +491,6 @@
   "facilities.technicalDesc": "Réduit les problèmes techniques et les coûts liés à l'entretien.",
   "facilities.teamCenterDesc": "Détermine la capacité de coureurs et de personnel de l'équipe.",
   "score.overall": "Score global",
-  "score.performance": "Performance",
   "trainingPage.typePerformance": "Performance",
   "trainingPage.typeTechnical": "Technique",
   "trainingPage.technicalSessionNote": "1 séance d'entraînement technique par semaine",
@@ -565,5 +558,11 @@
   "ranking.divisionNone": "Tu n'es pas encore placé dans une division.",
   "ranking.divisionEqual": "Les divisions d'une même ligue sont équivalentes.",
   "ranking.you": "Toi",
-  "ranking.divisionMembersEmpty": "La liste des coureurs de cette division est vide pour l'instant."
+  "ranking.divisionMembersEmpty": "La liste des coureurs de cette division est vide pour l'instant.",
+  "radar.overview": "Aperçu",
+  "radar.estimate": "estimation",
+  "radar.unknown": "Inconnu",
+  "radar.devNote": "Le développement n’est qu’une estimation. Les vraies valeurs cachées restent non révélées et ne comptent pas dans le score global.",
+  "radar.devNoteUnknown": "Le développement n’a pas encore été prospecté. Les vraies valeurs cachées ne sont pas révélées et ne comptent pas dans le score global.",
+  "radar.aria": "Radar des capacités du coureur"
 }

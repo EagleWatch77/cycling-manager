@@ -3,11 +3,13 @@ import { getMyRider } from '@/lib/rider/repository';
 import { SKILL_ATTRIBUTES, POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
-import { riderOverall, performanceScore } from '@/lib/rider/score';
+import { riderOverall } from '@/lib/rider/score';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { SummaryCard } from '@/components/ui/SummaryCard';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
+import { buildRadarModel } from '@/lib/rider/radar';
+import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
@@ -60,14 +62,18 @@ export default async function RiderOverviewPage() {
           enter this calculation (see lib/rider/score.ts). */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <SummaryCard icon={<Icon name="trophy" className="h-4.5 w-4.5" />} label={t('score.overall')} value={riderOverall(rider.attributes)} />
-        <SummaryCard icon={<Icon name="chart" className="h-4.5 w-4.5" />} label={t('score.performance')} value={performanceScore(rider.attributes)} />
       </div>
 
       {/* Radar + areas explainer */}
       <div className="grid grid-cols-12 gap-3">
         <Card title={t('profile.radarTitle')} dense className="col-span-12 lg:col-span-7">
           <div className="p-3.5">
-            <AbilityRadar t={t} attributes={rider.attributes} />
+            <AbilityRadar
+              model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
+              labels={{
+                overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
+                note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
+              }} />
           </div>
         </Card>
 

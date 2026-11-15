@@ -49,6 +49,12 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Folders: `admin/`, `facilities/`, `market/`, `public/`, `races/`, `rankings/`, `rider/`, `training/`
 - Before reuse, read the single component you need; do not bulk-read the folder.
 
+## Ability radar (rider/AbilityRadar, CONFIRMED 2026-11-14)
+- Client SVG component, props = pre-translated model (`lib/rider/radar.ts`) + labels; never receives hidden true values.
+- Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy".
+- Overview = 5 points. Selecting a group (tab pills or tapping a label) rotates it to the top and fans its attributes as small points with thin leader lines to two label columns (no overlap by fixed row spacing). Works by tap/keyboard; respects `prefers-reduced-motion`.
+- `initialSelected` prop exists for tests/static rendering only.
+
 ## Known deviations (CONFIRMED, not fixed)
 - Hex colors inside SVG components (`ElevationProfile`, `AbilityRadar`, `StageProfile`, `StageScoring`); they match tokens.
 - `#16a34a` (green) in `StageScoring` is not a token.

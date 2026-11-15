@@ -180,12 +180,6 @@
   "attr.reaction": "Reaktion",
   "attr.breakawaySkill": "Ausreißfähigkeit",
   "attr.wetHandling": "Nässefahren",
-  "radar.mountains": "Berge",
-  "radar.flat": "Flach",
-  "radar.sprint": "Sprint",
-  "radar.endurance": "Ausdauer",
-  "radar.technique": "Technik",
-  "radar.positioning": "Feld",
   "profile.overview": "Übersicht",
   "profile.stats": "Statistiken",
   "profile.results": "Ergebnisse",
@@ -497,7 +491,6 @@
   "facilities.technicalDesc": "Reduziert technische Probleme und servicebezogene Kosten.",
   "facilities.teamCenterDesc": "Legt die Fahrer- und Personalkapazität des Teams fest.",
   "score.overall": "Gesamtwertung",
-  "score.performance": "Leistung",
   "trainingPage.typePerformance": "Leistung",
   "trainingPage.typeTechnical": "Technisch",
   "trainingPage.technicalSessionNote": "1 technische Trainingseinheit pro Woche",
@@ -565,5 +558,11 @@
   "ranking.divisionNone": "Du bist noch keiner Division zugeordnet.",
   "ranking.divisionEqual": "Divisionen innerhalb einer Liga sind gleichwertig.",
   "ranking.you": "Du",
-  "ranking.divisionMembersEmpty": "Die Fahrerliste dieser Division ist noch leer."
+  "ranking.divisionMembersEmpty": "Die Fahrerliste dieser Division ist noch leer.",
+  "radar.overview": "Überblick",
+  "radar.estimate": "Schätzung",
+  "radar.unknown": "Unbekannt",
+  "radar.devNote": "Entwicklung ist nur eine Schätzung. Die wahren verborgenen Werte bleiben unbekannt und zählen nicht zur Gesamtwertung.",
+  "radar.devNoteUnknown": "Entwicklung wurde noch nicht gescoutet. Die wahren verborgenen Werte werden nicht offengelegt und zählen nicht zur Gesamtwertung.",
+  "radar.aria": "Fähigkeitsradar des Fahrers"
 }

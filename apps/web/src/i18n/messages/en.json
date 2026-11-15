@@ -180,12 +180,6 @@
   "attr.reaction": "Reaction",
   "attr.breakawaySkill": "Breakaway Skill",
   "attr.wetHandling": "Wet Handling",
-  "radar.mountains": "Mountains",
-  "radar.flat": "Flat",
-  "radar.sprint": "Sprint",
-  "radar.endurance": "Endurance",
-  "radar.technique": "Technique",
-  "radar.positioning": "Pack",
   "profile.overview": "Overview",
   "profile.stats": "Statistics",
   "profile.results": "Results",
@@ -497,7 +491,6 @@
   "facilities.technicalDesc": "Reduces technical problems and service-related costs.",
   "facilities.teamCenterDesc": "Sets rider and staff capacity for the team.",
   "score.overall": "Overall score",
-  "score.performance": "Performance",
   "trainingPage.typePerformance": "Performance",
   "trainingPage.typeTechnical": "Technical",
   "trainingPage.technicalSessionNote": "1 technical training session per week",
@@ -565,5 +558,11 @@
   "ranking.divisionNone": "You are not placed in a division yet.",
   "ranking.divisionEqual": "Divisions within a league are equal in strength.",
   "ranking.you": "You",
-  "ranking.divisionMembersEmpty": "The list of riders in this division is empty for now."
+  "ranking.divisionMembersEmpty": "The list of riders in this division is empty for now.",
+  "radar.overview": "Overview",
+  "radar.estimate": "estimate",
+  "radar.unknown": "Unknown",
+  "radar.devNote": "Development is only an estimate. The true hidden values stay undisclosed and do not count towards the overall score.",
+  "radar.devNoteUnknown": "Development has not been scouted yet. The true hidden values are not revealed and do not count towards the overall score.",
+  "radar.aria": "Rider ability radar"
 }
