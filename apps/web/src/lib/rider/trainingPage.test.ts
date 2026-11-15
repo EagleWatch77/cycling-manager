@@ -17,7 +17,7 @@ const t = (k: string) => k;
 const page = readFileSync('src/app/rider/training/page.tsx', 'utf8');
 const form = readFileSync('src/components/training/TrainingConfigForm.tsx', 'utf8');
 
-// layout order: left column (planning, history) then right column (condition, development), then 3 cards
+// layout order: left column (planning, Vývoj jazdca) then right column (condition, development), then 3 cards
 const at = (s: string) => page.indexOf(s);
 check('left column is wider (lg:col-span-8) and right narrower (lg:col-span-4)', /col-span-12 space-y-3 lg:col-span-8/.test(page) && /col-span-12 space-y-3 lg:col-span-4/.test(page));
 check('DOM order: planning < condition < development', at('planCardTitle}') < at("group.condition") && at("group.condition") < at("group.development"));

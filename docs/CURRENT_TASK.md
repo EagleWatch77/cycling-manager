@@ -7,3 +7,4 @@ Training V1: E1 security + approved planning rules implemented, awaiting deploym
 - Next only after approval: daily training block (needs D8), regeneration, scouting, contracts, season transition.
 - 2026-11-15: "Posledné tréningy" card removed from Tréning (C-041); history stays in DB. UI-only change.
 - 2026-11-15: Tréning UI: removed locked-note text and the Energia/Únava/Pripravenosť strip, lock icon added to the confirmed card (C-042). UI-only.
+- 2026-11-15: Vývoj jazdca: migration 20261115_03 (rider_acquisitions + rider_attribute_history, trigger), card on Tréning (Free table, Premium chart), tests progress.test.ts + rider_development.test.sh (C-043). Awaiting owner: apply migrations 01 (confirm), 02, 03 in Supabase.

@@ -594,5 +594,22 @@
   "trainingPage.deadlineNote": "Planuje się na następny tydzień. Termin: niedziela 24:00 UTC.",
   "trainingPage.blockedSeasonEnd": "W 10. tygodniu sezonu nie planuje się treningu. Nowy trening będzie można zaplanować w nowym sezonie.",
   "trainingPage.blockedTour": "W tym tygodniu masz potwierdzony udział w Tourze. Podczas Touru się nie trenuje.",
-  "races.trainingConflict": "W tygodniu tego Touru masz już potwierdzony trening. Podczas Touru się nie trenuje."
+  "races.trainingConflict": "W tygodniu tego Touru masz już potwierdzony trening. Podczas Touru się nie trenuje.",
+  "progress.title": "Rozwój zawodnika",
+  "progress.ovr": "OVR",
+  "progress.ovrAcquired": "OVR przy pozyskaniu",
+  "progress.ovrStart": "OVR na początku śledzenia",
+  "progress.ovrNow": "Aktualny OVR",
+  "progress.ovrDelta": "Różnica OVR",
+  "progress.colAttribute": "Atrybut",
+  "progress.colAcquired": "Przy pozyskaniu",
+  "progress.colStart": "Początek śledzenia",
+  "progress.colNow": "Teraz",
+  "progress.colDelta": "Różnica",
+  "progress.trackingNote": "Oryginalne wartości zawodnika przy pozyskaniu nie zostały zapisane. Porównanie zaczyna się od stanu z początku śledzenia.",
+  "progress.chartTitle": "Wykres rozwoju",
+  "progress.chartMetric": "Pokaż",
+  "progress.chartStarted": "Śledzenie właśnie się rozpoczęło – na razie zapisano jeden wpis.",
+  "progress.chartAria": "Wykres rozwoju zawodnika",
+  "progress.sourceTraining": "Trening"
 }

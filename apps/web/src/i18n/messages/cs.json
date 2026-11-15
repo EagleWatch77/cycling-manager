@@ -594,5 +594,22 @@
   "trainingPage.deadlineNote": "Plánuje se na následující týden. Uzávěrka je neděle 24:00 UTC.",
   "trainingPage.blockedSeasonEnd": "V 10. týdnu sezóny se trénink neplánuje. Nový trénink bude možné naplánovat v nové sezóně.",
   "trainingPage.blockedTour": "Tento týden máš potvrzenou účast na Tour. Během Tour se netrénuje.",
-  "races.trainingConflict": "V týdnu této Tour už máš potvrzený trénink. Během Tour se netrénuje."
+  "races.trainingConflict": "V týdnu této Tour už máš potvrzený trénink. Během Tour se netrénuje.",
+  "progress.title": "Vývoj jezdce",
+  "progress.ovr": "OVR",
+  "progress.ovrAcquired": "OVR při získání",
+  "progress.ovrStart": "OVR na začátku sledování",
+  "progress.ovrNow": "Aktuální OVR",
+  "progress.ovrDelta": "Rozdíl OVR",
+  "progress.colAttribute": "Atribut",
+  "progress.colAcquired": "Při získání",
+  "progress.colStart": "Začátek sledování",
+  "progress.colNow": "Nyní",
+  "progress.colDelta": "Rozdíl",
+  "progress.trackingNote": "Původní hodnoty jezdce při získání nebyly uloženy. Porovnání začíná od stavu, kdy se sledování spustilo.",
+  "progress.chartTitle": "Graf vývoje",
+  "progress.chartMetric": "Zobrazit",
+  "progress.chartStarted": "Sledování právě začalo – zatím je uložen jeden záznam.",
+  "progress.chartAria": "Graf vývoje jezdce",
+  "progress.sourceTraining": "Trénink"
 }

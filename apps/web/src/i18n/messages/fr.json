@@ -594,5 +594,22 @@
   "trainingPage.deadlineNote": "Planification pour la semaine suivante. Clôture : dimanche 24:00 UTC.",
   "trainingPage.blockedSeasonEnd": "Aucun entraînement n'est planifié en semaine 10 de la saison. Un nouvel entraînement pourra être planifié dans la nouvelle saison.",
   "trainingPage.blockedTour": "Tu es inscrit à un Tour cette semaine. On ne s'entraîne pas pendant un Tour.",
-  "races.trainingConflict": "Tu as déjà un entraînement confirmé la semaine de ce Tour. On ne s'entraîne pas pendant un Tour."
+  "races.trainingConflict": "Tu as déjà un entraînement confirmé la semaine de ce Tour. On ne s'entraîne pas pendant un Tour.",
+  "progress.title": "Évolution du coureur",
+  "progress.ovr": "OVR",
+  "progress.ovrAcquired": "OVR à l'acquisition",
+  "progress.ovrStart": "OVR au début du suivi",
+  "progress.ovrNow": "OVR actuel",
+  "progress.ovrDelta": "Écart d'OVR",
+  "progress.colAttribute": "Attribut",
+  "progress.colAcquired": "À l'acquisition",
+  "progress.colStart": "Début du suivi",
+  "progress.colNow": "Maintenant",
+  "progress.colDelta": "Écart",
+  "progress.trackingNote": "Les valeurs d'origine du coureur à son acquisition n'ont pas été enregistrées. La comparaison part de l'état au début du suivi.",
+  "progress.chartTitle": "Graphique d'évolution",
+  "progress.chartMetric": "Afficher",
+  "progress.chartStarted": "Le suivi vient de commencer : un seul enregistrement pour l'instant.",
+  "progress.chartAria": "Graphique d'évolution du coureur",
+  "progress.sourceTraining": "Entraînement"
 }

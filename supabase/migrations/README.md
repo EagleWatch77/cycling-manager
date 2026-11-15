@@ -40,3 +40,13 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/training_s
 
 Run 04 first (if not yet applied), then 05. 04 is never edited once applied; 05 only replaces/adds objects. Deploy the SQL, then push the code
 (old code would still try to overwrite plans / does not know the new refusal reasons).
+
+## 2026-11-15 — Vývoj jazdca (development tracking)
+
+| # | File | What it does |
+|---|------|--------------|
+| 6 | `20261115_03_rider_development_tracking.sql` | `rider_acquisitions` (immutable baseline snapshot of the 19 public attributes) + `rider_attribute_history` (one row per real change, Premium-only read) + trigger `riders_track_development`; existing riders get a `tracking_start` baseline = current state |
+
+Needs 04 (`20261115_01`) already applied (uses `season_id_at` / `season_week_at`); does NOT need 05. Whole file, idempotent, additive, never changes or deletes
+riders/plans. Either deploy order is safe: without the SQL the new card simply does not render. Verify locally:
+`PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_development.test.sh` (as `postgres`).

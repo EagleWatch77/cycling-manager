@@ -594,5 +594,22 @@
   "trainingPage.deadlineNote": "Geplant wird für die nächste Woche. Anmeldeschluss: Sonntag 24:00 UTC.",
   "trainingPage.blockedSeasonEnd": "In Woche 10 der Saison wird kein Training geplant. Neues Training kann in der neuen Saison geplant werden.",
   "trainingPage.blockedTour": "Du bist in dieser Woche für eine Tour gemeldet. Während einer Tour wird nicht trainiert.",
-  "races.trainingConflict": "In der Woche dieser Tour hast du bereits bestätigtes Training. Während einer Tour wird nicht trainiert."
+  "races.trainingConflict": "In der Woche dieser Tour hast du bereits bestätigtes Training. Während einer Tour wird nicht trainiert.",
+  "progress.title": "Fahrerentwicklung",
+  "progress.ovr": "OVR",
+  "progress.ovrAcquired": "OVR bei Verpflichtung",
+  "progress.ovrStart": "OVR zu Beginn der Erfassung",
+  "progress.ovrNow": "Aktuelles OVR",
+  "progress.ovrDelta": "OVR-Differenz",
+  "progress.colAttribute": "Attribut",
+  "progress.colAcquired": "Bei Verpflichtung",
+  "progress.colStart": "Beginn der Erfassung",
+  "progress.colNow": "Jetzt",
+  "progress.colDelta": "Differenz",
+  "progress.trackingNote": "Die ursprünglichen Werte bei der Verpflichtung wurden nicht gespeichert. Der Vergleich beginnt mit dem Stand zu Beginn der Erfassung.",
+  "progress.chartTitle": "Entwicklungsdiagramm",
+  "progress.chartMetric": "Anzeigen",
+  "progress.chartStarted": "Die Erfassung hat gerade begonnen – bisher ist nur ein Eintrag gespeichert.",
+  "progress.chartAria": "Diagramm der Fahrerentwicklung",
+  "progress.sourceTraining": "Training"
 }

@@ -80,6 +80,7 @@ psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" >/dev/null 2>&1 
 psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" >/dev/null 2>&1 && ok "migration 04 is idempotent (second run)" || bad "migration 04 second run" "$(psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" | tail -3)"
 psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" >/dev/null 2>&1 && ok "migration 05 applies on top of 04" || { bad "migration 05 applies" "$(psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" | tail -3)"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" >/dev/null 2>&1 && ok "migration 05 is idempotent (second run)" || bad "migration 05 second run" "$(psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" | tail -3)"
+psqlc t -f "$ROOT/migrations/20261115_03_rider_development_tracking.sql" >/dev/null 2>&1 && ok "migration 06 (development tracking) applies on top of 05" || { bad "migration 06 applies" "$(psqlc t -f "$ROOT/migrations/20261115_03_rider_development_tracking.sql" | tail -3)"; exit 1; }
 eq "no legacy plan deleted" "$(q "select count(*) from public.training_plans")" "$BEFORE_PLANS"
 eq "no legacy rider deleted" "$(q "select count(*) from public.riders")" "$BEFORE_RIDERS"
 eq "legacy applied plan keeps its gains" "$(q "select primary_gain||':'||secondary_gain||':'||(applied_at is not null) from public.training_plans where rider_id='$R1'")" "1:0:true"

@@ -23,6 +23,8 @@ import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
 import { ConditionRow, type Trend } from '@/components/rider/ConditionRow';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
+import { RiderProgressCard } from '@/components/rider/RiderProgressCard';
+import { getMyRiderProgress } from '@/lib/rider/progressRepository';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction } from './actions';
 
@@ -78,9 +80,11 @@ export default async function RiderTrainingPage() {
   // server-side and never takes a season/week from the client.
   const plannable = getPlannableWeek(season);
 
-  const [plan, recent] = await Promise.all([
+  const [plan, recent, progress] = await Promise.all([
     getTrainingPlan(season.seasonId, plannable ?? season.currentWeek),
     listRecentCompletedTrainings(1),
+    // Real baseline + (Premium) history; null (card hidden) when nothing is stored yet.
+    getMyRiderProgress(rider.id),
   ]);
 
   // Why a NEW plan cannot be made right now (a confirmed plan is always shown locked instead).
@@ -204,6 +208,15 @@ export default async function RiderTrainingPage() {
               />
             </div>
           </Card>
+          {progress && (
+            <RiderProgressCard
+              t={t}
+              baseline={progress.baseline.attributes}
+              baselineKind={progress.baseline.kind}
+              current={rider.attributes}
+              history={progress.history}
+            />
+          )}
         </div>
 
         {/* RIGHT (narrower) — condition, then development */}
