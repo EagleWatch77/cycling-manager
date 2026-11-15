@@ -60,8 +60,8 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Rozvoj card = heading + one description line + Potenciál (stars) + Trénovateľnosť only; no explanatory/scouting text (the player discovers mechanics by playing).
 
 ## Rider → Tréning (CONFIRMED 2026-11-15)
-- Same card system as Prehľad: every card heading is `CardTitle` (teal, icon, same size/padding): Tréning pre týždeň N / M (`calendar`), Posledné tréningy (`swap`), Stav jazdca (`heart`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`).
-- Layout (lg): `grid-cols-12` — left `col-span-8` = planner + Posledné tréningy; right `col-span-4` = Stav jazdca + Rozvoj; below, `lg:grid-cols-3` = Výkon | Taktika | Technika (`AttributeGroup`, `showStatIcons statIconSize={24} showBars={false}` + `bonuses`, so the "+N" gain column stays). Mobile: one column in the same order.
+- Same card system as Prehľad: every card heading is `CardTitle` (teal, icon, same size/padding): Tréning pre týždeň N / M (`calendar`), Stav jazdca (`heart`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`).
+- Layout (lg): `grid-cols-12` — left `col-span-8` = planner only (training history is not shown here, see C-041); right `col-span-4` = Stav jazdca + Rozvoj; below, `lg:grid-cols-3` = Výkon | Taktika | Technika (`AttributeGroup`, `showStatIcons statIconSize={24} showBars={false}` + `bonuses`, so the "+N" gain column stays). Mobile: one column in the same order.
 - Planner controls share `CONTROL` (`rounded-lg px-3 py-2 text-sm font-semibold`): active = `bg-teal text-white`, inactive = `bg-surface text-navy-soft hover:bg-teal-rail`; field labels `text-xs font-semibold text-navy-muted`; main button stays `bg-teal`. On desktop the planner is two columns (choices | week strip + condition).
 - Value typography everywhere: `text-base font-bold tabular-nums text-navy` (attribute groups, condition rows).
 

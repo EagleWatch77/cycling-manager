@@ -5,3 +5,4 @@ Training V1: E1 security + approved planning rules implemented, awaiting deploym
 - Tests: supabase/tests/training_security.test.sh (real Postgres), league_divisions.test.sh, web tests.
 - Open: D4, D7, D8 (background mechanism), D9, D10, D12-D14; O-011 market hidden values; O-012 remaining direct writes (bike_condition, tour_registrations delete limits, starter generation).
 - Next only after approval: daily training block (needs D8), regeneration, scouting, contracts, season transition.
+- 2026-11-15: "Posledné tréningy" card removed from Tréning (C-041); history stays in DB. UI-only change.

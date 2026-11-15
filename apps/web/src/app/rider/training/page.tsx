@@ -80,8 +80,8 @@ export default async function RiderTrainingPage() {
   const plannable = getPlannableWeek(season);
 
   const [plan, recent] = await Promise.all([
-    plannable != null ? getTrainingPlan(season.seasonId, plannable) : Promise.resolve(null),
-    listRecentCompletedTrainings(3),
+    getTrainingPlan(season.seasonId, plannable ?? season.currentWeek),
+    listRecentCompletedTrainings(1),
   ]);
 
   // Why a NEW plan cannot be made right now (a confirmed plan is always shown locked instead).
@@ -152,26 +152,6 @@ export default async function RiderTrainingPage() {
     { key: 'rider.morale', conditionKey: 'morale', value: rider.condition.morale, trend: trendOf('morale'), goodDirection: 'up' },
   ];
 
-  // "Posledné tréningy": completed weeks plus the currently scheduled one
-  // (if any), so the player sees where it sits relative to what already ran.
-  type HistoryRow = { key: string; weekNumber: number; label: string; done: boolean };
-  const historyRows: HistoryRow[] = [
-    ...recent.map((h): HistoryRow => ({
-      key: h.id,
-      weekNumber: h.weekNumber,
-      label: SKILL_ATTRIBUTES.includes(h.focus as SkillAttribute) ? t(`attr.${h.focus}`) : h.focus,
-      done: true,
-    })),
-    ...(plan && !plan.appliedAt
-      ? [{
-          key: plan.id,
-          weekNumber: plan.weekNumber,
-          label: SKILL_ATTRIBUTES.includes(plan.focus as SkillAttribute) ? t(`attr.${plan.focus}`) : plan.focus,
-          done: false,
-        } satisfies HistoryRow]
-      : []),
-  ];
-
   return (
     <>
       {/* Header */}
@@ -194,7 +174,7 @@ export default async function RiderTrainingPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-3">
-        {/* LEFT (wider) — planning is the main element, history right under it */}
+        {/* LEFT (wider) — planning is the main element. Training history is NOT shown here (kept in the database for later use, see DECISIONS C-041). */}
         <div className="col-span-12 space-y-3 lg:col-span-8">
           <Card title={<CardTitle icon="calendar">{planCardTitle}</CardTitle>} dense>
             <div className="p-3.5">
@@ -244,27 +224,6 @@ export default async function RiderTrainingPage() {
                 saveAction={saveTrainingAction}
               />
             </div>
-          </Card>
-
-          <Card title={<CardTitle icon="swap">{t('trainingPage.recentHistory')}</CardTitle>} dense>
-            {historyRows.length === 0 ? (
-              <p className="p-3.5 text-xs leading-snug text-navy-soft">{t('trainingPage.noHistory')}</p>
-            ) : (
-              <ul className="px-3.5 py-1">
-                {historyRows.map((h) => (
-                  <li key={h.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
-                    <span className="min-w-0 truncate text-[15px] text-navy">
-                      {t('races.weekN', { n: h.weekNumber })} · {h.label}
-                    </span>
-                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold uppercase ${
-                      h.done ? 'bg-surface text-navy-muted' : 'bg-teal-rail text-teal-dark'
-                    }`}>
-                      {h.done ? t('trainingPage.statusDone') : t('trainingPage.statusPlanned')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
           </Card>
         </div>
 

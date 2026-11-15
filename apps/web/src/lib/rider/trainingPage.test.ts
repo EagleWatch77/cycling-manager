@@ -20,10 +20,11 @@ const form = readFileSync('src/components/training/TrainingConfigForm.tsx', 'utf
 // layout order: left column (planning, history) then right column (condition, development), then 3 cards
 const at = (s: string) => page.indexOf(s);
 check('left column is wider (lg:col-span-8) and right narrower (lg:col-span-4)', /col-span-12 space-y-3 lg:col-span-8/.test(page) && /col-span-12 space-y-3 lg:col-span-4/.test(page));
-check('DOM order: planning < history < condition < development', at('planCardTitle}') < at("trainingPage.recentHistory") && at("trainingPage.recentHistory") < at("group.condition") && at("group.condition") < at("group.development"));
+check('DOM order: planning < condition < development', at('planCardTitle}') < at("group.condition") && at("group.condition") < at("group.development"));
+check('no "Posledné tréningy" card on the page (history stays in the DB)', !/recentHistory|historyRows|HistoryRow/.test(page));
 check('bottom row: Výkon, Taktika, Technika in one 3-column grid after the main columns', /lg:grid-cols-3/.test(page) && at('group.performance') > at('group.development') && at('group.performance') < at('group.tactics') && at('group.tactics') < at('group.technique'));
 check('planner heading uses shared CardTitle (week + season)', /<CardTitle icon="calendar">\{planCardTitle\}<\/CardTitle>/.test(page) && /trainingPage\.forWeek/.test(page) && /seasonNumber/.test(page));
-for (const k of ['trainingPage.recentHistory', 'group.condition', 'group.development']) {
+for (const k of ['group.condition', 'group.development']) {
   check(`heading ${k} uses shared CardTitle`, new RegExp(`<CardTitle icon="[a-z]+">\\{t\\('${k.replace('.', '\\.')}'\\)`).test(page));
 }
 check('no local text-teal-dark heading spans remain', !/<span className="text-sm text-teal-dark">/.test(page));
