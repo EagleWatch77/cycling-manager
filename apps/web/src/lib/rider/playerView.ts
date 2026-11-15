@@ -1,11 +1,6 @@
 import 'server-only';
 import type { StoredRider } from './repository';
 import type { SegmentLevel } from './development';
-import { potentialToStars, scoreToLevel } from './development';
-import {
-  POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
-  PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
-} from './config';
 
 /**
  * The shape a player is ever allowed to receive for their own rider —
@@ -51,9 +46,10 @@ export function toPlayerRiderView(rider: StoredRider): PlayerRiderView {
     attributes: rider.attributes,
     condition: rider.condition,
     conditionPrevious: rider.conditionPrevious,
-    potentialStars: potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX),
-    trainabilityLevel: scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX),
-    professionalismLevel: scoreToLevel(rider.professionalism, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX),
-    recoveryLevel: scoreToLevel(rider.recovery, RECOVERY_MIN, RECOVERY_MAX),
+    // 1-5 estimates computed in the database — the raw values never reach the app.
+    potentialStars: rider.estimates.potentialStars,
+    trainabilityLevel: rider.estimates.trainabilityLevel,
+    professionalismLevel: rider.estimates.professionalismLevel,
+    recoveryLevel: rider.estimates.recoveryLevel,
   };
 }

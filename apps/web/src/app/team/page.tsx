@@ -1,7 +1,5 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { POTENTIAL_MIN, POTENTIAL_MAX } from '@/lib/rider/config';
-import { potentialToStars } from '@/lib/rider/development';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
@@ -60,7 +58,7 @@ export default async function TeamPage() {
     { header: t('team.colAge'), render: (r) => <span className="text-navy-soft">{r.age}</span> },
     { header: t('team.colType'), render: (r) => <span className="text-navy-soft">{t(`style.${r.inferredArchetype}`)}</span> },
     { header: t('team.colPotential'), render: (r) => {
-      const stars = potentialToStars(r.potential, POTENTIAL_MIN, POTENTIAL_MAX);
+      const stars = r.estimates.potentialStars;
       return <span className="text-teal" aria-label={`${stars}/5`}>{'★'.repeat(stars)}<span className="text-line">{'★'.repeat(5 - stars)}</span></span>;
     } },
     { header: t('team.colStatus'), render: () => <StatusBadge label={t('team.statusActive')} tone="teal" /> },

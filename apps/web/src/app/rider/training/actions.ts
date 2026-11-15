@@ -5,13 +5,13 @@ import { saveTrainingPlan, type SaveTrainingResult } from '@/lib/training/reposi
 import type { TrainingIntensity, WeekType } from '@/lib/training/config';
 
 export async function saveTrainingAction(input: {
-  seasonId: string;
-  weekNumber: number;
   weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {
-  const result = await saveTrainingPlan(input);
+  // Only type/focus/intensity are forwarded: season, week and player are never
+  // taken from the client (save_my_training_plan() derives them).
+  const result = await saveTrainingPlan({ weekType: input.weekType, focus: input.focus, intensity: input.intensity });
   if (result.ok) revalidatePath('/rider/training');
   return result;
 }

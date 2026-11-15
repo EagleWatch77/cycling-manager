@@ -20,6 +20,8 @@ M2="$ROOT/migrations/20261114_02_league_divisions.sql"
 M3="$ROOT/migrations/20261114_03_profiles_lockdown.sql"
 SCHEMA="$ROOT/schema.sql"
 BASE="$DIR/base_schema.sql"; sed '/^-- >>>>>>>> /,$d' "$SCHEMA" > "$BASE"
+# This test covers migrations 01-03 only: cut later migrations (04+) off the full schema.
+SCHEMA3="$DIR/schema_01_03.sql"; sed '/^-- >>>>>>>> 20261115_/,$d' "$SCHEMA" > "$SCHEMA3"
 pass=0; fail=0
 ok()  { pass=$((pass+1)); echo "  PASS  $1"; }
 bad() { fail=$((fail+1)); echo "  FAIL  $1  ($2)"; }
@@ -66,7 +68,7 @@ eq "legacy amateur stays amateur 1.1" "$(q "select d.league||' 1.'||d.number fro
 eq "legacy rookies share rookie 1.1" "$(q "select count(*) from public.league_memberships m join public.league_divisions d on d.id=m.division_id where d.league='rookie' and d.number=1")" "2"
 
 echo "== Scenario B: fresh database from supabase/schema.sql == scenario A"
-psqlc fresh -f "$SCHEMA" >/dev/null 2>&1 && ok "full schema.sql applies on a fresh database" || bad "full schema.sql applies" "$(psqlc fresh -f "$SCHEMA" | tail -3)"
+psqlc fresh -f "$SCHEMA3" >/dev/null 2>&1 && ok "schema.sql (up to migration 03) applies on a fresh database" || bad "schema.sql applies" "$(psqlc fresh -f "$SCHEMA3" | tail -3)"
 dump() { pg_dump -h "$DIR" -p $PORT -U postgres -s --no-owner --no-privileges "$1" | grep -v '^--' | grep -v '^$' | grep -v 'SET \|set_config\|^SELECT pg_catalog\|^.restrict\|^.unrestrict' | sort; }
 DIFFN=$(diff <(dump t) <(dump fresh) | grep -c '^[<>]')
 eq "catalog identical (A: base+3 migrations, B: schema.sql)" "$DIFFN" "0"

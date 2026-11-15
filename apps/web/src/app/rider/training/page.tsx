@@ -1,13 +1,14 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
 import {
-  SKILL_ATTRIBUTES, ATTR_MIN, ATTR_MAX,
-  POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX,
-  PROFESSIONALISM_MIN, PROFESSIONALISM_MAX, RECOVERY_MIN, RECOVERY_MAX,
-  TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES,
+  SKILL_ATTRIBUTES,
+  ATTR_MIN,
+  ATTR_MAX,
+  TACTICS_ATTRIBUTES,
+  TECHNIQUE_ATTRIBUTES,
   type SkillAttribute,
 } from '@/lib/rider/config';
-import { scoreToLevel, potentialToStars } from '@/lib/rider/development';
+import { scoreToLevel } from '@/lib/rider/development';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
@@ -98,10 +99,7 @@ export default async function RiderTrainingPage() {
 
   // Rozvoj never shows exact development numbers — only a 1-5 visual read.
   // See lib/rider/development.ts for the centralized value->level mapping.
-  const potentialStars = potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX);
-  const trainabilityLevel = scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX);
-  const professionalismLevel = scoreToLevel(rider.professionalism, PROFESSIONALISM_MIN, PROFESSIONALISM_MAX);
-  const recoveryLevel = scoreToLevel(rider.recovery, RECOVERY_MIN, RECOVERY_MAX);
+  const { potentialStars, trainabilityLevel, professionalismLevel, recoveryLevel } = rider.estimates;
   const experienceLevel = scoreToLevel(rider.attributes.experience, ATTR_MIN, ATTR_MAX);
 
   // Real bonus overlay: only the single most recently processed training,
@@ -183,7 +181,6 @@ export default async function RiderTrainingPage() {
           <Card title={<CardTitle icon="calendar">{t('trainingPage.forWeek')} {plannableWeek} / {season.totalWeeks}</CardTitle>} dense>
             <div className="p-3.5">
               <TrainingConfigForm
-                seasonId={season.seasonId}
                 weekNumber={plannableWeek}
                 totalWeeks={season.totalWeeks}
                 initialPlan={plan}

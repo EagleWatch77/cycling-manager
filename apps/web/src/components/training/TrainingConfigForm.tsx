@@ -138,12 +138,11 @@ function FocusSelect({ options, value, onChange }: {
  * client-only state to remember that a plan was saved.
  */
 export function TrainingConfigForm({
-  seasonId, weekNumber, totalWeeks,
+  weekNumber, totalWeeks,
   initialPlan, performanceFocus, technicalFocus,
   condition, readinessLabel,
   labels, dayLabels, saveAction,
 }: {
-  seasonId: string;
   weekNumber: number;
   totalWeeks: number;
   initialPlan: TrainingPlan | null;
@@ -175,7 +174,7 @@ export function TrainingConfigForm({
     saveError: string;
   };
   saveAction: (input: {
-    seasonId: string; weekNumber: number; weekType: WeekType; focus: string; intensity: TrainingIntensity;
+    weekType: WeekType; focus: string; intensity: TrainingIntensity;
   }) => Promise<SaveTrainingResult>;
 }) {
   const router = useRouter();
@@ -202,7 +201,7 @@ export function TrainingConfigForm({
     setError(null);
     startTransition(async () => {
       try {
-        const result = await saveAction({ seasonId, weekNumber, weekType, focus, intensity });
+        const result = await saveAction({ weekType, focus, intensity });
         if (result.ok) {
           setPlan(result.plan);
           router.refresh();

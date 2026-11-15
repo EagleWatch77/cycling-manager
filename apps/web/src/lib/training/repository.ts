@@ -1,34 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS, type TrainingIntensity, type WeekType } from './config';
-
-const VALID_INTENSITIES: readonly TrainingIntensity[] = ['light', 'normal', 'hard'];
-/**
- * Technical training has no player-facing intensity (see the chat report,
- * item 26). The `intensity` DB column is NOT NULL with a check constraint
- * on ('light','normal','hard') — rather than widen the schema for a value
- * that's never player-facing, a technical plan is persisted with this
- * neutral placeholder. process_training_plan() (supabase/schema.sql)
- * ignores Performance intensity semantics entirely once week_type is
- * 'technical' and always processes exactly 1 technical session — see that
- * function's own doc comment.
- */
-const TECHNICAL_INTENSITY_PLACEHOLDER: TrainingIntensity = 'light';
-
-/**
- * The only week a plan may ever target: exactly one week ahead of whatever
- * week the real server clock says we're in right now (clamped at the last
- * week of the season, where there is no "next" week left). Computed fresh
- * from lib/calendar/season.ts — never trust a client-supplied week number as
- * proof it's plannable, since nothing stops a direct call to the server
- * action with an arbitrary value.
- */
-function plannableWeekNumber(): { seasonId: string; weekNumber: number } {
-  const season = getCurrentSeasonInfo();
-  return { seasonId: season.seasonId, weekNumber: Math.min(season.currentWeek + 1, season.totalWeeks) };
-}
+import { type TrainingIntensity, type WeekType } from './config';
 
 /**
  * Training V1 persistence — one row per Rider per season week
@@ -117,100 +90,41 @@ export type SaveTrainingResult =
 
 /**
  * Saves the current player's training plan for the one week that's ever
- * plannable — exactly one week ahead of the real current week, see
- * plannableWeekNumber(). Races do not gate this at all: a race scheduled in
- * the current week, or even in the plannable week itself, has no bearing on
- * whether training can be scheduled — those are independent systems.
+ * plannable — current week + 1, capped at the season's last week.
  *
- * Unified Weekly Training V1 (see the chat report): a rider has exactly ONE
- * plan per week, of exactly one of two types — `weekType` decides which
- * focus set is valid and which intensity semantics apply. Server-side
- * validation enforces the pairing so a client can never submit
- * technical+climbing or performance+descending (item 24):
- *   - 'performance': focus must be one of PERFORMANCE_FOCUS, intensity is
- *     the real Light/Normal/Hard choice (drives session count).
- *   - 'technical': focus must be one of TECHNICAL_FOCUS; intensity has no
- *     player-facing meaning — always written as TECHNICAL_INTENSITY_PLACEHOLDER
- *     (see its own comment) and ignored by process_training_plan().
+ * Stage E1 (migration 04): this is now a thin call to the database function
+ * save_my_training_plan(), which is the ONLY write path to training_plans. The
+ * caller sends nothing but type / focus / intensity: the player comes from
+ * auth, the season and week from the SQL calendar, and the type↔focus↔intensity
+ * pairing, rider ownership and "a processed plan is history" are enforced there
+ * (see supabase/tests/training_security.test.sh). Races never gate planning.
  *
- * Once a plan exists for that week it is permanent: this function is only
- * ever called while no plan exists yet (the UI removes the form the moment
- * one is saved, and never offers an edit/cancel path — see
- * TrainingConfigForm). The `already-processed` guard and the upsert are
- * still here as defense in depth, not because normal use reaches them.
- *
- * The unique constraint on (rider_id, season_id, week_number) is the final
- * backstop against two plans for the same week.
+ * Unified Weekly Training V1: exactly ONE plan per rider and week —
+ *   - 'performance': focus in PERFORMANCE_FOCUS, intensity Light/Normal/Hard.
+ *   - 'technical': focus in TECHNICAL_FOCUS; intensity has no player-facing
+ *     meaning (stored as the 'light' placeholder).
+ * An unprocessed plan may be overwritten exactly as before (the UI offers no
+ * edit; whether that should stay possible is open decision D11).
  */
 export async function saveTrainingPlan(input: {
-  seasonId: string;
-  weekNumber: number;
   weekType: WeekType;
   focus: string;
   intensity: TrainingIntensity;
 }): Promise<SaveTrainingResult> {
-  const rider = await getMyRider();
-  if (!rider) return { ok: false, reason: 'no-rider' };
-
-  // Authoritative "only 1 week ahead" rule — recomputed here, not trusted
-  // from the client, so a direct call can't schedule further out or into
-  // the past/current week.
-  const plannable = plannableWeekNumber();
-  if (input.seasonId !== plannable.seasonId || input.weekNumber !== plannable.weekNumber) {
-    return { ok: false, reason: 'locked' };
-  }
-
-  let intensity: TrainingIntensity;
-  if (input.weekType === 'performance') {
-    if (!VALID_INTENSITIES.includes(input.intensity) || !PERFORMANCE_FOCUS.includes(input.focus as never)) {
-      return { ok: false, reason: 'invalid-focus' };
-    }
-    intensity = input.intensity;
-  } else if (input.weekType === 'technical') {
-    if (!TECHNICAL_FOCUS.includes(input.focus as never)) {
-      return { ok: false, reason: 'invalid-focus' };
-    }
-    intensity = TECHNICAL_INTENSITY_PLACEHOLDER;
-  } else {
-    return { ok: false, reason: 'invalid-focus' };
-  }
-
-  const existing = await getTrainingPlan(input.seasonId, input.weekNumber);
-  if (existing?.appliedAt) return { ok: false, reason: 'already-processed' };
-
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('training_plans')
-    .upsert(
-      {
-        rider_id: rider.id,
-        season_id: input.seasonId,
-        week_number: input.weekNumber,
-        week_type: input.weekType,
-        focus: input.focus,
-        intensity,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'rider_id,season_id,week_number' },
-    )
-    .select('*')
-    .single();
+  const { data, error } = await supabase.rpc('save_my_training_plan', {
+    p_week_type: input.weekType,
+    p_focus: input.focus,
+    p_intensity: input.intensity,
+  });
 
-  if (error || !data) return { ok: false, reason: 'error' };
-  return { ok: true, plan: fromRow(data) };
+  if (error) {
+    const msg = error.message ?? '';
+    if (msg.includes('no_rider')) return { ok: false, reason: 'no-rider' };
+    if (msg.includes('invalid_focus')) return { ok: false, reason: 'invalid-focus' };
+    if (msg.includes('already_processed')) return { ok: false, reason: 'already-processed' };
+    return { ok: false, reason: 'error' };
+  }
+  if (!data) return { ok: false, reason: 'error' };
+  return { ok: true, plan: fromRow(data as Record<string, unknown>) };
 }
-
-/** Every scheduled-but-not-yet-processed plan for a rider, oldest week first. Used only by the training engine. */
-export async function listUnprocessedTrainingPlans(riderId: string): Promise<TrainingPlan[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('training_plans')
-    .select('*')
-    .eq('rider_id', riderId)
-    .is('applied_at', null)
-    .order('week_number', { ascending: true });
-
-  if (error || !data) return [];
-  return data.map(fromRow);
-}
-

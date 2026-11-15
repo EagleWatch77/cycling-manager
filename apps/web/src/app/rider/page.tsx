@@ -1,8 +1,7 @@
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
+import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
-import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
@@ -47,8 +46,8 @@ export default async function RiderOverviewPage() {
         <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
           <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} />
           <DevelopmentCard t={t}
-            potentialLevel={potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX)}
-            trainabilityLevel={scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX)} />
+            potentialLevel={rider.estimates.potentialStars}
+            trainabilityLevel={rider.estimates.trainabilityLevel} />
         </div>
       </div>
 

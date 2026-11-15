@@ -24,3 +24,14 @@ show errors until migration 01 has run. Missing 02 only hides the "Rookie 1.x" l
 Verify locally (real Postgres 16, run as a non-root OS user such as `postgres`):
 
     PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/league_divisions.test.sh
+
+
+## 2026-11-15 — Training V1 E1 (security)
+
+| # | File | What it does |
+|---|------|--------------|
+| 4 | `20261115_01_training_security.sql` | `training_plans` read-only for clients + `save_my_training_plan()`; `process_my_due_training()` / internal apply; `riders` locked down (no client writes, public columns only, 1-5 estimates via `my_rider_estimates()`); `create_my_starter_rider()`, admin-only `admin_generate_ai_riders()` / `admin_list_riders()`; `rider_training_progress` closed |
+
+Run AFTER 01-03, whole file, idempotent. **Deploy the SQL, then push the code within minutes**: the
+old code can no longer write `riders`/`training_plans`, the new code needs the new functions.
+Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/training_security.test.sh` (run as `postgres`).

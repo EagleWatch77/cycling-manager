@@ -71,24 +71,20 @@ function fromRow(row: Record<string, unknown>): AdminRiderRow {
  */
 export async function getAdminRiderRawList(): Promise<AdminRiderRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('riders')
-    .select('*')
-    .order('created_at', { ascending: false });
+  // Raw rows (incl. hidden values) only through the admin-checked function:
+  // the table's hidden columns are not readable by any client role.
+  const { data, error } = await supabase.rpc('admin_list_riders');
 
   if (error || !data) return [];
-  return data.map(fromRow);
+  return (data as Record<string, unknown>[]).map(fromRow);
 }
 
 /** One rider, raw, by id — same RLS dependency as getAdminRiderRawList(). */
 export async function getAdminRiderRawById(id: string): Promise<AdminRiderRow | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('riders')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('admin_list_riders', { p_id: id });
+  const row = Array.isArray(data) ? data[0] : null;
 
-  if (error || !data) return null;
-  return fromRow(data);
+  if (error || !row) return null;
+  return fromRow(row as Record<string, unknown>);
 }

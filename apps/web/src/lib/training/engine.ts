@@ -2,7 +2,6 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
 import type { SeasonInfo } from '@/lib/calendar/season';
-import { listUnprocessedTrainingPlans, type TrainingPlan } from './repository';
 
 /**
  * Unified Weekly Training V1 processing engine.
@@ -17,8 +16,8 @@ import { listUnprocessedTrainingPlans, type TrainingPlan } from './repository';
  * week" for a calendar with no separate tick step.
  *
  * SECURITY + Unified Weekly Training V1 (see the chat report, item 25):
- * process_training_plan() (a security-definer Postgres function, see
- * supabase/schema.sql) is now the SOLE authoritative source for
+ * apply_training_plan_internal() (a security-definer Postgres function that
+ * no client role can call, see supabase/schema.sql / migration 04) is now the SOLE authoritative source for
  * EVERYTHING a processed plan changes — attribute gains (Performance AND
  * Technical), Energy/Fatigue/condition_previous, and readiness — reading
  * only trusted persisted data (week_type, focus, intensity, rider
@@ -42,26 +41,14 @@ export async function processCompletedTrainings(season: SeasonInfo): Promise<voi
   const rider = await getMyRider();
   if (!rider) return;
 
-  const pending = (await listUnprocessedTrainingPlans(rider.id))
-    .filter((plan) => isWeekOver(plan, season));
-  if (pending.length === 0) return;
-
+  // E1 (migration 04): the database decides which plans are due. One call, no
+  // parameters — process_my_due_training() takes the caller from auth, applies
+  // only plans whose week has ended per the SQL calendar (oldest first), and is
+  // idempotent/atomic (row locks), so calling it on every page load or from
+  // several tabs at once can never count a training twice. Nothing about the
+  // season, week or plan is client-controlled any more.
   const supabase = await createClient();
-
-  for (const plan of pending) {
-    // The only parameter this RPC takes is the plan id — see this
-    // function's own doc comment and process_training_plan()'s in
-    // supabase/schema.sql for why: nothing about the gain (focus,
-    // intensity, raw growth, secondary attribute, condition/readiness) is
-    // client-controlled anymore.
-    await supabase.rpc('process_training_plan', { p_plan_id: plan.id });
-    // Best-effort: a failed/erroring call is retried on the next lazy run
-    // (the plan's applied_at is still NULL). The RPC itself is idempotent,
-    // so retrying a partially-applied attempt is always safe.
-  }
-}
-
-/** A plan's week has ended once its season is behind the current one, or it's an earlier week of the current season. */
-function isWeekOver(plan: TrainingPlan, season: SeasonInfo): boolean {
-  return plan.seasonId !== season.seasonId || plan.weekNumber < season.currentWeek;
+  await supabase.rpc('process_my_due_training');
+  // Best-effort: on an error nothing was applied (single transaction) and the
+  // next call simply retries.
 }

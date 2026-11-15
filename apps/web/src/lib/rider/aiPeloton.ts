@@ -59,15 +59,11 @@ export async function generateTestPeloton(): Promise<GenerateTestPelotonResult> 
     };
   });
 
-  const { data, error } = await supabase.from('riders').insert(rows).select('id');
+  // Admin-only security-definer function (migration 04): riders can no longer be
+  // inserted from a client role, and it creates every filler's bike as well.
+  const { data, error } = await supabase.rpc('admin_generate_ai_riders', { p_rows: rows });
   if (error) throw new Error(`Failed to generate AI test peloton: ${error.message}`);
 
-  // Bike Condition V1 — every AI filler also starts at a full bike, same
-  // as a real starter rider (see lib/rider/repository.ts's ensureStarterRider).
-  if (data && data.length > 0) {
-    await supabase.from('bike_condition').insert(data.map((r) => ({ rider_id: r.id })));
-  }
-
-  const createdCount = data?.length ?? 0;
+  const createdCount = typeof data === 'number' ? data : 0;
   return { created: createdCount, realRiders: real, aiRiders: existingAi + createdCount, skippedReason: null };
 }
