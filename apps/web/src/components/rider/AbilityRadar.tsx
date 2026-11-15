@@ -26,17 +26,17 @@ export interface RadarLabels {
   aria: string;
 }
 
-const CX = 240, CY = 190, R = 118;
+const CX = 240, CY = 190, R = 102;
 /**
  * Two view boxes with the SAME aspect ratio (so the card height never
  * jumps): a tight one around the 5-axis overview (graph as large as
  * possible) and a wider one for the expanded fan, which needs two label
  * columns. The view box is interpolated while a group opens/closes.
  */
-const OV_W = 410, OV_H = 298;
-const OV = { x: CX - OV_W / 2, y: CY - R - 42, w: OV_W, h: OV_H };
+const OV_W = 410, OV_H = 276;
+const OV = { x: CX - OV_W / 2, y: CY - 12 - OV_H / 2, w: OV_W, h: OV_H };   // overview content is centred on CY-12
 const EX_W = 480, EX_H = (EX_W * OV_H) / OV_W;
-const EX = { x: CX - EX_W / 2, y: OV.y + OV_H / 2 - EX_H / 2, w: EX_W, h: EX_H };
+const EX = { x: CX - EX_W / 2, y: CY - 195, w: EX_W, h: EX_H };               // fan rows start at CY-182
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /**
@@ -45,7 +45,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  * (pure math, no randomness) so server and client markup are identical.
  * Very low contrast by design.
  */
-const CONTOUR_W = 480, CONTOUR_H = Math.round((480 * 298) / 410);
+const CONTOUR_W = 600, CONTOUR_H = 600;
 function contourRing(cx: number, cy: number, r: number, phase: number): string {
   const pts: string[] = [];
   const n = 64;
@@ -59,8 +59,8 @@ function contourRing(cx: number, cy: number, r: number, phase: number): string {
   return pts.join('') + 'Z';
 }
 const CONTOURS: string[] = [
-  ...Array.from({ length: 9 }, (_, i) => contourRing(330, 130, 26 + i * 26, 0.6 + i * 0.18)),
-  ...Array.from({ length: 7 }, (_, i) => contourRing(120, 290, 22 + i * 28, 2.1 + i * 0.22)),
+  ...Array.from({ length: 11 }, (_, i) => contourRing(440, 170, 28 + i * 28, 0.6 + i * 0.18)),
+  ...Array.from({ length: 10 }, (_, i) => contourRing(140, 440, 24 + i * 28, 2.1 + i * 0.22)),
 ];
 const N = RADAR_GROUP_ORDER.length;
 const STEP = (Math.PI * 2) / N;
@@ -77,7 +77,7 @@ const pt = (ang: number, radius: number): [number, number] => [CX + Math.cos(ang
 const f1 = (n: number) => Math.round(n * 10) / 10;
 const fmtRange = (r: { min: number; max: number }) => (r.min === r.max ? `${r.min}` : `${r.min}–${r.max}`);
 
-export function AbilityRadar({ model, labels, initialSelected = null }: { model: RadarModel; labels: RadarLabels; initialSelected?: ExpandableGroupId | null }) {
+export function AbilityRadar({ model, labels, title, className = '', initialSelected = null }: { model: RadarModel; labels: RadarLabels; title: string; className?: string; initialSelected?: ExpandableGroupId | null }) {
   const [selected, setSelected] = useState<ExpandableGroupId | null>(initialSelected);
   const [rot, setRot] = useState(initialSelected ? -RADAR_GROUP_ORDER.indexOf(initialSelected) * STEP : 0);
   const [settled, setSettled] = useState(true);
@@ -126,25 +126,31 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
   const selGroup = selected ? groups[selIndex] : null;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div role="group" aria-label={labels.aria} className="flex flex-wrap justify-center gap-1.5">
-        <TabButton active={selected === null} onClick={() => setSelected(null)} label={labels.overview} />
-        {EXPANDABLE_GROUPS.map((id) => (
-          <TabButton key={id} active={selected === id} dev={id === 'development'}
-            onClick={() => setSelected(id)} label={groups[RADAR_GROUP_ORDER.indexOf(id)].label} />
-        ))}
-      </div>
-
-      <div className="relative w-full max-w-[680px] overflow-hidden rounded-xl"
-        style={{ background: 'radial-gradient(ellipse at 50% 52%, rgb(14 147 132 / 0.13) 0%, rgb(14 147 132 / 0.06) 45%, rgb(14 147 132 / 0.02) 100%)' }}>
+    <section className={`relative flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-card ${className}`}
+      style={{ backgroundImage: 'radial-gradient(ellipse at 50% 56%, rgb(14 147 132 / 0.13) 0%, rgb(14 147 132 / 0.06) 48%, rgb(14 147 132 / 0.02) 100%)' }}>
+      {/* Topographic contours across the WHOLE card (decorative, low contrast) */}
       <svg aria-hidden="true" viewBox={`0 0 ${CONTOUR_W} ${CONTOUR_H}`} preserveAspectRatio="xMidYMid slice"
         className="pointer-events-none absolute inset-0 h-full w-full">
         {CONTOURS.map((d, i) => (
           <path key={i} d={d} fill="none" stroke={TEAL} strokeOpacity={i % 4 === 0 ? 0.13 : 0.07} strokeWidth={i % 4 === 0 ? 1 : 0.8} strokeLinejoin="round" />
         ))}
       </svg>
+
+      <header className="relative px-3.5 py-2.5">
+        <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{title}</h2>
+      </header>
+
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-2 px-2 pb-3">
+        <div role="group" aria-label={labels.aria} className="flex flex-wrap justify-center gap-1.5">
+          <TabButton active={selected === null} onClick={() => setSelected(null)} label={labels.overview} />
+          {EXPANDABLE_GROUPS.map((id) => (
+            <TabButton key={id} active={selected === id} dev={id === 'development'}
+              onClick={() => setSelected(id)} label={groups[RADAR_GROUP_ORDER.indexOf(id)].label} />
+          ))}
+        </div>
+
       <svg viewBox={`${f1(lerp(OV.x, EX.x, zoom))} ${f1(lerp(OV.y, EX.y, zoom))} ${f1(lerp(OV.w, EX.w, zoom))} ${f1(lerp(OV.h, EX.h, zoom))}`}
-        className="relative block h-auto w-full" role="img" aria-label={labels.aria}>
+        className="relative block h-auto w-full max-w-[680px]" role="img" aria-label={labels.aria}>
         {[0.25, 0.5, 0.75, 1].map((ring) => (
           <polygon key={ring} fill="none" stroke="#6b8195" strokeOpacity="0.3" strokeWidth="1"
             points={groups.map((_, i) => pt(angleOf(i), R * ring).map(f1).join(',')).join(' ')} />
@@ -210,14 +216,14 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
           );
         })}
       </svg>
-      </div>
 
-      {selected === 'development' && (
-        <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">
-          {groups[RADAR_GROUP_ORDER.indexOf('development')].range ? labels.note : labels.noteUnknown}
-        </p>
-      )}
-    </div>
+        {selected === 'development' && (
+          <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">
+            {groups[RADAR_GROUP_ORDER.indexOf('development')].range ? labels.note : labels.noteUnknown}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 

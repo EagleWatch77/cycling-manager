@@ -4,7 +4,6 @@ import { POTENTIAL_MIN, POTENTIAL_MAX, TRAINABILITY_MIN, TRAINABILITY_MAX, TACTI
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { potentialToStars, scoreToLevel } from '@/lib/rider/development';
 import { meanOf } from '@/lib/rider/score';
-import { Card } from '@/components/ui/Card';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
@@ -39,17 +38,12 @@ export default async function RiderOverviewPage() {
       {/* Left: radar. Right: Silné stránky jazdca, then Rozvoj. Mobile order = DOM order:
           radar, strengths, Rozvoj, then the detailed attribute cards. */}
       <div className="grid grid-cols-12 gap-3">
-        <Card title={t('profile.radarTitle')} dense
-          className="col-span-12 lg:col-span-7 [&>div]:flex [&>div]:items-center [&>div]:justify-center">
-          <div className="w-full p-2">
-            <AbilityRadar
-              model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
-              labels={{
-                overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
-                note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
-              }} />
-          </div>
-        </Card>
+        <AbilityRadar title={t('profile.radarTitle')} className="col-span-12 lg:col-span-7"
+          model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
+          labels={{
+            overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
+            note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
+          }} />
 
         <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
           <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} />

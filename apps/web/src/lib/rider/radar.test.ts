@@ -80,7 +80,7 @@ check('out-of-scale/inverted ranges are clamped and ordered', (() => {
 // ---- render smoke ----
 const labels = { overview: 'Prehľad', estimate: 'odhad', unknown: 'Neznámy', note: 'NOTE', noteUnknown: 'NOTE-UNKNOWN', aria: 'Radar' };
 const R = (model: typeof m, sel: 'performance' | 'tactics' | 'technique' | 'development' | null) =>
-  renderToStaticMarkup(createElement(AbilityRadar, { model, labels, initialSelected: sel }));
+  renderToStaticMarkup(createElement(AbilityRadar, { model, labels, title: 'Radar schopností', initialSelected: sel }));
 const overview = R(m, null);
 check('overview shows five main labels + toggles', ['Výkon', 'Taktika', 'Technika', 'Skúsenosti', 'Rozvoj', 'Prehľad'].every((s) => overview.includes(s)));
 check('overview shows no sub-attribute (no fan)', !overview.includes('Stúpanie') && !overview.includes('Zjazd'));

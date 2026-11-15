@@ -82,7 +82,9 @@ check('Rozvoj card shows no raw numeric development value', !/>\d{2,3}</.test(de
 const radarSrc = readFileSync('src/components/rider/AbilityRadar.tsx', 'utf8');
 check('radar keeps tabs + interactive handlers', /aria-pressed/.test(radarSrc) && /onClick/.test(radarSrc) && /onKeyDown/.test(radarSrc));
 check('radar background is pure CSS/SVG (gradient + contour paths), no external images', /radial-gradient/.test(radarSrc) && /CONTOURS/.test(radarSrc) && !/<img|url\(/.test(radarSrc));
-check('radar background sits behind the plot only (inside the radar wrapper)', /relative w-full max-w-\[680px\] overflow-hidden rounded-xl/.test(radarSrc));
+check('radar background covers the WHOLE card (card shell carries gradient + contours, keeps rounded-card)', /<section className=\{`relative flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-card/.test(radarSrc)
+  && /absolute inset-0/.test(radarSrc) && !/overflow-hidden rounded-xl/.test(radarSrc));
+check('title + tabs live inside the same card as the plot', radarSrc.indexOf('<header') > radarSrc.indexOf('<section') && radarSrc.indexOf('role="group"') > radarSrc.indexOf('<header') && radarSrc.indexOf('role="img"') > radarSrc.indexOf('role="group"'));
 check('Rozvoj card still uses existing level display (no raw hidden numbers)', !/rider\.(potential|trainability)\}/.test(page));
 
 console.log(`\n${pass} passed, ${fail} failed`);
