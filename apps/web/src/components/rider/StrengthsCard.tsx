@@ -3,6 +3,7 @@ import type { SkillAttribute } from '@/lib/rider/config';
 import { topStrengths } from '@/lib/rider/strengths';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { Card } from '../ui/Card';
+import { CardTitle } from '../ui/CardTitle';
 import { RiderStatIcon } from './RiderStatIcon';
 
 /**
@@ -21,16 +22,16 @@ export function StrengthsCard({
 }) {
   const strengths = topStrengths(attributes);
   return (
-    <Card title={t('profile.strengths')} dense className={className}>
-      <ul className="px-3.5 pt-1.5">
+    <Card title={<CardTitle icon="trend">{t('profile.strengths')}</CardTitle>} dense className={className}>
+      <ul className="px-3.5 pb-1 pt-1">
         {strengths.map((s) => (
-          <li key={s.key} className="flex items-start gap-2.5 border-b border-line py-2.5 last:border-0">
+          <li key={s.key} className="flex items-start gap-2.5 border-b border-line py-2 last:border-0">
             <RiderStatIcon src={getSkillStatIcon(s.key)} alt="" size={30} className="mt-0.5" />
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold text-navy">{t(`attr.${s.key}`)}</span>
+              <span className="block text-[15px] text-navy">{t(`attr.${s.key}`)}</span>
               <span className="mt-0.5 block text-xs leading-snug text-navy-soft">{t(`attrDesc.${s.key}`)}</span>
             </span>
-            <span className="shrink-0 text-lg font-bold tabular-nums text-navy">{s.value}</span>
+            <span className="shrink-0 text-base font-bold tabular-nums text-navy">{s.value}</span>
           </li>
         ))}
       </ul>

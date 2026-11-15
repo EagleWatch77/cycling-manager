@@ -78,7 +78,7 @@ check('card shows title, 3 rows with name + value + description', html.includes(
 check('card shows exactly three attribute rows', (html.match(/<li /g) ?? []).length === 3);
 check('card shows Pretekársky profil with the existing style + description', html.includes('Pretekársky profil') && html.includes('Puncheur')
   && html.includes('Jazdec vhodný na zvlnené trate, krátke stúpania a útočné pretekanie.'));
-check('values are right-aligned (own shrink-0 column after the text)', /shrink-0 text-lg font-bold tabular-nums text-navy">139</.test(html));
+check('values are right-aligned (own shrink-0 column after the text)', /shrink-0 text-base font-bold tabular-nums text-navy">139</.test(html));
 check('no progress bars, images other than stat icons', !/progress|role="progressbar"/i.test(html));
 const page = readFileSync('src/app/rider/page.tsx', 'utf8');
 check('page uses the card next to the radar and no longer builds its own top-5 list', /<StrengthsCard/.test(page) && !/\.slice\(0, 5\)/.test(page));

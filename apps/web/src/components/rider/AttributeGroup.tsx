@@ -3,7 +3,7 @@ import { PERFORMANCE_MAX, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { Card } from '../ui/Card';
-import { Icon } from '../ui/Icon';
+import { CardTitle } from '../ui/CardTitle';
 import { ProgressBar } from '../ui/ProgressBar';
 import { RiderStatIcon } from './RiderStatIcon';
 
@@ -30,7 +30,7 @@ import { RiderStatIcon } from './RiderStatIcon';
  */
 export function AttributeGroup({
   t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28, bonuses,
-  descriptionKey, average,
+  descriptionKey,
 }: {
   t: T;
   titleKey: string;
@@ -44,17 +44,10 @@ export function AttributeGroup({
   bonuses?: Partial<Record<SkillAttribute, number>>;
   /** Short explanation shown under the heading, before the list. */
   descriptionKey?: string;
-  /** Group average shown in the heading, e.g. "Výkon · 128". */
-  average?: number;
 }) {
   return (
     <Card dense className={className}
-      title={
-        <span className="flex items-center gap-1.5 text-sm text-teal-dark">
-          <Icon name={icon} className="h-3.5 w-3.5 text-teal" />
-          {t(titleKey)}{average != null && ` · ${average}`}
-        </span>
-      }>
+      title={<CardTitle icon={icon}>{t(titleKey)}</CardTitle>}>
       {descriptionKey && (
         <p className="px-3.5 pt-3 text-xs leading-snug text-navy-soft">{t(descriptionKey)}</p>
       )}

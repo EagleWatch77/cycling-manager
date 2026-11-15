@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { CardTitle } from '../ui/CardTitle';
 import {
   EXPANDABLE_GROUPS, RADAR_GROUP_ORDER,
   type ExpandableGroupId, type RadarGroup, type RadarModel,
@@ -136,8 +137,11 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
         ))}
       </svg>
 
-      <header className="relative px-3.5 py-2.5">
-        <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{title}</h2>
+      {/* same header as Card (padding, h2 style), without the divider so it blends into the background */}
+      <header className="relative flex items-center justify-between gap-2 px-3.5 py-2.5">
+        <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">
+          <CardTitle icon="radar">{title}</CardTitle>
+        </h2>
       </header>
 
       <div className="relative flex flex-1 flex-col items-center justify-center gap-2 px-2 pb-3">

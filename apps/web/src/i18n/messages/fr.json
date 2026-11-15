@@ -588,6 +588,5 @@
   "styleDesc.sprinter": "Coureur adapté aux étapes plates qui se terminent par un sprint massif.",
   "styleDesc.timeTrial": "Coureur adapté au contre-la-montre et à l’allure régulière sur le plat.",
   "styleDesc.classics": "Coureur adapté aux classiques avec surfaces irrégulières et passages techniques.",
-  "strengths.profile": "Profil de course",
-  "dev.scoutNote": "L’évaluation affichée n’est qu’indicative. Les vraies valeurs cachées ne sont pas révélées ; une prospection plus précise des attributs de développement viendra plus tard."
+  "strengths.profile": "Profil de course"
 }

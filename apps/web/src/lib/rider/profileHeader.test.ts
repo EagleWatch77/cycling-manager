@@ -10,8 +10,11 @@ import { RiderProfileHeader } from '@/components/rider/RiderProfileHeader';
 import { RiderPortrait } from '@/components/rider/RiderPortrait';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
-import { overallRating, meanOf } from './score';
-import { TACTICS_ATTRIBUTES, type SkillAttribute } from './config';
+import { AbilityRadar } from '@/components/rider/AbilityRadar';
+import { StrengthsCard } from '@/components/rider/StrengthsCard';
+import { buildRadarModel, NO_DEVELOPMENT_ESTIMATES } from './radar';
+import { overallRating } from './score';
+import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from './config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import sk from '@/i18n/messages/sk.json';
 
@@ -55,12 +58,13 @@ check('portrait placeholder when src empty string', !/<img/.test(renderToStaticM
 
 const grp = renderToStaticMarkup(createElement(AttributeGroup, {
   t, titleKey: 'group.performance', icon: 'chart', keys: PERFORMANCE_FOCUS, attributes,
-  descriptionKey: 'groupDesc.performance', average: Math.round(meanOf(attributes, PERFORMANCE_FOCUS)),
+  descriptionKey: 'groupDesc.performance',
 }));
-check('group heading shows the average ("Výkon · 128")', grp.includes('Výkon · 128'), grp.slice(0, 300));
+check('group heading is just the title, no average number ("Výkon", not "Výkon · 128")', grp.includes('>Výkon<') && !/Výkon\s*·/.test(grp), grp.slice(0, 400));
 check('group description sits under the heading, before the list', grp.indexOf('Fyzická výkonnosť jazdca') > 0 && grp.indexOf('Fyzická výkonnosť jazdca') < grp.indexOf('<ul'));
 const plain = renderToStaticMarkup(createElement(AttributeGroup, { t, titleKey: 'group.performance', icon: 'chart', keys: PERFORMANCE_FOCUS, attributes }));
-check('without the new props the group renders as before (Training page unaffected)', !plain.includes(' · ') && !plain.includes('<p '));
+check('without the description prop the group renders no paragraph (Training page unaffected)', !plain.includes(' · ') && !plain.includes('<p '));
+check('AttributeGroup no longer has an average prop', !/average/.test(readFileSync('src/components/rider/AttributeGroup.tsx', 'utf8')));
 
 // page structure
 const page = readFileSync('src/app/rider/page.tsx', 'utf8');
@@ -77,7 +81,36 @@ check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) &&
 }
 const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, potentialLevel: 4, trainabilityLevel: 3 }));
 check('Rozvoj card keeps star potential + segment trainability + icons', dev.includes('aria-label="4/5"') && dev.includes('3/5') && /<img[^>]+ride-icon/.test(dev));
-check('Rozvoj card has the description and the scouting note', dev.includes('Potenciál a schopnosť jazdca zlepšovať sa.') && dev.includes('pribudne neskôr'));
+check('Rozvoj card keeps only the group description + the two rows (no scouting/explanation note)', dev.includes('Potenciál a schopnosť jazdca zlepšovať sa.')
+  && !dev.includes('pribudne neskôr') && !dev.includes('orientačné') && (dev.match(/<p /g) ?? []).length === 1);
+check('"dev.scoutNote" removed from all 7 locales', ['sk', 'en', 'cs', 'de', 'es', 'fr', 'pl'].every((l) => !('dev.scoutNote' in JSON.parse(readFileSync(`src/i18n/messages/${l}.json`, 'utf8')))));
+
+// unified card headings
+const TITLE = /flex items-center gap-1\.5 text-sm text-teal-dark/;
+const strengthsHtml = renderToStaticMarkup(createElement(StrengthsCard, { t, attributes, archetype: 'puncheur' }));
+const groupHtml = (tk: string, icon: string, keys: readonly SkillAttribute[]) => renderToStaticMarkup(createElement(AttributeGroup, { t, titleKey: tk, icon, keys, attributes }));
+const headings: [string, string][] = [
+  ['Silné stránky jazdca', strengthsHtml], ['Rozvoj', dev],
+  ['Výkon', groupHtml('group.performance', 'chart', PERFORMANCE_FOCUS)], ['Taktika', groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)],
+  ['Technika', groupHtml('group.technique', 'wheel', TECHNIQUE_ATTRIBUTES)], ['Skúsenosti', groupHtml('group.experience', 'trophy', ['experience'])],
+];
+for (const [name, html] of headings) {
+  const h = html.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
+  check(`${name}: heading uses the shared teal title (icon 3.5, text-sm teal-dark) in the standard Card header`, TITLE.test(h) && h.includes('h-3.5 w-3.5 text-teal') && h.includes('px-3.5 py-2.5') && h.includes('uppercase') && h.includes('tracking-wide'), h.slice(0, 260));
+}
+const radarHtml = renderToStaticMarkup(createElement(AbilityRadar, { model: buildRadarModel(attributes, NO_DEVELOPMENT_ESTIMATES, (k: string) => k), labels: { overview: 'o', estimate: 'e', unknown: 'u', note: 'n', noteUnknown: 'nu', aria: 'a' }, title: 'Radar schopností' }));
+const rh = radarHtml.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
+check('Radar schopností: same shared title + header padding/typography', TITLE.test(rh) && rh.includes('h-3.5 w-3.5 text-teal') && rh.includes('px-3.5 py-2.5') && rh.includes('uppercase') && rh.includes('tracking-wide'), rh.slice(0, 260));
+const iconOf = (html: string) => (html.match(/<header[\s\S]*?<path d="([^"]+)"/)?.[1] ?? '');
+check('new heading icons exist and differ from each other (radar / trend / sprout)', new Set([iconOf(radarHtml), iconOf(strengthsHtml), iconOf(dev)]).size === 3
+  && [iconOf(radarHtml), iconOf(strengthsHtml), iconOf(dev)].every((d) => d.length > 10));
+check('heading icons are outline SVG (not the coloured PNG attribute icons)', !/<img/.test(radarHtml.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '') && ![strengthsHtml, dev].some((h) => /<header[\s\S]*?<img[\s\S]*?<\/header>/.test(h)));
+// typography
+const cls = (html: string, re: RegExp) => (html.match(re) ?? []).length;
+check('attribute names share one style (text-[15px] text-navy) in Strengths, groups and Rozvoj', /text-\[15px\] text-navy/.test(strengthsHtml) && /text-\[15px\] text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && /text-\[15px\] text-navy/.test(dev) && !/text-\[15px\] font-semibold/.test(strengthsHtml));
+check('values share one style (text-base font-bold tabular-nums text-navy) in Strengths and groups', /text-base font-bold tabular-nums text-navy/.test(strengthsHtml) && /text-base font-bold tabular-nums text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && !/text-lg/.test(strengthsHtml));
+check('secondary texts share text-xs leading-snug text-navy-soft (group descriptions, Rozvoj, strengths)', cls(strengthsHtml, /text-xs leading-snug text-navy-soft/g) >= 4 && /text-xs leading-snug text-navy-soft/.test(dev) && /text-xs leading-snug text-navy-soft/.test(grp));
+check('rows share one rhythm (gap-2.5, py-2, border-b border-line)', [strengthsHtml, grp].every((h) => /gap-2\.5 border-b border-line py-2 last:border-0/.test(h)));
 check('Rozvoj card shows no raw numeric development value', !/>\d{2,3}</.test(dev));
 const radarSrc = readFileSync('src/components/rider/AbilityRadar.tsx', 'utf8');
 check('radar keeps tabs + interactive handlers', /aria-pressed/.test(radarSrc) && /onClick/.test(radarSrc) && /onKeyDown/.test(radarSrc));

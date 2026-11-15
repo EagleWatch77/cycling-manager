@@ -51,7 +51,13 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 
 ## Rider profile header + portrait (CONFIRMED 2026-11-15)
 - `RiderProfileHeader`: portrait (`RiderPortrait`, 3:4, `bg-surface`, silhouette placeholder, `onError` fallback; only displays an image, never generates/assigns) · name · nationality · age · style · league label · Celkové hodnotenie tile (`bg-teal-rail`); condition meters right (2x2 / 4 cols on mobile, inline on desktop).
-- `AttributeGroup` optional props `descriptionKey` (small secondary text under the heading) and `average` (heading `Výkon · 128`).
+- `AttributeGroup` optional prop `descriptionKey` (small secondary text under the heading). Headings carry NO numbers (group averages live only on the radar).
+
+## Card headings + typography on Rider → Prehľad (CONFIRMED 2026-11-15)
+- Reference = the Taktika card. Shared component `ui/CardTitle` (`icon`, children): `flex items-center gap-1.5 text-sm text-teal-dark` + `Icon h-3.5 w-3.5 text-teal`, placed in `Card`'s `title` slot (which supplies `text-2xs font-semibold uppercase tracking-wide`, `px-3.5 py-2.5`). Used by Radar schopností (`radar` icon), Silné stránky jazdca (`trend`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`), Skúsenosti (`trophy`). New outline icons `radar`, `trend`, `sprout` were added to `ui/Icon` (the single icon set). `SectionCard` (other pages) is unchanged.
+- The radar card renders the same header without the bottom divider so it blends into the full-card background.
+- Row typography: attribute name `text-[15px] text-navy`; value `text-base font-bold tabular-nums text-navy` right-aligned; secondary text `text-xs leading-snug text-navy-soft`; rows `gap-2.5 py-2 border-b border-line last:border-0`. Hierarchy stays: heading > name/value > secondary text.
+- Rozvoj card = heading + one description line + Potenciál (stars) + Trénovateľnosť only; no explanatory/scouting text (the player discovers mechanics by playing).
 
 ## Attribute icons (CONFIRMED 2026-11-15)
 - Single source: `lib/rider/statIcons.ts` (`getSkillStatIcon`, `getConditionStatIcon`, `getDevStatIcon`) → PNGs in `apps/web/public/ride-icon/`. Rendered only through `RiderStatIcon` (fixed square box, `object-contain`, never recoloured/wrapped).
@@ -60,7 +66,7 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - New icon sets: transparent PNG, keep the soft-gradient look, ≥8 px (of 128) padding, similar optical size; add the file + one line in `SKILL_ICON`, never reuse another attribute's icon.
 
 ## StrengthsCard (rider/StrengthsCard, CONFIRMED 2026-11-15)
-- `Card dense`, title "Silné stránky jazdca"; 3 rows: stat icon (`RiderStatIcon`, neutral dot when no asset), name + small `text-xs text-navy-soft` description, value right-aligned (`text-lg font-bold`), `border-line` dividers. Below: `bg-teal-rail` box "Pretekársky profil" (style name `text-teal-dark` + description). No bars/charts/images. Sits right of the radar on desktop (`lg:col-span-5`), under it on mobile.
+- `Card dense`, title "Silné stránky jazdca"; 3 rows: stat icon (`RiderStatIcon`, neutral dot when no asset), name + small `text-xs text-navy-soft` description, value right-aligned (`text-base font-bold tabular-nums`, same as attribute groups), name `text-[15px] text-navy` (normal weight), `border-line` dividers. Below: `bg-teal-rail` box "Pretekársky profil" (style name `text-teal-dark` + description). No bars/charts/images. Sits right of the radar on desktop (`lg:col-span-5`), under it on mobile.
 
 ## Ability radar (rider/AbilityRadar, CONFIRMED 2026-11-14)
 - Client SVG component, props = pre-translated model (`lib/rider/radar.ts`) + labels; never receives hidden true values.
