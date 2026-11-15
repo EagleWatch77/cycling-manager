@@ -29,7 +29,7 @@ export function ConditionRow({
         <RiderStatIcon src={icon} alt={label} size={24} />
         <span className="min-w-0 truncate text-[15px] text-navy" title={label}>{label}</span>
       </span>
-      <span className="text-right text-base font-semibold tabular-nums text-navy">{value}</span>
+      <span className="text-right text-base font-bold tabular-nums text-navy">{value}</span>
       <span className={`text-right text-base font-bold leading-none ${colorClass}`} aria-label={trend}>
         {ARROW[trend]}
       </span>

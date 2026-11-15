@@ -11,6 +11,12 @@ import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
 
 type FocusOption = { id: string; label: string };
 
+/** One shared look for every control on the planner: same radius, padding and font size. Active = main teal, inactive = light and quiet. */
+const CONTROL = 'rounded-lg px-3 py-2 text-sm font-semibold transition-colors';
+const CONTROL_ON = 'bg-teal text-white';
+const CONTROL_OFF = 'bg-surface text-navy-soft hover:bg-teal-rail';
+const FIELD_LABEL = 'mb-1.5 block text-xs font-semibold text-navy-muted';
+
 /** Po Ut St Št Pi So Ne = index 0-6. Which of those 7 are training days, by plan type/intensity — purely presentational (see the chat report, items 21-22). */
 const PERFORMANCE_TRAIN_DAYS: Record<TrainingIntensity, readonly number[]> = {
   light: [1],
@@ -77,8 +83,8 @@ function FocusSelect({ options, value, onChange }: {
   return (
     <div ref={rootRef} className="relative">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
-        className="flex w-full items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-2 text-left text-base font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
-        <RiderStatIcon src={selected ? getSkillStatIcon(selected.id as SkillAttribute) : null} alt="" size={32} />
+        className="flex w-full items-center gap-2.5 rounded-lg border border-line bg-card px-3 py-1.5 text-left text-sm font-semibold text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
+        <RiderStatIcon src={selected ? getSkillStatIcon(selected.id as SkillAttribute) : null} alt="" size={28} />
         <span className="min-w-0 flex-1 truncate">{selected?.label}</span>
         <svg viewBox="0 0 24 24" className={`h-3.5 w-3.5 shrink-0 text-navy-muted transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -238,14 +244,14 @@ export function TrainingConfigForm({
 
     return (
       <div className="space-y-3">
-        <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.confirmedTitle}</p>
+        <p className="text-sm font-semibold text-navy">{labels.confirmedTitle}</p>
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
-          <p className="flex items-center gap-2 text-lg font-bold text-navy">
+          <p className="flex items-center gap-2 text-base font-bold text-navy">
             <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={32} />
             {focusLabel}
           </p>
-          <p className="mt-2 text-sm text-navy-soft">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
-          <p className="text-sm text-navy-soft">{isTechnical ? labels.typeTechnical : `${labels.typePerformance} · ${intensityLabel}`}</p>
+          <p className="mt-2 text-xs leading-snug text-navy-soft">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
+          <p className="text-xs leading-snug text-navy-soft">{isTechnical ? labels.typeTechnical : `${labels.typePerformance} · ${intensityLabel}`}</p>
           <p className="mt-3 flex items-center gap-2">
             <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.statusLabel}</span>
             <span className="rounded bg-teal px-2 py-0.5 text-2xs font-bold uppercase text-white">{labels.statusPlanned}</span>
@@ -264,58 +270,55 @@ export function TrainingConfigForm({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm font-semibold uppercase tracking-wide text-teal-dark">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
-
+     {/* two columns on desktop (choices | week + condition), one column on mobile */}
+     <div className="grid gap-x-6 gap-y-4 lg:grid-cols-2">
+      <div className="space-y-4">
       {/* Type selector */}
       <div className="grid grid-cols-2 gap-1.5">
-        <button type="button" onClick={() => handleTypeChange('performance')}
-          className={`rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
-            weekType === 'performance' ? 'bg-navy text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
-          }`}>
+        <button type="button" onClick={() => handleTypeChange('performance')} aria-pressed={weekType === 'performance'}
+          className={`${CONTROL} ${weekType === 'performance' ? CONTROL_ON : CONTROL_OFF}`}>
           {labels.typePerformance}
         </button>
-        <button type="button" onClick={() => handleTypeChange('technical')}
-          className={`rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
-            weekType === 'technical' ? 'bg-navy text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
-          }`}>
+        <button type="button" onClick={() => handleTypeChange('technical')} aria-pressed={weekType === 'technical'}
+          className={`${CONTROL} ${weekType === 'technical' ? CONTROL_ON : CONTROL_OFF}`}>
           {labels.typeTechnical}
         </button>
       </div>
 
       {/* Focus */}
       <div>
-        <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.focusLabel}</span>
+        <span className={FIELD_LABEL}>{labels.focusLabel}</span>
         <FocusSelect options={currentOptions} value={focus} onChange={setFocus} />
       </div>
 
       {/* Intensity — Performance only */}
       {weekType === 'performance' ? (
         <div>
-          <span className="mb-1.5 block text-sm font-semibold text-navy-muted">{labels.intensityLabel}</span>
+          <span className={FIELD_LABEL}>{labels.intensityLabel}</span>
           <div className="grid grid-cols-3 gap-1.5">
             {([
               ['light', labels.intensityLight],
               ['normal', labels.intensityNormal],
               ['hard', labels.intensityHard],
             ] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setIntensity(value)}
-                className={`rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
-                  intensity === value ? 'bg-navy text-white' : 'bg-surface text-navy-soft hover:bg-teal-rail'
-                }`}>
+              <button key={value} type="button" onClick={() => setIntensity(value)} aria-pressed={intensity === value}
+                className={`${CONTROL} ${intensity === value ? CONTROL_ON : CONTROL_OFF}`}>
                 {label}
               </button>
             ))}
           </div>
         </div>
       ) : (
-        <p className="rounded-lg bg-surface px-3 py-2 text-sm text-navy-soft">{labels.technicalSessionNote}</p>
+        <p className="rounded-lg bg-surface px-3 py-2 text-xs leading-snug text-navy-soft">{labels.technicalSessionNote}</p>
       )}
 
-      <div>
-        <WeeklyStrip trainDays={trainDays} dayLabels={dayLabels} />
       </div>
 
-      {conditionSummary}
+      <div className="space-y-4">
+        <WeeklyStrip trainDays={trainDays} dayLabels={dayLabels} />
+        {conditionSummary}
+      </div>
+     </div>
 
       {error && (
         <p role="alert" className="rounded-lg border border-danger/30 bg-danger/5 px-2.5 py-1.5 text-sm text-danger">

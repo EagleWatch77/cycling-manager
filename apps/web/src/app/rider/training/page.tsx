@@ -15,6 +15,7 @@ import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS } from '@/lib/training/config';
 import { readinessScore, readinessLabel as computeReadinessLabel } from '@/lib/training/readiness';
 import { processCompletedTrainings } from '@/lib/training/engine';
 import { Card } from '@/components/ui/Card';
+import { CardTitle } from '@/components/ui/CardTitle';
 import { Icon } from '@/components/ui/Icon';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
@@ -177,16 +178,10 @@ export default async function RiderTrainingPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-3">
-        {/* LEFT — performance attributes */}
-        <div className="col-span-12 space-y-3 lg:col-span-3">
-          <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
-            showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
-        </div>
-
-        {/* CENTER — training configuration */}
-        <div className="col-span-12 lg:col-span-6">
-          <Card dense>
-            <div className="p-4">
+        {/* LEFT (wider) — planning is the main element, history right under it */}
+        <div className="col-span-12 space-y-3 lg:col-span-8">
+          <Card title={<CardTitle icon="calendar">{t('trainingPage.forWeek')} {plannableWeek} / {season.totalWeeks}</CardTitle>} dense>
+            <div className="p-3.5">
               <TrainingConfigForm
                 seasonId={season.seasonId}
                 weekNumber={plannableWeek}
@@ -229,12 +224,42 @@ export default async function RiderTrainingPage() {
               />
             </div>
           </Card>
+
+          <Card title={<CardTitle icon="swap">{t('trainingPage.recentHistory')}</CardTitle>} dense>
+            {historyRows.length === 0 ? (
+              <p className="p-3.5 text-xs leading-snug text-navy-soft">{t('trainingPage.noHistory')}</p>
+            ) : (
+              <ul className="px-3.5 py-1">
+                {historyRows.map((h) => (
+                  <li key={h.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
+                    <span className="min-w-0 truncate text-[15px] text-navy">
+                      {t('races.weekN', { n: h.weekNumber })} · {h.label}
+                    </span>
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold uppercase ${
+                      h.done ? 'bg-surface text-navy-muted' : 'bg-teal-rail text-teal-dark'
+                    }`}>
+                      {h.done ? t('trainingPage.statusDone') : t('trainingPage.statusPlanned')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </div>
 
-        {/* RIGHT — development, condition */}
-        <div className="col-span-12 space-y-3 lg:col-span-3">
-          <Card title={<span className="text-sm text-teal-dark">{t('group.development')}</span>} dense>
-            <ul className="p-3.5">
+        {/* RIGHT (narrower) — condition, then development */}
+        <div className="col-span-12 space-y-3 lg:col-span-4">
+          <Card title={<CardTitle icon="heart">{t('group.condition')}</CardTitle>} dense>
+            <ul className="px-3.5 py-1">
+              {conditionRows.map((c) => (
+                <ConditionRow key={c.key} icon={getConditionStatIcon(c.conditionKey)} label={t(c.key)}
+                  value={c.value} trend={c.trend} goodDirection={c.goodDirection} />
+              ))}
+            </ul>
+          </Card>
+
+          <Card title={<CardTitle icon="sprout">{t('group.development')}</CardTitle>} dense>
+            <ul className="px-3.5 py-1">
               <DevAttributeRow variant="stars" icon={getDevStatIcon('potential')} label={t('dev.potential')} level={potentialStars} />
               <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')} level={trainabilityLevel} accentClass="bg-purple-500" />
               <DevAttributeRow variant="segments" icon={getDevStatIcon('professionalism')} label={t('dev.professionalism')} level={professionalismLevel} accentClass="bg-blue-500" />
@@ -242,59 +267,17 @@ export default async function RiderTrainingPage() {
               <DevAttributeRow variant="segments" icon={getSkillStatIcon('experience')} label={t('attr.experience')} level={experienceLevel} accentClass="bg-orange-500" />
             </ul>
           </Card>
-
-          <Card title={<span className="text-sm text-teal-dark">{t('group.condition')}</span>} dense>
-            <ul className="p-3.5">
-              {conditionRows.map((c) => (
-                <ConditionRow key={c.key} icon={getConditionStatIcon(c.conditionKey)} label={t(c.key)}
-                  value={c.value} trend={c.trend} goodDirection={c.goodDirection} />
-              ))}
-            </ul>
-          </Card>
         </div>
       </div>
 
-      {/* BOTTOM — recent training history, tactics, technique, side by side */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.15fr_0.9fr_1fr]">
-        <Card title={<span className="text-sm text-teal-dark">{t('trainingPage.recentHistory')}</span>} dense>
-          {historyRows.length === 0 ? (
-            <p className="p-3.5 text-sm text-navy-soft">{t('trainingPage.noHistory')}</p>
-          ) : (
-            <ul className="p-3.5">
-              {historyRows.map((h) => (
-                <li key={h.key} className="flex items-center justify-between gap-2.5 border-b border-line py-2 last:border-0">
-                  <span className="min-w-0 truncate text-[15px] text-navy">
-                    {t('races.weekN', { n: h.weekNumber })} · {h.label}
-                  </span>
-                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold uppercase ${
-                    h.done ? 'bg-surface text-navy-muted' : 'bg-teal-rail text-teal-dark'
-                  }`}>
-                    {h.done ? t('trainingPage.statusDone') : t('trainingPage.statusPlanned')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
+      {/* BOTTOM — the three detail cards in one row (same card as on Prehľad) */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
+          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
         <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_ATTRIBUTES} attributes={rider.attributes}
-          showBars={false} bonuses={bonuses} />
-
-        <Card title={<span className="text-sm text-teal-dark">{t('group.technique')}</span>} dense>
-          <ul className="p-3.5">
-            {TECHNIQUE_ATTRIBUTES.map((k) => (
-              <li key={k} className="grid grid-cols-[minmax(0,1fr)_60px_42px] items-center gap-2 border-b border-line py-2 last:border-0">
-                <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
-                  {t(`attr.${k}`)}
-                </span>
-                <span className="text-right text-base font-semibold tabular-nums text-navy">{rider.attributes[k]}</span>
-                <span className="text-right text-xs font-bold tabular-nums text-teal-dark">
-                  {bonuses[k] != null ? `+${bonuses[k]}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
+          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
+        <AttributeGroup t={t} titleKey="group.technique" icon="wheel" keys={TECHNIQUE_ATTRIBUTES} attributes={rider.attributes}
+          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
       </div>
     </>
   );

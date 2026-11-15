@@ -79,7 +79,7 @@ export function AttributeGroup({
                   {t(`attr.${k}`)}
                 </span>
               </span>
-              <span className="text-right text-base font-semibold tabular-nums text-navy">{attributes[k]}</span>
+              <span className="text-right text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
               <span className="text-right text-xs font-bold tabular-nums text-teal-dark">
                 {bonuses?.[k] != null ? `+${bonuses[k]}` : ''}
               </span>

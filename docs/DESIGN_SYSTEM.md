@@ -59,6 +59,12 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Row typography: attribute name `text-[15px] text-navy`; value `text-base font-bold tabular-nums text-navy` right-aligned; secondary text `text-xs leading-snug text-navy-soft`; rows `gap-2.5 py-2 border-b border-line last:border-0`. Hierarchy stays: heading > name/value > secondary text.
 - Rozvoj card = heading + one description line + Potenciál (stars) + Trénovateľnosť only; no explanatory/scouting text (the player discovers mechanics by playing).
 
+## Rider → Tréning (CONFIRMED 2026-11-15)
+- Same card system as Prehľad: every card heading is `CardTitle` (teal, icon, same size/padding): Tréning pre týždeň N / M (`calendar`), Posledné tréningy (`swap`), Stav jazdca (`heart`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`).
+- Layout (lg): `grid-cols-12` — left `col-span-8` = planner + Posledné tréningy; right `col-span-4` = Stav jazdca + Rozvoj; below, `lg:grid-cols-3` = Výkon | Taktika | Technika (`AttributeGroup`, `showStatIcons statIconSize={24} showBars={false}` + `bonuses`, so the "+N" gain column stays). Mobile: one column in the same order.
+- Planner controls share `CONTROL` (`rounded-lg px-3 py-2 text-sm font-semibold`): active = `bg-teal text-white`, inactive = `bg-surface text-navy-soft hover:bg-teal-rail`; field labels `text-xs font-semibold text-navy-muted`; main button stays `bg-teal`. On desktop the planner is two columns (choices | week strip + condition).
+- Value typography everywhere: `text-base font-bold tabular-nums text-navy` (attribute groups, condition rows).
+
 ## Attribute icons (CONFIRMED 2026-11-15)
 - Single source: `lib/rider/statIcons.ts` (`getSkillStatIcon`, `getConditionStatIcon`, `getDevStatIcon`) → PNGs in `apps/web/public/ride-icon/`. Rendered only through `RiderStatIcon` (fixed square box, `object-contain`, never recoloured/wrapped).
 - All 19 skill attributes now have their own icon. Výkon + Rozvoj + condition icons: original 1254 px assets (unchanged). Taktika + Technika icons: 128×128 RGBA, transparent, symbol ≤112 px: `pozicia, nacasovanie-utoku, reakcia, manazment-energie, unik` (Taktika); `zjazd, ovladanie-bicykla, zatacky, jazda-v-baliku, jazda-v-dazdi, nerovny-povrch` (Technika). `skusenosti.png` (medal) was already present and is kept.
