@@ -78,6 +78,8 @@ q "insert into public.training_plans (rider_id, season_id, week_number, week_typ
 BEFORE_PLANS=$(q "select count(*) from public.training_plans"); BEFORE_RIDERS=$(q "select count(*) from public.riders")
 psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" >/dev/null 2>&1 && ok "migration 04 applies on top of legacy data" || { bad "migration 04 applies" "$(psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" | tail -3)"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" >/dev/null 2>&1 && ok "migration 04 is idempotent (second run)" || bad "migration 04 second run" "$(psqlc t -f "$ROOT/migrations/20261115_01_training_security.sql" | tail -3)"
+psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" >/dev/null 2>&1 && ok "migration 05 applies on top of 04" || { bad "migration 05 applies" "$(psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" | tail -3)"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" >/dev/null 2>&1 && ok "migration 05 is idempotent (second run)" || bad "migration 05 second run" "$(psqlc t -f "$ROOT/migrations/20261115_02_training_calendar_rules.sql" | tail -3)"
 eq "no legacy plan deleted" "$(q "select count(*) from public.training_plans")" "$BEFORE_PLANS"
 eq "no legacy rider deleted" "$(q "select count(*) from public.riders")" "$BEFORE_RIDERS"
 eq "legacy applied plan keeps its gains" "$(q "select primary_gain||':'||secondary_gain||':'||(applied_at is not null) from public.training_plans where rider_id='$R1'")" "1:0:true"
@@ -120,11 +122,12 @@ has "direct plan delete is denied" "$(as $P1 "delete from public.training_plans 
 eq "own plans stay readable" "$(as $P1 "select count(*) from public.training_plans;")" "1"
 
 echo "== 4. save_my_training_plan"
-CUR=$(q "select public.current_season_id()"); WK=$(q "select least(public.season_week_at(now())+1,10)")
+CUR=$(q "select public.current_season_id()"); WK=$(q "select public.training_plannable_week(now())")
 SAVED=$(as $P1 "select season_id||':'||week_number||':'||week_type||':'||focus||':'||intensity||':'||(applied_at is null) from public.save_my_training_plan('performance','climbing','normal');")
 eq "valid plan: season + week come from the SQL calendar, owner from auth" "$SAVED" "$CUR:$WK:performance:climbing:normal:true"
 eq "the plan belongs to the caller's rider" "$(q "select rider_id from public.training_plans where season_id='$CUR' and week_number=$WK and rider_id in ('$R1','$R2')")" "$R1"
-eq "an unprocessed plan can still be changed (current behaviour, D11 open)" "$(as $P1 "select focus||':'||intensity from public.save_my_training_plan('performance','sprint','hard');")" "sprint:hard"
+has "a confirmed plan cannot be overwritten (even before processing)" "$(as $P1 "select * from public.save_my_training_plan('performance','sprint','hard');")" "already_planned"
+eq "the confirmed plan kept its focus and intensity" "$(q "select focus||':'||intensity from public.training_plans where rider_id='$R1' and season_id='$CUR' and week_number=$WK")" "climbing:normal"
 eq "one row per rider and week (no duplicate)" "$(q "select count(*) from public.training_plans where rider_id='$R1' and season_id='$CUR' and week_number=$WK")" "1"
 eq "technical plan stores the placeholder intensity" "$(as $P2 "select week_type||':'||focus||':'||intensity from public.save_my_training_plan('technical','cornering','hard');")" "technical:cornering:light"
 has "technical + performance focus is rejected" "$(as $P2 "select * from public.save_my_training_plan('technical','climbing','light');")" "invalid_focus"
@@ -136,11 +139,7 @@ has "null focus is rejected" "$(as $P2 "select * from public.save_my_training_pl
 has "a player without a rider cannot plan" "$(as $P3 "select * from public.save_my_training_plan('performance','climbing','light');")" "no_rider"
 has "anon cannot call save_my_training_plan" "$(asanon "select * from public.save_my_training_plan('performance','climbing','light');")" "permission denied"
 eq "failed calls wrote nothing for P2 except the one technical plan" "$(q "select count(*) from public.training_plans where rider_id='$R2'")" "1"
-# a processed plan is history: simulate the engine having applied this week's plan
-q "update public.training_plans set applied_at = now() where rider_id='$R1' and season_id='$CUR' and week_number=$WK" >/dev/null
-has "a processed plan can never be changed" "$(as $P1 "select * from public.save_my_training_plan('performance','flat','light');")" "already_processed"
-eq "and it kept its focus" "$(q "select focus from public.training_plans where rider_id='$R1' and season_id='$CUR' and week_number=$WK")" "sprint"
-q "update public.training_plans set applied_at = null where rider_id='$R1' and season_id='$CUR' and week_number=$WK" >/dev/null
+has "a plan can never be cancelled/changed by the client (no UPDATE/DELETE path)" "$(as $P1 "delete from public.training_plans where rider_id='$R1' and season_id='$CUR' and week_number=$WK;")" "permission denied"
 
 echo "== 5. processing: only ended weeks, never early"
 BEFORE_ATTR=$(q "select attributes::text from public.riders where id='$R1'")
@@ -234,6 +233,69 @@ for i in $(seq 0 $((n-1))); do
 done
 eq "all $n sample dates (season/week boundaries, leap day) match TypeScript" "$okc" "$n"
 eq "training_plan_is_due (at 2026-11-15, season 2 week 3): earlier season yes, same week no, earlier week yes, week 11 no" "$(q "select concat_ws('', public.training_plan_is_due('season-1',9,'2026-11-15T12:00Z')::text, public.training_plan_is_due('season-2',3,'2026-11-15T12:00Z')::text, public.training_plan_is_due('season-2',2,'2026-11-15T12:00Z')::text, public.training_plan_is_due('season-2',11,'2026-11-15T12:00Z')::text)" | sed 's/true/t/g; s/false/f/g')" "tftf"
+
+echo "== 12. approved planning rules (migration 05)"
+n=$(ref "len(d['calendar'])"); okp=0
+for i in $(seq 0 $((n-1))); do
+  at=$(ref "d['calendar'][$i]['at']"); want=$(ref "str(d['calendar'][$i]['plannable'] if d['calendar'][$i]['plannable'] is not None else 'none')")
+  got=$(q "select coalesce(public.training_plannable_week('$at')::text,'none')")
+  [ "$got" = "$want" ] && okp=$((okp+1)) || bad "plannable week $at" "got $got want $want"
+done
+eq "plannable week: SQL == lib/training/planning.ts on all $n sample dates" "$okp" "$n"
+pw() { q "select coalesce(public.training_plannable_week('$1')::text,'none')"; }
+eq "Sunday 23:59:59 UTC is still week 3 -> plans week 4" "$(pw 2026-11-15T23:59:59Z)" "4"
+eq "Monday 00:00:00 UTC is week 4 -> plans week 5 (deadline = Sunday 24:00 UTC)" "$(pw 2026-11-16T00:00:00Z)" "5"
+eq "Monday 00:30 CET (= Sunday 23:30 UTC) still plans week 4" "$(pw 2026-11-16T00:30:00+01:00)" "4"
+eq "Sunday 00:59 UTC-1 (= Monday 00:30 UTC) already plans week 5" "$(pw 2026-11-15T23:30:00-01:00)" "5"
+eq "week 1 (preparatory), first second: planning is for week 2" "$(pw 2026-10-26T00:00:00Z)" "2"
+eq "week 1, last second: still planning for week 2" "$(pw 2026-11-01T23:59:59Z)" "2"
+eq "week 9 plans week 10" "$(pw 2026-12-22T12:00:00Z)" "10"
+eq "week 10: nothing is plannable (no week 1 of the next season)" "$(pw 2026-12-30T12:00:00Z)" "none"
+eq "last second of week 10 / first second of next season" "$(pw 2027-01-03T23:59:59Z)|$(pw 2027-01-04T00:00:00Z)" "none|2"
+eq "no plan can ever target week 1 (plannable week is always 2..10)" "$(q "select count(*) from generate_series(timestamp '2026-08-17', timestamp '2027-12-31', interval '1 day') d where public.training_plannable_week(d::timestamptz) is not null and public.training_plannable_week(d::timestamptz) < 2")" "0"
+eq "tour_schedule == data/tourSchedule.ts" "$(q "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourSchedule'])")"
+has "clients cannot write tour_schedule" "$(as $P1 "update public.tour_schedule set week_number = 1;")" "permission denied"
+eq "clients can read tour_schedule" "$(as $P1 "select count(*) from public.tour_schedule;")" "5"
+
+q "insert into public.tour_schedule (tour_id, week_number) values ('test-tour-wk', $WK), ('test-tour-other', $([ "$WK" = 2 ] && echo 3 || echo 2))" >/dev/null
+mk() { local pl; pl=$(mkplayer); mkrider "$pl" "$1" > "$DIR/last_rider"; echo "$pl"; }
+regq() { echo "insert into public.tour_registrations (rider_id, tour_id) select id, '$2' from public.riders where player_id='$1' returning tour_id;"; }
+T1=$(mk TourA); T1R=$(cat "$DIR/last_rider")
+has "Tour registration for the plannable week works with no plan" "$(as $T1 "$(regq $T1 test-tour-wk)")" "test-tour-wk"
+has "planning is refused when registered for a Tour in that week" "$(as $T1 "select * from public.save_my_training_plan('performance','climbing','normal');")" "tour_conflict"
+eq "no plan was written by the refused save" "$(q "select count(*) from public.training_plans where rider_id='$T1R'")" "0"
+as $T1 "delete from public.tour_registrations where rider_id='$T1R';" >/dev/null
+has "after un-registering, the same week can be planned" "$(as $T1 "select week_number from public.save_my_training_plan('performance','climbing','normal');")" "$WK"
+has "Tour registration is refused when training is confirmed for that Tour's week" "$(as $T1 "$(regq $T1 test-tour-wk)")" "training_conflict"
+eq "refused registration wrote nothing" "$(q "select count(*) from public.tour_registrations where rider_id='$T1R'")" "0"
+has "a Tour in ANOTHER week is fine alongside the plan" "$(as $T1 "$(regq $T1 test-tour-other)")" "test-tour-other"
+has "an unknown tour id is not blocked by the guard" "$(as $T1 "$(regq $T1 some-future-tour)")" "some-future-tour"
+
+# parallel save + registration of the same rider: never both
+BOTH=0; ONE=0
+for i in 1 2 3 4 5 6; do
+  PL=$(mk Race$i); RR=$(cat "$DIR/last_rider")
+  ( as $PL "select * from public.save_my_training_plan('performance','sprint','light');" > "$DIR/race_s_$i.out" ) &
+  ( as $PL "$(regq $PL test-tour-wk)" > "$DIR/race_r_$i.out" ) &
+  wait
+  np=$(q "select count(*) from public.training_plans where rider_id='$RR'"); nr=$(q "select count(*) from public.tour_registrations where rider_id='$RR' and tour_id='test-tour-wk'")
+  [ "$np" = 1 ] && [ "$nr" = 1 ] && BOTH=$((BOTH+1)); [ $((np+nr)) = 1 ] && ONE=$((ONE+1))
+done
+eq "6 simultaneous save+register races: no rider ended with BOTH a plan and a Tour in the same week" "$BOTH" "0"
+eq "and exactly one of the two won each race" "$ONE" "6"
+
+# parallel saves of the same week
+PS=$(mk ParSave); PSR=$(cat "$DIR/last_rider")
+for f in climbing hills flat sprint timeTrial endurance acceleration climbing; do
+  ( as $PS "select 'SAVED' from public.save_my_training_plan('performance','$f','hard');" > "$DIR/ps_$f.$RANDOM.out" ) &
+done
+wait
+eq "8 parallel saves created exactly one plan" "$(q "select count(*) from public.training_plans where rider_id='$PSR'")" "1"
+eq "exactly one parallel save succeeded, the rest were rejected as already_planned" "$(cat "$DIR"/ps_*.out | grep -c SAVED)|$(cat "$DIR"/ps_*.out | grep -c already_planned)" "1|7"
+FIRSTFOCUS=$(q "select focus from public.training_plans where rider_id='$PSR'")
+has "a later save cannot change it" "$(as $PS "select * from public.save_my_training_plan('technical','cornering','light');")" "already_planned"
+eq "plan unchanged after the later attempt" "$(q "select focus from public.training_plans where rider_id='$PSR'")" "$FIRSTFOCUS"
+q "delete from public.tour_registrations where tour_id like 'test-tour%' or tour_id='some-future-tour'; delete from public.tour_schedule where tour_id like 'test-tour%';" >/dev/null
 
 echo "== Scenario B: fresh database from supabase/schema.sql == scenario A"
 psqlc fresh -f "$SCHEMA" >/dev/null 2>&1 && ok "full schema.sql applies on a fresh database" || bad "full schema.sql applies" "$(psqlc fresh -f "$SCHEMA" | tail -3)"

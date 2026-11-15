@@ -35,3 +35,8 @@ Verify locally (real Postgres 16, run as a non-root OS user such as `postgres`):
 Run AFTER 01-03, whole file, idempotent. **Deploy the SQL, then push the code within minutes**: the
 old code can no longer write `riders`/`training_plans`, the new code needs the new functions.
 Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/training_security.test.sh` (run as `postgres`).
+
+| 5 | `20261115_02_training_calendar_rules.sql` | Approved planning rules: next-week planning (Sunday 24:00 UTC), confirmed plan final, week 1 prep / week 10 closed, no training in a Tour week (both directions, race-free), `tour_schedule` table |
+
+Run 04 first (if not yet applied), then 05. 04 is never edited once applied; 05 only replaces/adds objects. Deploy the SQL, then push the code
+(old code would still try to overwrite plans / does not know the new refusal reasons).

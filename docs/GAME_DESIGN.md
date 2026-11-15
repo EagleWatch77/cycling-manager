@@ -29,6 +29,21 @@ Zdroj: `lib/training/config.ts`. `[KÓD]`
 - Tactics sa tréningom nezvyšuje, má rásť až cez budúci systém pretekových situácií. `[KÓD]`
 - Kondícia a regenerácia: `lib/training/condition.ts`. Pravidlá `[CHÝBA]` (neprečítané).
 
+### Pravidlá plánovania tréningu `[SCHVÁLENÉ 2026-11-15]` `[KÓD]` (migrácia 20261115_02)
+- Plánuje sa vždy na nasledujúci herný týždeň; uzávierka nedeľa 24:00 UTC (= pondelok 00:00 UTC). Autoritatívny je SQL kalendár v UTC, klient neposiela sezónu ani týždeň.
+- Potvrdený plán sa nedá zmeniť, prepísať ani zrušiť; na jazdca a týždeň je najviac jeden plán.
+- 1. týždeň sezóny je prípravný (netrénuje sa), v ňom sa dá plánovať 2. týždeň. V 10. týždni sa neplánuje nič (nie na 1. týždeň novej sezóny).
+- V týždni Touru sa netrénuje: tréning a Tour sa nemôžu prekrývať, kontrola na serveri v oboch smeroch.
+- Bez plánu jazdec nezískava tréningové prírastky. Prirodzená regenerácia príde v ďalšom bloku.
+
+### Schválené návrhy pre ďalšie bloky `[SCHVÁLENÉ 2026-11-15]` `[NEIMPLEMENTOVANÉ]` (podrobnosti C-040)
+- **Denný tréning:** jednotky počas týždňa podľa intenzity, automaticky na serveri aj bez prihlásenia; ovplyvňujú energiu a únavu; týždenný rast sa nenásobí počtom jednotiek.
+- **Regenerácia:** vrodený skrytý atribút, nemení sa, netrénuje sa; kondícia, fyzioterapeut a Recovery Center zlepšujú skutočnú regeneráciu, nie vrodenú hodnotu. Rozsah a koeficienty neschválené.
+- **Premium skauting:** vlastný jazdec; potenciál, trénovateľnosť, regenerácia, profesionalita; komplexný 10 týždňov a výsledky naraz na konci; cielený = 1 atribút, 2 alebo 3 týždne (potvrdiť); výsledky ostávajú pri jazdcovi, vidí ich Premium, nie Free; presné hodnoty nikdy ku klientovi.
+- **Rookie:** dva OVR limity (pri získaní nižší, pri ponechaní vyšší; 75/95 pracovné); prekročenie limitu ponechania = bez novej zmluvy, ak manažér ostáva v Rookie; pri postupe do Amateur si jazdca môže ponechať.
+- **Kontrakty:** platia do konca sezóny; v prípravnom týždni prednostné právo na doterajšieho jazdca; jazdec môže žiadať vyšší plat; bez zmluvy odchádza ako voľný jazdec.
+- **Sezónny prechod:** postupy/zostupy, podligy, nové tabuľky a Tour kalendár; história a schopnosti sa zachovávajú (nie reset). Výber Tour zatiaľ neurčený.
+
 ## 4. Zázemie (Facilities)
 Zdroj: `lib/facilities/config.ts`, jediný kanonický zdroj všetkých efektov. `[KÓD]`
 - 5 zariadení: training, recovery, scouting, technical, teamCenter. Úrovne 1–5.

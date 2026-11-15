@@ -2,7 +2,8 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getMyRider } from '@/lib/rider/repository';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
+import { getSeasonSchedule, getSelectionState, getScheduleForTour } from '@/data/tourSchedule';
+import { getTrainingPlan } from '@/lib/training/repository';
 
 /**
  * Tour Registration V1 — links a Rider (not the player account) to a
@@ -69,7 +70,7 @@ export async function getMySeasonRegistrations(tourIds: string[]): Promise<Store
 
 export type RegisterResult =
   | { ok: true }
-  | { ok: false; reason: 'no-rider' | 'already-registered' | 'date-overlap' | 'season-limit' | 'tour-started' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'already-registered' | 'date-overlap' | 'season-limit' | 'tour-started' | 'training-conflict' | 'error' };
 
 /**
  * Registers the current player's Rider for a Tour ("Tour selection").
@@ -93,6 +94,14 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   if (state === 'season-limit') return { ok: false, reason: 'season-limit' };
   if (state === 'started') return { ok: false, reason: 'tour-started' };
 
+  // A Tour week has no training: refuse when a (final) plan already exists for
+  // this Tour's week. Friendly pre-check only — the database trigger on
+  // tour_registrations enforces it authoritatively (and race-free).
+  const tourWeek = getScheduleForTour(tourId)?.weekNumber;
+  if (tourWeek != null && await getTrainingPlan(info.seasonId, tourWeek)) {
+    return { ok: false, reason: 'training-conflict' };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from('tour_registrations')
@@ -101,6 +110,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   if (error) {
     // Postgres unique_violation — a concurrent request won the same race.
     if (error.code === '23505') return { ok: false, reason: 'already-registered' };
+    if ((error.message ?? '').includes('training_conflict')) return { ok: false, reason: 'training-conflict' };
     console.error('[registerForTour] insert failed', { tourId, riderId: rider.id, error });
     return { ok: false, reason: 'error' };
   }

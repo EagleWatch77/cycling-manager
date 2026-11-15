@@ -138,13 +138,15 @@ function FocusSelect({ options, value, onChange }: {
  * client-only state to remember that a plan was saved.
  */
 export function TrainingConfigForm({
-  weekNumber, totalWeeks,
+  weekNumber, totalWeeks, blocked,
   initialPlan, performanceFocus, technicalFocus,
   condition, readinessLabel,
   labels, dayLabels, saveAction,
 }: {
   weekNumber: number;
   totalWeeks: number;
+  /** Why a NEW plan cannot be made now (null = planning is open). A confirmed plan is always shown locked. */
+  blocked: 'season-end' | 'tour-conflict' | null;
   initialPlan: TrainingPlan | null;
   performanceFocus: FocusOption[];
   technicalFocus: FocusOption[];
@@ -172,6 +174,11 @@ export function TrainingConfigForm({
     saving: string;
     focusRequired: string;
     saveError: string;
+    lockedNote: string;
+    alreadyPlanned: string;
+    deadlineNote: string;
+    blockedSeasonEnd: string;
+    blockedTour: string;
   };
   saveAction: (input: {
     weekType: WeekType; focus: string; intensity: TrainingIntensity;
@@ -207,6 +214,14 @@ export function TrainingConfigForm({
           router.refresh();
         } else if (result.reason === 'invalid-focus') {
           setError(labels.focusRequired);
+        } else if (result.reason === 'already-planned') {
+          // A plan for this week is already confirmed (e.g. another tab): it is final, show it.
+          setError(labels.alreadyPlanned);
+          router.refresh();
+        } else if (result.reason === 'tour-conflict') {
+          setError(labels.blockedTour);
+        } else if (result.reason === 'no-plannable-week') {
+          setError(labels.blockedSeasonEnd);
         } else {
           setError(labels.saveError);
         }
@@ -259,6 +274,19 @@ export function TrainingConfigForm({
             <WeeklyStrip trainDays={trainDays} dayLabels={dayLabels} />
           </div>
         </div>
+        <p className="text-xs leading-snug text-navy-soft">{labels.lockedNote}</p>
+        {conditionSummary}
+      </div>
+    );
+  }
+
+  // No new plan possible right now (last week of the season / Tour week): say why, show no form.
+  if (blocked) {
+    return (
+      <div className="space-y-3">
+        <p className="rounded-lg bg-surface px-3 py-2 text-xs leading-snug text-navy-soft">
+          {blocked === 'season-end' ? labels.blockedSeasonEnd : labels.blockedTour}
+        </p>
         {conditionSummary}
       </div>
     );
@@ -329,6 +357,7 @@ export function TrainingConfigForm({
         className="w-full rounded-lg bg-teal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark disabled:cursor-not-allowed disabled:opacity-70">
         {pending ? labels.saving : labels.save}
       </button>
+      <p className="text-xs leading-snug text-navy-muted">{labels.deadlineNote}</p>
     </div>
   );
 }

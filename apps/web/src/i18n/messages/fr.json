@@ -588,5 +588,11 @@
   "styleDesc.sprinter": "Coureur adapté aux étapes plates qui se terminent par un sprint massif.",
   "styleDesc.timeTrial": "Coureur adapté au contre-la-montre et à l’allure régulière sur le plat.",
   "styleDesc.classics": "Coureur adapté aux classiques avec surfaces irrégulières et passages techniques.",
-  "strengths.profile": "Profil de course"
+  "strengths.profile": "Profil de course",
+  "trainingPage.lockedNote": "Un plan confirmé est verrouillé et ne peut être ni modifié ni annulé.",
+  "trainingPage.alreadyPlanned": "L'entraînement de cette semaine est déjà confirmé et ne peut pas être modifié.",
+  "trainingPage.deadlineNote": "Planification pour la semaine suivante. Clôture : dimanche 24:00 UTC.",
+  "trainingPage.blockedSeasonEnd": "Aucun entraînement n'est planifié en semaine 10 de la saison. Un nouvel entraînement pourra être planifié dans la nouvelle saison.",
+  "trainingPage.blockedTour": "Tu es inscrit à un Tour cette semaine. On ne s'entraîne pas pendant un Tour.",
+  "races.trainingConflict": "Tu as déjà un entraînement confirmé la semaine de ce Tour. On ne s'entraîne pas pendant un Tour."
 }

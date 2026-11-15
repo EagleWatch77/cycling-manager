@@ -588,5 +588,11 @@
   "styleDesc.sprinter": "Zawodnik na płaskie etapy kończące się finiszem z grupy.",
   "styleDesc.timeTrial": "Zawodnik na jazdę na czas i równe tempo na płaskim.",
   "styleDesc.classics": "Zawodnik na klasyki z nierówną nawierzchnią i technicznymi odcinkami.",
-  "strengths.profile": "Profil wyścigowy"
+  "strengths.profile": "Profil wyścigowy",
+  "trainingPage.lockedNote": "Potwierdzony plan jest zablokowany i nie można go zmienić ani anulować.",
+  "trainingPage.alreadyPlanned": "Trening na ten tydzień jest już potwierdzony i nie można go zmienić.",
+  "trainingPage.deadlineNote": "Planuje się na następny tydzień. Termin: niedziela 24:00 UTC.",
+  "trainingPage.blockedSeasonEnd": "W 10. tygodniu sezonu nie planuje się treningu. Nowy trening będzie można zaplanować w nowym sezonie.",
+  "trainingPage.blockedTour": "W tym tygodniu masz potwierdzony udział w Tourze. Podczas Touru się nie trenuje.",
+  "races.trainingConflict": "W tygodniu tego Touru masz już potwierdzony trening. Podczas Touru się nie trenuje."
 }

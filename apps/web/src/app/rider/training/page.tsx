@@ -10,7 +10,9 @@ import {
 } from '@/lib/rider/config';
 import { scoreToLevel } from '@/lib/rider/development';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { getSeasonSchedule } from '@/data/tourSchedule';
+import { getSeasonSchedule, getScheduleForTour } from '@/data/tourSchedule';
+import { getMySeasonRegistrations } from '@/lib/races/registration';
+import { plannableWeek as getPlannableWeek } from '@/lib/training/planning';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS } from '@/lib/training/config';
 import { readinessScore, readinessLabel as computeReadinessLabel } from '@/lib/training/readiness';
@@ -71,16 +73,32 @@ export default async function RiderTrainingPage() {
   // Purely informational (header badge) — never gates training planning.
   const currentWeekHasRace = scheduled.some((v) => v.isCurrentWeek);
 
-  // Training can only ever be scheduled one week ahead of right now — see
-  // plannableWeekNumber() in lib/training/repository.ts, which enforces this
-  // server-side too. Clamped at the season's last week (no week beyond it).
-  // A race in this (or any) week has no bearing on whether it's plannable.
-  const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
+  // Training is planned for the NEXT game week only (deadline Sunday 24:00 UTC);
+  // in the last week (10) nothing is plannable. Display mirror of
+  // public.training_plannable_week() — save_my_training_plan() recomputes it
+  // server-side and never takes a season/week from the client.
+  const plannable = getPlannableWeek(season);
 
   const [plan, recent] = await Promise.all([
-    getTrainingPlan(season.seasonId, plannableWeek),
+    plannable != null ? getTrainingPlan(season.seasonId, plannable) : Promise.resolve(null),
     listRecentCompletedTrainings(3),
   ]);
+
+  // Why a NEW plan cannot be made right now (a confirmed plan is always shown locked instead).
+  // The Tour conflict is informational here; the database enforces it in both directions.
+  let blocked: 'season-end' | 'tour-conflict' | null = null;
+  if (!plan) {
+    if (plannable == null) {
+      blocked = 'season-end';
+    } else {
+      const registrations = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
+      if (registrations.some((r) => getScheduleForTour(r.tourId)?.weekNumber === plannable)) blocked = 'tour-conflict';
+    }
+  }
+  const seasonLabel = `${t('races.season')} ${season.seasonNumber}`;
+  const planCardTitle = plannable != null
+    ? `${t('trainingPage.forWeek')} ${plannable} / ${season.totalWeeks} · ${seasonLabel}`
+    : `${seasonLabel} · ${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`;
 
   const performanceOptions = PERFORMANCE_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
   const technicalOptions = TECHNICAL_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
@@ -178,10 +196,11 @@ export default async function RiderTrainingPage() {
       <div className="grid grid-cols-12 gap-3">
         {/* LEFT (wider) — planning is the main element, history right under it */}
         <div className="col-span-12 space-y-3 lg:col-span-8">
-          <Card title={<CardTitle icon="calendar">{t('trainingPage.forWeek')} {plannableWeek} / {season.totalWeeks}</CardTitle>} dense>
+          <Card title={<CardTitle icon="calendar">{planCardTitle}</CardTitle>} dense>
             <div className="p-3.5">
               <TrainingConfigForm
-                weekNumber={plannableWeek}
+                weekNumber={plannable ?? season.totalWeeks}
+                blocked={blocked}
                 totalWeeks={season.totalWeeks}
                 initialPlan={plan}
                 performanceFocus={performanceOptions}
@@ -216,6 +235,11 @@ export default async function RiderTrainingPage() {
                   saving: t('trainingPage.saving'),
                   focusRequired: t('trainingPage.focusRequired'),
                   saveError: t('trainingPage.saveError'),
+                  lockedNote: t('trainingPage.lockedNote'),
+                  alreadyPlanned: t('trainingPage.alreadyPlanned'),
+                  deadlineNote: t('trainingPage.deadlineNote'),
+                  blockedSeasonEnd: t('trainingPage.blockedSeasonEnd'),
+                  blockedTour: t('trainingPage.blockedTour'),
                 }}
                 saveAction={saveTrainingAction}
               />

@@ -588,5 +588,11 @@
   "styleDesc.sprinter": "A rider suited to flat stages ending in a bunch sprint.",
   "styleDesc.timeTrial": "A rider suited to time trials and steady pace on the flat.",
   "styleDesc.classics": "A rider suited to classics with rough surfaces and technical sections.",
-  "strengths.profile": "Racing profile"
+  "strengths.profile": "Racing profile",
+  "trainingPage.lockedNote": "A confirmed plan is locked and cannot be changed or cancelled.",
+  "trainingPage.alreadyPlanned": "Training for this week is already confirmed and cannot be changed.",
+  "trainingPage.deadlineNote": "Planned for the next week. Deadline: Sunday 24:00 UTC.",
+  "trainingPage.blockedSeasonEnd": "No training is planned in week 10 of the season. New training can be planned in the new season.",
+  "trainingPage.blockedTour": "You are registered for a Tour this week. There is no training during a Tour.",
+  "races.trainingConflict": "You already have confirmed training in this Tour’s week. There is no training during a Tour."
 }

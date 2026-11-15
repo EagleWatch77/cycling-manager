@@ -588,5 +588,11 @@
   "styleDesc.sprinter": "Fahrer für flache Etappen mit Massensprint.",
   "styleDesc.timeTrial": "Fahrer für Zeitfahren und gleichmäßiges Tempo auf flacher Strecke.",
   "styleDesc.classics": "Fahrer für Klassiker mit unebenem Untergrund und technischen Passagen.",
-  "strengths.profile": "Rennprofil"
+  "strengths.profile": "Rennprofil",
+  "trainingPage.lockedNote": "Ein bestätigter Plan ist gesperrt und kann weder geändert noch storniert werden.",
+  "trainingPage.alreadyPlanned": "Das Training für diese Woche ist bereits bestätigt und kann nicht geändert werden.",
+  "trainingPage.deadlineNote": "Geplant wird für die nächste Woche. Anmeldeschluss: Sonntag 24:00 UTC.",
+  "trainingPage.blockedSeasonEnd": "In Woche 10 der Saison wird kein Training geplant. Neues Training kann in der neuen Saison geplant werden.",
+  "trainingPage.blockedTour": "Du bist in dieser Woche für eine Tour gemeldet. Während einer Tour wird nicht trainiert.",
+  "races.trainingConflict": "In der Woche dieser Tour hast du bereits bestätigtes Training. Während einer Tour wird nicht trainiert."
 }

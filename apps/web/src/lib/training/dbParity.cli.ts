@@ -6,6 +6,8 @@
  *   npx tsx src/lib/training/dbParity.cli.ts
  */
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { TOUR_SCHEDULE } from '@/data/tourSchedule';
+import { plannableWeek } from './planning';
 import { calculatePerformanceRawGrowth } from './growth';
 import { applyConditionDelta, weeklyConditionDelta } from './condition';
 import { readinessEffectiveness, readinessScore } from './readiness';
@@ -21,7 +23,7 @@ const dates = ['2026-08-10', '2026-08-17', '2026-08-23', '2026-08-24', '2026-10-
   '2026-11-15', '2026-12-31', '2027-01-03', '2027-01-04', '2027-03-14', '2027-03-15', '2027-06-01', '2028-02-29'];
 const calendar = dates.map((d) => {
   const s = getCurrentSeasonInfo(new Date(`${d}T12:00:00Z`));
-  return { at: `${d}T12:00:00Z`, season: s.seasonId, week: s.currentWeek };
+  return { at: `${d}T12:00:00Z`, season: s.seasonId, week: s.currentWeek, plannable: plannableWeek(s) };
 });
 
 const attrs = Object.fromEntries(SKILL_ATTRIBUTES.map((a) => [a, 130])) as Record<SkillAttribute, number>;
@@ -53,6 +55,7 @@ const starterPayload = {
 
 console.log(JSON.stringify({
   calendar, raw, cond, levels,
+  tourSchedule: [...TOUR_SCHEDULE].map((t) => `${t.tourId}:${t.weekNumber}`).sort(),
   generator: { min, max, archetypes: [...archetypes].sort(), hidMin, hidMax, ageMin, ageMax, keys: [...SKILL_ATTRIBUTES].sort() },
   starterPayload,
 }));

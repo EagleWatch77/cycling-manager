@@ -128,3 +128,9 @@ Migrácia `supabase/migrations/20261115_01_training_security.sql` (rovnaký text
 | `anon` rola | Odobrané všetky práva na dotknuté tabuľky |
 
 Zostáva (pozri aj DECISIONS O-008, O-010, O-011): `market_riders` ukazuje skryté hodnoty dostupných jazdcov; `bike_condition` a `tour_registrations` majú stále priame zápisy vlastníka; štartovací jazdec sa generuje v aplikácii (DB overuje len rozsahy); spracovanie je stále lenivé (cron = etapa E3); nespracovaný plán sa dá prepísať (D11).
+
+## 8. Stav po schválení pravidiel (2026-11-15, migrácia 20261115_02)
+
+Rozhodnutia z §5.5, ktoré majiteľ medzitým zodpovedal: **D2** (bez plánu žiadne prírastky), **D3** (plánuje sa na nasledujúci týždeň, 1. týždeň prípravný, v 10. sa neplánuje), **D5** (v týždni Touru sa netrénuje, konflikt kontrolovaný v oboch smeroch), **D11** (potvrdený plán je konečný), **D6** (Regenerácia je vrodená, nemenná, netrénuje sa; koeficienty neschválené). **D1** čiastočne (nová regenerácia príde v ďalšom bloku). Ostatné (D4, D7, D8 mechanizmus pozadia, D9, D10, D12, D13, D14) zostávajú **neschválené**. Denný tréning bez prihlásenia (schválený návrh) vyžaduje serverový plánovač — voľba mechanizmu (D8) ešte čaká.
+
+Implementované: pravidlá 1–5 a 6–11 z C-039 v databáze + UI (zamknutý plán, vysvetlenie v 10. týždni a pri konflikte s Tour). Nové: tabuľka `tour_schedule` (zrkadlo `data/tourSchedule.ts`), `training_plannable_week()`, spoločný zámok jazdca pre plán a registráciu na Tour. Historické plány sa nemenia ani nespracúvajú spätne; plány z minulosti mimo nových pravidiel (napr. v týždni Touru) ostávajú, ako boli.

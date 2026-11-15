@@ -239,6 +239,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                       overlap: t('races.dateOverlap'),
                       seasonLimit: t('races.limitReached'),
                       started: t('races.tourStarted'),
+                      trainingConflict: t('races.trainingConflict'),
                       genericError: t('detail.registerError'),
                     }}
                     registerAction={registerForTourAction}

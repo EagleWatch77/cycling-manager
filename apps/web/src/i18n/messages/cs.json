@@ -588,5 +588,11 @@
   "styleDesc.sprinter": "Jezdec vhodný na rovinaté etapy končící hromadným sprintem.",
   "styleDesc.timeTrial": "Jezdec vhodný na časovky a rovnoměrné tempo na rovině.",
   "styleDesc.classics": "Jezdec vhodný na klasiky s nerovným povrchem a technickými pasážemi.",
-  "strengths.profile": "Závodní profil"
+  "strengths.profile": "Závodní profil",
+  "trainingPage.lockedNote": "Potvrzený plán je uzamčen a nelze ho změnit ani zrušit.",
+  "trainingPage.alreadyPlanned": "Trénink na tento týden je již potvrzen a nelze ho změnit.",
+  "trainingPage.deadlineNote": "Plánuje se na následující týden. Uzávěrka je neděle 24:00 UTC.",
+  "trainingPage.blockedSeasonEnd": "V 10. týdnu sezóny se trénink neplánuje. Nový trénink bude možné naplánovat v nové sezóně.",
+  "trainingPage.blockedTour": "Tento týden máš potvrzenou účast na Tour. Během Tour se netrénuje.",
+  "races.trainingConflict": "V týdnu této Tour už máš potvrzený trénink. Během Tour se netrénuje."
 }

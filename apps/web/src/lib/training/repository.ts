@@ -86,7 +86,7 @@ export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingP
 
 export type SaveTrainingResult =
   | { ok: true; plan: TrainingPlan }
-  | { ok: false; reason: 'no-rider' | 'locked' | 'invalid-focus' | 'already-processed' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'invalid-focus' | 'already-planned' | 'tour-conflict' | 'no-plannable-week' | 'error' };
 
 /**
  * Saves the current player's training plan for the one week that's ever
@@ -103,8 +103,10 @@ export type SaveTrainingResult =
  *   - 'performance': focus in PERFORMANCE_FOCUS, intensity Light/Normal/Hard.
  *   - 'technical': focus in TECHNICAL_FOCUS; intensity has no player-facing
  *     meaning (stored as the 'light' placeholder).
- * An unprocessed plan may be overwritten exactly as before (the UI offers no
- * edit; whether that should stay possible is open decision D11).
+ * A confirmed plan is final (migration 05): a second save is rejected as
+ * 'already-planned', and a week in which the rider is registered for a Tour
+ * is rejected as 'tour-conflict' (the Tour registration is blocked the same
+ * way in the other direction).
  */
 export async function saveTrainingPlan(input: {
   weekType: WeekType;
@@ -122,7 +124,9 @@ export async function saveTrainingPlan(input: {
     const msg = error.message ?? '';
     if (msg.includes('no_rider')) return { ok: false, reason: 'no-rider' };
     if (msg.includes('invalid_focus')) return { ok: false, reason: 'invalid-focus' };
-    if (msg.includes('already_processed')) return { ok: false, reason: 'already-processed' };
+    if (msg.includes('already_planned')) return { ok: false, reason: 'already-planned' };
+    if (msg.includes('tour_conflict')) return { ok: false, reason: 'tour-conflict' };
+    if (msg.includes('no_plannable_week')) return { ok: false, reason: 'no-plannable-week' };
     return { ok: false, reason: 'error' };
   }
   if (!data) return { ok: false, reason: 'error' };

@@ -34,6 +34,7 @@ export function TourRegistrationButton({
     overlap: string;
     seasonLimit: string;
     started: string;
+    trainingConflict: string;
     genericError: string;
   };
   registerAction: (tourId: string) => Promise<RegisterResult>;
@@ -48,6 +49,7 @@ export function TourRegistrationButton({
     if (reason === 'date-overlap') return labels.overlap;
     if (reason === 'season-limit') return labels.seasonLimit;
     if (reason === 'tour-started') return labels.started;
+    if (reason === 'training-conflict') return labels.trainingConflict;
     return labels.genericError;
   }
 
