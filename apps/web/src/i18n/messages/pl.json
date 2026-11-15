@@ -588,5 +588,6 @@
   "styleDesc.sprinter": "Zawodnik na płaskie etapy kończące się finiszem z grupy.",
   "styleDesc.timeTrial": "Zawodnik na jazdę na czas i równe tempo na płaskim.",
   "styleDesc.classics": "Zawodnik na klasyki z nierówną nawierzchnią i technicznymi odcinkami.",
-  "strengths.profile": "Profil wyścigowy"
+  "strengths.profile": "Profil wyścigowy",
+  "dev.scoutNote": "Wyświetlana ocena jest tylko orientacyjna. Prawdziwe ukryte wartości nie są ujawniane; dokładniejsze zbadanie atrybutów rozwoju pojawi się później."
 }

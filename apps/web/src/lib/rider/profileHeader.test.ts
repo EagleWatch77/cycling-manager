@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { RiderProfileHeader } from '@/components/rider/RiderProfileHeader';
 import { RiderPortrait } from '@/components/rider/RiderPortrait';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
+import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
 import { overallRating, meanOf } from './score';
 import { TACTICS_ATTRIBUTES, type SkillAttribute } from './config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
@@ -67,7 +68,21 @@ check('standalone Celkové skóre card removed from the page', !/SummaryCard|sco
 check('"Hlavné oblasti" card removed', !/areas\./.test(page));
 check('"Ostatné" renamed to Skúsenosti', /group\.experience/.test(page) && !/group\.other/.test(page));
 check('Silné stránky card present', /StrengthsCard/.test(page));
-check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) && /AttributeGroup/.test(page) && /DevAttributeRow/.test(page));
+check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) && /AttributeGroup/.test(page) && /<DevelopmentCard/.test(page));
+{
+  const iRadar = page.indexOf('<AbilityRadar'), iStr = page.indexOf('<StrengthsCard'), iDev = page.indexOf('<DevelopmentCard'), iGrp = page.indexOf('<AttributeGroup');
+  check('DOM/mobile order: radar, strengths, Rozvoj, then detailed attributes', iRadar > 0 && iRadar < iStr && iStr < iDev && iDev < iGrp, `${iRadar},${iStr},${iDev},${iGrp}`);
+  check('Rozvoj appears exactly once on the page (old bottom card removed)', (page.match(/<DevelopmentCard/g) ?? []).length === 1 && !/DevAttributeRow|group\.development/.test(page));
+  check('right column wraps Silné stránky + Rozvoj (lg:col-span-5), radar is lg:col-span-7', /lg:col-span-7/.test(page) && /col-span-12 flex flex-col gap-3 lg:col-span-5/.test(page));
+}
+const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, potentialLevel: 4, trainabilityLevel: 3 }));
+check('Rozvoj card keeps star potential + segment trainability + icons', dev.includes('aria-label="4/5"') && dev.includes('3/5') && /<img[^>]+ride-icon/.test(dev));
+check('Rozvoj card has the description and the scouting note', dev.includes('Potenciál a schopnosť jazdca zlepšovať sa.') && dev.includes('pribudne neskôr'));
+check('Rozvoj card shows no raw numeric development value', !/>\d{2,3}</.test(dev));
+const radarSrc = readFileSync('src/components/rider/AbilityRadar.tsx', 'utf8');
+check('radar keeps tabs + interactive handlers', /aria-pressed/.test(radarSrc) && /onClick/.test(radarSrc) && /onKeyDown/.test(radarSrc));
+check('radar background is pure CSS/SVG (gradient + contour paths), no external images', /radial-gradient/.test(radarSrc) && /CONTOURS/.test(radarSrc) && !/<img|url\(/.test(radarSrc));
+check('radar background sits behind the plot only (inside the radar wrapper)', /relative w-full max-w-\[680px\] overflow-hidden rounded-xl/.test(radarSrc));
 check('Rozvoj card still uses existing level display (no raw hidden numbers)', !/rider\.(potential|trainability)\}/.test(page));
 
 console.log(`\n${pass} passed, ${fail} failed`);

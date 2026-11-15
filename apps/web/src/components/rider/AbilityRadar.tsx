@@ -26,11 +26,46 @@ export interface RadarLabels {
   aria: string;
 }
 
-const W = 440, H = 350, CX = 220, CY = 195, R = 105;
+const CX = 240, CY = 190, R = 118;
+/**
+ * Two view boxes with the SAME aspect ratio (so the card height never
+ * jumps): a tight one around the 5-axis overview (graph as large as
+ * possible) and a wider one for the expanded fan, which needs two label
+ * columns. The view box is interpolated while a group opens/closes.
+ */
+const OV_W = 410, OV_H = 298;
+const OV = { x: CX - OV_W / 2, y: CY - R - 42, w: OV_W, h: OV_H };
+const EX_W = 480, EX_H = (EX_W * OV_H) / OV_W;
+const EX = { x: CX - EX_W / 2, y: OV.y + OV_H / 2 - EX_H / 2, w: EX_W, h: EX_H };
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/**
+ * Decorative topographic contour lines behind the plot (cycling-route-map
+ * feel): nested wobbly rings around two "hills", generated deterministically
+ * (pure math, no randomness) so server and client markup are identical.
+ * Very low contrast by design.
+ */
+const CONTOUR_W = 480, CONTOUR_H = Math.round((480 * 298) / 410);
+function contourRing(cx: number, cy: number, r: number, phase: number): string {
+  const pts: string[] = [];
+  const n = 64;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const wob = 1 + 0.10 * Math.sin(3 * a + phase) + 0.06 * Math.sin(5 * a + phase * 1.7) + 0.04 * Math.sin(2 * a - phase);
+    const x = cx + Math.cos(a) * r * wob * 1.25;
+    const y = cy + Math.sin(a) * r * wob * 0.9;
+    pts.push(`${i === 0 ? 'M' : 'L'}${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`);
+  }
+  return pts.join('') + 'Z';
+}
+const CONTOURS: string[] = [
+  ...Array.from({ length: 9 }, (_, i) => contourRing(330, 130, 26 + i * 26, 0.6 + i * 0.18)),
+  ...Array.from({ length: 7 }, (_, i) => contourRing(120, 290, 22 + i * 28, 2.1 + i * 0.22)),
+];
 const N = RADAR_GROUP_ORDER.length;
 const STEP = (Math.PI * 2) / N;
 const FAN_STEP = 0.3;
-const ROW_TOP = CY - 172;
+const ROW_TOP = CY - 168;
 const ROW_GAP = 28;
 const COL_X = 118;
 
@@ -46,6 +81,8 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
   const [selected, setSelected] = useState<ExpandableGroupId | null>(initialSelected);
   const [rot, setRot] = useState(initialSelected ? -RADAR_GROUP_ORDER.indexOf(initialSelected) * STEP : 0);
   const [settled, setSettled] = useState(true);
+  const [zoom, setZoom] = useState(initialSelected ? 1 : 0);
+  const zoomRef = useRef(initialSelected ? 1 : 0);
   const rotRef = useRef(initialSelected ? -RADAR_GROUP_ORDER.indexOf(initialSelected) * STEP : 0);
   const rafRef = useRef<number | null>(null);
 
@@ -56,11 +93,13 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
   useEffect(() => {
     const target = selIndex >= 0 ? -selIndex * STEP : 0;
     const from = rotRef.current;
+    const zFrom = zoomRef.current;
+    const zTo = selIndex >= 0 ? 1 : 0;
     const delta = ((((target - from + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) - Math.PI;
     const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    if (reduce || Math.abs(delta) < 1e-4) {
-      rotRef.current = from + delta; setRot(from + delta); setSettled(true);
+    if (reduce || (Math.abs(delta) < 1e-4 && Math.abs(zFrom - zTo) < 1e-4)) {
+      rotRef.current = from + delta; setRot(from + delta); zoomRef.current = zTo; setZoom(zTo); setSettled(true);
       return;
     }
     setSettled(false);
@@ -71,6 +110,7 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
       const eased = 1 - Math.pow(1 - p, 3);
       const v = from + delta * eased;
       rotRef.current = v; setRot(v);
+      const z = zFrom + (zTo - zFrom) * eased; zoomRef.current = z; setZoom(z);
       if (p < 1) rafRef.current = requestAnimationFrame(tick);
       else setSettled(true);
     };
@@ -95,16 +135,25 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
         ))}
       </div>
 
-      <svg viewBox={`0 10 ${W} ${H - 22}`} className="w-full max-w-[560px]" role="img" aria-label={labels.aria}>
+      <div className="relative w-full max-w-[680px] overflow-hidden rounded-xl"
+        style={{ background: 'radial-gradient(ellipse at 50% 52%, rgb(14 147 132 / 0.13) 0%, rgb(14 147 132 / 0.06) 45%, rgb(14 147 132 / 0.02) 100%)' }}>
+      <svg aria-hidden="true" viewBox={`0 0 ${CONTOUR_W} ${CONTOUR_H}`} preserveAspectRatio="xMidYMid slice"
+        className="pointer-events-none absolute inset-0 h-full w-full">
+        {CONTOURS.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke={TEAL} strokeOpacity={i % 4 === 0 ? 0.13 : 0.07} strokeWidth={i % 4 === 0 ? 1 : 0.8} strokeLinejoin="round" />
+        ))}
+      </svg>
+      <svg viewBox={`${f1(lerp(OV.x, EX.x, zoom))} ${f1(lerp(OV.y, EX.y, zoom))} ${f1(lerp(OV.w, EX.w, zoom))} ${f1(lerp(OV.h, EX.h, zoom))}`}
+        className="relative block h-auto w-full" role="img" aria-label={labels.aria}>
         {[0.25, 0.5, 0.75, 1].map((ring) => (
-          <polygon key={ring} fill="none" stroke="#e4e9ec" strokeWidth="1"
+          <polygon key={ring} fill="none" stroke="#6b8195" strokeOpacity="0.3" strokeWidth="1"
             points={groups.map((_, i) => pt(angleOf(i), R * ring).map(f1).join(',')).join(' ')} />
         ))}
         {groups.map((g, i) => {
           const [x, y] = pt(angleOf(i), R);
           const dev = g.id === 'development';
           return <line key={g.id} x1={CX} y1={CY} x2={f1(x)} y2={f1(y)}
-            stroke={dev ? ORANGE : '#e4e9ec'} strokeWidth="1" strokeDasharray={dev ? '3 3' : undefined} />;
+            stroke={dev ? ORANGE : '#6b8195'} strokeOpacity={dev ? 1 : 0.3} strokeWidth="1" strokeDasharray={dev ? '3 3' : undefined} />;
         })}
 
         {known.length >= 3 && (
@@ -119,7 +168,7 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
           const [x, y] = pt(a, R * g.norm);
           const dim = selected !== null && selected !== g.id;
           return (
-            <g key={g.id} opacity={dim ? 0.55 : 1}>
+            <g key={g.id} opacity={dim ? 0.7 : 1}>
               {dev && g.normRange && (() => {
                 const [x1, y1] = pt(a, R * g.normRange.min);
                 const [x2, y2] = pt(a, R * g.normRange.max);
@@ -145,7 +194,7 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
           const value = g.value !== null ? String(g.value) : g.range ? `${fmtRange(g.range)} · ${labels.estimate}` : labels.unknown;
           const ty = y + Math.sin(a) * 8;
           return (
-            <g key={g.id} opacity={dim ? 0.5 : 1}
+            <g key={g.id} opacity={dim ? 0.75 : 1}
               role={expandable ? 'button' : undefined} tabIndex={expandable ? 0 : undefined}
               aria-pressed={expandable ? selected === g.id : undefined}
               aria-label={`${g.label} ${value}`}
@@ -161,6 +210,7 @@ export function AbilityRadar({ model, labels, initialSelected = null }: { model:
           );
         })}
       </svg>
+      </div>
 
       {selected === 'development' && (
         <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">

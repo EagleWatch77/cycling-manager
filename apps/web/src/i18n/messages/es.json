@@ -588,5 +588,6 @@
   "styleDesc.sprinter": "Corredor adecuado para etapas llanas que acaban en sprint masivo.",
   "styleDesc.timeTrial": "Corredor adecuado para contrarrelojes y ritmo constante en llano.",
   "styleDesc.classics": "Corredor adecuado para clásicas con superficies irregulares y tramos técnicos.",
-  "strengths.profile": "Perfil de carrera"
+  "strengths.profile": "Perfil de carrera",
+  "dev.scoutNote": "La valoración mostrada es solo orientativa. Los valores ocultos reales no se revelan; una exploración más precisa de los atributos de desarrollo llegará más adelante."
 }

@@ -61,6 +61,8 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy".
 - Overview = 5 points. Selecting a group (tab pills or tapping a label) rotates it to the top and fans its attributes as small points with thin leader lines to two label columns (no overlap by fixed row spacing). Works by tap/keyboard; respects `prefers-reduced-motion`.
 - `initialSelected` prop exists for tests/static rendering only.
+- Layout: radar card left (lg:col-span-7, content vertically centred), right column (lg:col-span-5) = `StrengthsCard` + `DevelopmentCard`; below the attribute group cards.
+- Plot area: wrapper with `radial-gradient` (teal 13% centre → 2% edge) + decorative contour SVG (deterministic wobbly rings, stroke teal at 7–13% opacity). The plot SVG's viewBox interpolates between a tight overview box and a wider expanded box with the SAME aspect ratio (card height never jumps). Grid lines `#6b8195` at 30% opacity so they stay above the contours.
 
 ## Known deviations (CONFIRMED, not fixed)
 - Hex colors inside SVG components (`ElevationProfile`, `AbilityRadar`, `StageProfile`, `StageScoring`); they match tokens.

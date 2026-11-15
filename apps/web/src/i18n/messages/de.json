@@ -588,5 +588,6 @@
   "styleDesc.sprinter": "Fahrer für flache Etappen mit Massensprint.",
   "styleDesc.timeTrial": "Fahrer für Zeitfahren und gleichmäßiges Tempo auf flacher Strecke.",
   "styleDesc.classics": "Fahrer für Klassiker mit unebenem Untergrund und technischen Passagen.",
-  "strengths.profile": "Rennprofil"
+  "strengths.profile": "Rennprofil",
+  "dev.scoutNote": "Die angezeigte Bewertung ist nur ein Richtwert. Die wahren verborgenen Werte werden nicht offengelegt; eine genauere Erkundung der Entwicklungsattribute folgt später."
 }

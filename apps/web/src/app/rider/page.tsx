@@ -10,8 +10,7 @@ import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { StrengthsCard } from '@/components/rider/StrengthsCard';
-import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
-import { getDevStatIcon } from '@/lib/rider/statIcons';
+import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
 
 /**
  * Attribute groups, following the reference layout, filled ONLY with the
@@ -37,10 +36,12 @@ export default async function RiderOverviewPage() {
 
   return (
     <>
-      {/* Radar + Silné stránky jazdca. The overall rating lives in the profile header. */}
+      {/* Left: radar. Right: Silné stránky jazdca, then Rozvoj. Mobile order = DOM order:
+          radar, strengths, Rozvoj, then the detailed attribute cards. */}
       <div className="grid grid-cols-12 gap-3">
-        <Card title={t('profile.radarTitle')} dense className="col-span-12 lg:col-span-7">
-          <div className="p-2">
+        <Card title={t('profile.radarTitle')} dense
+          className="col-span-12 lg:col-span-7 [&>div]:flex [&>div]:items-center [&>div]:justify-center">
+          <div className="w-full p-2">
             <AbilityRadar
               model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
               labels={{
@@ -50,7 +51,12 @@ export default async function RiderOverviewPage() {
           </div>
         </Card>
 
-        <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} className="col-span-12 lg:col-span-5" />
+        <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
+          <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} />
+          <DevelopmentCard t={t}
+            potentialLevel={potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX)}
+            trainabilityLevel={scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX)} />
+        </div>
       </div>
 
       {/* Attribute groups */}
@@ -62,18 +68,6 @@ export default async function RiderOverviewPage() {
             showStatIcons={g.titleKey === 'group.performance'}
             className="col-span-12 sm:col-span-6 xl:col-span-3" />
         ))}
-      </div>
-
-      <div className="grid grid-cols-12 gap-3">
-        <Card title={<span className="text-sm">{t('group.development')}</span>} dense className="col-span-12 lg:col-span-6">
-          <p className="px-3.5 pt-3 text-xs leading-snug text-navy-soft">{t('groupDesc.development')}</p>
-          <ul className="px-3.5 pb-1 pt-1">
-            <DevAttributeRow variant="stars" icon={getDevStatIcon('potential')} label={t('dev.potential')}
-              level={potentialToStars(rider.potential, POTENTIAL_MIN, POTENTIAL_MAX)} />
-            <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')}
-              level={scoreToLevel(rider.trainability, TRAINABILITY_MIN, TRAINABILITY_MAX)} accentClass="bg-purple-500" />
-          </ul>
-        </Card>
       </div>
     </>
   );

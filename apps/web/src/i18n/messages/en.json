@@ -588,5 +588,6 @@
   "styleDesc.sprinter": "A rider suited to flat stages ending in a bunch sprint.",
   "styleDesc.timeTrial": "A rider suited to time trials and steady pace on the flat.",
   "styleDesc.classics": "A rider suited to classics with rough surfaces and technical sections.",
-  "strengths.profile": "Racing profile"
+  "strengths.profile": "Racing profile",
+  "dev.scoutNote": "The rating shown is only indicative. True hidden values are not revealed; more precise scouting of development attributes will come later."
 }

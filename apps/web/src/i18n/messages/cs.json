@@ -588,5 +588,6 @@
   "styleDesc.sprinter": "Jezdec vhodný na rovinaté etapy končící hromadným sprintem.",
   "styleDesc.timeTrial": "Jezdec vhodný na časovky a rovnoměrné tempo na rovině.",
   "styleDesc.classics": "Jezdec vhodný na klasiky s nerovným povrchem a technickými pasážemi.",
-  "strengths.profile": "Závodní profil"
+  "strengths.profile": "Závodní profil",
+  "dev.scoutNote": "Zobrazené hodnocení je jen orientační. Skutečné skryté hodnoty se neodhalují; přesnější prozkoumání rozvojových atributů přibude později."
 }
