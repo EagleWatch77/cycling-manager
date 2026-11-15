@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TrainingPlan, SaveTrainingResult } from '@/lib/training/repository';
 import type { TrainingIntensity, WeekType } from '@/lib/training/config';
-import type { ReadinessLabel } from '@/lib/training/readiness';
+import { Icon } from '@/components/ui/Icon';
 import type { SkillAttribute } from '@/lib/rider/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
 import { RiderStatIcon } from '@/components/rider/RiderStatIcon';
@@ -41,14 +41,6 @@ function WeeklyStrip({ trainDays, dayLabels }: { trainDays: readonly number[]; d
     </div>
   );
 }
-
-const READINESS_COLOR: Record<ReadinessLabel, string> = {
-  excellent: 'text-green-600',
-  good: 'text-teal-dark',
-  reduced: 'text-warn',
-  poor: 'text-danger',
-  veryPoor: 'text-danger',
-};
 
 /**
  * Custom listbox (not a native <select>) so the currently selected Focus,
@@ -127,8 +119,8 @@ function FocusSelect({ options, value, onChange }: {
  * (lib/training/engine.ts) — the component has exactly two states, set
  * (`plan`) or not (form), never a third "editing" state.
  *
- * Condition (Energy/Fatigue/Readiness) is shown in BOTH states — real
- * current numbers, never a fabricated predicted gain (item 23): this page
+ * Condition (Energy/Fatigue) lives only in the Stav jazdca card on the page,
+ * not here. This page never shows a fabricated predicted gain (item 23), e.g.
  * never shows "+2 Climbing" before a plan is processed, only after, via the
  * real persisted primaryGain/secondaryGain (see training/page.tsx's
  * `bonuses`).
@@ -140,7 +132,6 @@ function FocusSelect({ options, value, onChange }: {
 export function TrainingConfigForm({
   weekNumber, totalWeeks, blocked,
   initialPlan, performanceFocus, technicalFocus,
-  condition, readinessLabel,
   labels, dayLabels, saveAction,
 }: {
   weekNumber: number;
@@ -150,8 +141,6 @@ export function TrainingConfigForm({
   initialPlan: TrainingPlan | null;
   performanceFocus: FocusOption[];
   technicalFocus: FocusOption[];
-  condition: { energy: number; fatigue: number };
-  readinessLabel: ReadinessLabel;
   dayLabels: readonly string[];
   labels: {
     forWeek: string;
@@ -166,10 +155,6 @@ export function TrainingConfigForm({
     intensityNormal: string;
     intensityHard: string;
     technicalSessionNote: string;
-    energyLabel: string;
-    fatigueLabel: string;
-    readinessLabel: string;
-    readiness: Record<ReadinessLabel, string>;
     save: string;
     saving: string;
     focusRequired: string;
@@ -231,23 +216,6 @@ export function TrainingConfigForm({
     });
   }
 
-  const conditionSummary = (
-    <div className="grid grid-cols-3 gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-center">
-      <div>
-        <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.energyLabel}</p>
-        <p className="mt-0.5 text-base font-bold tabular-nums text-navy">{condition.energy}</p>
-      </div>
-      <div>
-        <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.fatigueLabel}</p>
-        <p className="mt-0.5 text-base font-bold tabular-nums text-navy">{condition.fatigue}</p>
-      </div>
-      <div>
-        <p className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{labels.readinessLabel}</p>
-        <p className={`mt-0.5 text-sm font-bold ${READINESS_COLOR[readinessLabel]}`}>{labels.readiness[readinessLabel]}</p>
-      </div>
-    </div>
-  );
-
   if (plan) {
     const isTechnical = plan.weekType === 'technical';
     const options = isTechnical ? technicalFocus : performanceFocus;
@@ -262,7 +230,10 @@ export function TrainingConfigForm({
         <div className="rounded-lg border border-teal/30 bg-teal-rail p-4">
           <p className="flex items-center gap-2 text-base font-bold text-navy">
             <RiderStatIcon src={getSkillStatIcon(plan.focus as SkillAttribute)} alt="" size={32} />
-            {focusLabel}
+            <span className="min-w-0 flex-1">{focusLabel}</span>
+            <span role="img" aria-label={labels.lockedNote} title={labels.lockedNote} className="shrink-0 text-teal-dark">
+              <Icon name="lock" className="h-4 w-4" />
+            </span>
           </p>
           <p className="mt-2 text-xs leading-snug text-navy-soft">{labels.forWeek} {weekNumber} / {totalWeeks}</p>
           <p className="text-xs leading-snug text-navy-soft">{isTechnical ? labels.typeTechnical : `${labels.typePerformance} · ${intensityLabel}`}</p>
@@ -274,8 +245,6 @@ export function TrainingConfigForm({
             <WeeklyStrip trainDays={trainDays} dayLabels={dayLabels} />
           </div>
         </div>
-        <p className="text-xs leading-snug text-navy-soft">{labels.lockedNote}</p>
-        {conditionSummary}
       </div>
     );
   }
@@ -287,7 +256,6 @@ export function TrainingConfigForm({
         <p className="rounded-lg bg-surface px-3 py-2 text-xs leading-snug text-navy-soft">
           {blocked === 'season-end' ? labels.blockedSeasonEnd : labels.blockedTour}
         </p>
-        {conditionSummary}
       </div>
     );
   }
@@ -343,7 +311,6 @@ export function TrainingConfigForm({
 
       <div className="space-y-4">
         <WeeklyStrip trainDays={trainDays} dayLabels={dayLabels} />
-        {conditionSummary}
       </div>
      </div>
 

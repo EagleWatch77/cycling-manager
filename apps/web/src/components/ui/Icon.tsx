@@ -6,6 +6,7 @@ const PATHS: Record<string, string> = {
   home: 'M3 10.5 12 3l9 7.5V21H3z',
   rider: 'M12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 21v-1a8 8 0 0 1 16 0v1',
   flag: 'M5 3v18M5 4h11l-2 4 2 4H5',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4',
   calendar: 'M4 6h16v15H4zM4 10h16M8 3v4M16 3v4',
   chart: 'M5 20V10M12 20V4M19 20v-7',
   trophy: 'M7 4h10v5a5 5 0 0 1-10 0zM4 5h3M17 5h3M9 20h6M12 14v6',

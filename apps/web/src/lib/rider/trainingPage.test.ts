@@ -22,6 +22,9 @@ const at = (s: string) => page.indexOf(s);
 check('left column is wider (lg:col-span-8) and right narrower (lg:col-span-4)', /col-span-12 space-y-3 lg:col-span-8/.test(page) && /col-span-12 space-y-3 lg:col-span-4/.test(page));
 check('DOM order: planning < condition < development', at('planCardTitle}') < at("group.condition") && at("group.condition") < at("group.development"));
 check('no "Posledné tréningy" card on the page (history stays in the DB)', !/recentHistory|historyRows|HistoryRow/.test(page));
+check('no lock explanation text under the confirmed plan', !/\{labels\.lockedNote\}<\/p>/.test(form));
+check('confirmed card has a lock icon (lockedNote only as aria-label/title)', /<Icon name="lock"/.test(form) && /aria-label=\{labels\.lockedNote\}/.test(form));
+check('no bottom condition strip (Energy/Fatigue/Readiness) in the planner', !/conditionSummary|readinessLabel|READINESS_COLOR|labels\.energyLabel|labels\.fatigueLabel/.test(form) && !/readinessLabel|readiness\./.test(page));
 check('bottom row: Výkon, Taktika, Technika in one 3-column grid after the main columns', /lg:grid-cols-3/.test(page) && at('group.performance') > at('group.development') && at('group.performance') < at('group.tactics') && at('group.tactics') < at('group.technique'));
 check('planner heading uses shared CardTitle (week + season)', /<CardTitle icon="calendar">\{planCardTitle\}<\/CardTitle>/.test(page) && /trainingPage\.forWeek/.test(page) && /seasonNumber/.test(page));
 for (const k of ['group.condition', 'group.development']) {

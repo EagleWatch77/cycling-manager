@@ -15,7 +15,6 @@ import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { plannableWeek as getPlannableWeek } from '@/lib/training/planning';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS } from '@/lib/training/config';
-import { readinessScore, readinessLabel as computeReadinessLabel } from '@/lib/training/readiness';
 import { processCompletedTrainings } from '@/lib/training/engine';
 import { Card } from '@/components/ui/Card';
 import { CardTitle } from '@/components/ui/CardTitle';
@@ -103,14 +102,6 @@ export default async function RiderTrainingPage() {
   const performanceOptions = PERFORMANCE_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
   const technicalOptions = TECHNICAL_FOCUS.map((a) => ({ id: a, label: t(`attr.${a}`) }));
 
-  // Readiness V1 (see the chat report, item 17-18): computed from the
-  // rider's CURRENT condition, purely for the player-facing qualitative
-  // label shown alongside the training config — the authoritative
-  // multiplier used for actual training math is computed independently
-  // inside process_training_plan() (supabase/schema.sql) from condition as
-  // it stands at processing time, never trusted from this render.
-  const currentReadinessLabel = computeReadinessLabel(readinessScore(rider.condition.energy, rider.condition.fatigue));
-
   const dayLabels = [
     t('day.mon'), t('day.tue'), t('day.wed'), t('day.thu'), t('day.fri'), t('day.sat'), t('day.sun'),
   ];
@@ -185,8 +176,6 @@ export default async function RiderTrainingPage() {
                 initialPlan={plan}
                 performanceFocus={performanceOptions}
                 technicalFocus={technicalOptions}
-                condition={{ energy: rider.condition.energy, fatigue: rider.condition.fatigue }}
-                readinessLabel={currentReadinessLabel}
                 dayLabels={dayLabels}
                 labels={{
                   forWeek: t('trainingPage.forWeek'),
@@ -201,16 +190,6 @@ export default async function RiderTrainingPage() {
                   intensityNormal: t('trainingPage.intensityNormal'),
                   intensityHard: t('trainingPage.intensityHard'),
                   technicalSessionNote: t('trainingPage.technicalSessionNote'),
-                  energyLabel: t('rider.energy'),
-                  fatigueLabel: t('rider.fatigue'),
-                  readinessLabel: t('trainingPage.readinessLabel'),
-                  readiness: {
-                    excellent: t('readiness.excellent'),
-                    good: t('readiness.good'),
-                    reduced: t('readiness.reduced'),
-                    poor: t('readiness.poor'),
-                    veryPoor: t('readiness.veryPoor'),
-                  },
                   save: t('trainingPage.save'),
                   saving: t('trainingPage.saving'),
                   focusRequired: t('trainingPage.focusRequired'),
