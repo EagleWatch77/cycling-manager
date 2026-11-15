@@ -601,7 +601,6 @@
   "progress.ovrStart": "OVR na początku śledzenia",
   "progress.ovrNow": "Aktualny OVR",
   "progress.ovrDelta": "Różnica OVR",
-  "progress.colAttribute": "Atrybut",
   "progress.colAcquired": "Przy pozyskaniu",
   "progress.colStart": "Początek śledzenia",
   "progress.colNow": "Teraz",
@@ -611,5 +610,8 @@
   "progress.chartMetric": "Pokaż",
   "progress.chartStarted": "Śledzenie właśnie się rozpoczęło – na razie zapisano jeden wpis.",
   "progress.chartAria": "Wykres rozwoju zawodnika",
-  "progress.sourceTraining": "Trening"
+  "progress.sourceTraining": "Trening",
+  "progress.showHistory": "Pokaż historię",
+  "progress.hideHistory": "Ukryj historię",
+  "progress.compareWith": "Porównanie ze stanem"
 }

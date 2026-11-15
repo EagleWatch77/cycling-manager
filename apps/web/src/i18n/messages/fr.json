@@ -601,7 +601,6 @@
   "progress.ovrStart": "OVR au début du suivi",
   "progress.ovrNow": "OVR actuel",
   "progress.ovrDelta": "Écart d'OVR",
-  "progress.colAttribute": "Attribut",
   "progress.colAcquired": "À l'acquisition",
   "progress.colStart": "Début du suivi",
   "progress.colNow": "Maintenant",
@@ -611,5 +610,8 @@
   "progress.chartMetric": "Afficher",
   "progress.chartStarted": "Le suivi vient de commencer : un seul enregistrement pour l'instant.",
   "progress.chartAria": "Graphique d'évolution du coureur",
-  "progress.sourceTraining": "Entraînement"
+  "progress.sourceTraining": "Entraînement",
+  "progress.showHistory": "Afficher l'historique",
+  "progress.hideHistory": "Masquer l'historique",
+  "progress.compareWith": "Comparé à"
 }

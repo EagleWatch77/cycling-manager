@@ -601,7 +601,6 @@
   "progress.ovrStart": "OVR at start of tracking",
   "progress.ovrNow": "Current OVR",
   "progress.ovrDelta": "OVR change",
-  "progress.colAttribute": "Attribute",
   "progress.colAcquired": "When acquired",
   "progress.colStart": "Start of tracking",
   "progress.colNow": "Now",
@@ -611,5 +610,8 @@
   "progress.chartMetric": "Show",
   "progress.chartStarted": "Tracking has just started – only one record is stored so far.",
   "progress.chartAria": "Rider development chart",
-  "progress.sourceTraining": "Training"
+  "progress.sourceTraining": "Training",
+  "progress.showHistory": "Show history",
+  "progress.hideHistory": "Hide history",
+  "progress.compareWith": "Compared with"
 }

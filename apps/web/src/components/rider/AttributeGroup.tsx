@@ -2,6 +2,7 @@ import type { T } from '@/i18n/config';
 import { PERFORMANCE_MAX, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { getSkillStatIcon } from '@/lib/rider/statIcons';
+import { DELTA_CLASS, deltaTone, formatDelta } from '@/lib/rider/progress';
 import { Card } from '../ui/Card';
 import { CardTitle } from '../ui/CardTitle';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -30,7 +31,7 @@ import { RiderStatIcon } from './RiderStatIcon';
  */
 export function AttributeGroup({
   t, titleKey, icon, keys, attributes, className = '', showStatIcons = false, showBars = true, statIconSize = 28, bonuses,
-  descriptionKey,
+  descriptionKey, compare,
 }: {
   t: T;
   titleKey: string;
@@ -44,12 +45,26 @@ export function AttributeGroup({
   bonuses?: Partial<Record<SkillAttribute, number>>;
   /** Short explanation shown under the heading, before the list. */
   descriptionKey?: string;
+  /**
+   * "Zobraziť históriu": show the stored baseline, the current value and the
+   * difference inside this same card (showBars=false layout only). Off by
+   * default — the clean card is unchanged. Real stored values only.
+   */
+  compare?: { from: Record<SkillAttribute, number>; labels: { from: string; now: string; delta: string } };
 }) {
   return (
     <Card dense className={className}
       title={<CardTitle icon={icon}>{t(titleKey)}</CardTitle>}>
       {descriptionKey && (
         <p className="px-3.5 pt-3 text-xs leading-snug text-navy-soft">{t(descriptionKey)}</p>
+      )}
+      {compare && !showBars && (
+        <div className="grid grid-cols-[minmax(0,1fr)_64px_48px_52px] items-end gap-2 px-3.5 pt-3 text-right text-2xs font-semibold uppercase leading-tight tracking-wide text-navy-muted">
+          <span />
+          <span>{compare.labels.from}</span>
+          <span>{compare.labels.now}</span>
+          <span>{compare.labels.delta}</span>
+        </div>
       )}
       <ul className={descriptionKey ? 'px-3.5 pb-3.5 pt-1' : 'p-3.5'}>
         {keys.map((k) => (
@@ -67,6 +82,22 @@ export function AttributeGroup({
                 {bonuses?.[k] != null && (
                   <span className="text-xs font-bold tabular-nums text-teal-dark">+{bonuses[k]}</span>
                 )}
+              </span>
+            </li>
+          ) : compare ? (
+            <li key={k} className="grid grid-cols-[minmax(0,1fr)_64px_48px_52px] items-center gap-2 border-b border-line py-2 last:border-0">
+              <span className="flex min-w-0 items-center gap-2.5">
+                {showStatIcons && (
+                  <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
+                )}
+                <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                  {t(`attr.${k}`)}
+                </span>
+              </span>
+              <span className="text-right text-base tabular-nums text-navy-soft">{compare.from[k]}</span>
+              <span className="text-right text-base font-bold tabular-nums text-navy">{attributes[k]}</span>
+              <span className={`text-right text-base font-bold tabular-nums ${DELTA_CLASS[deltaTone(attributes[k] - compare.from[k])]}`}>
+                {formatDelta(attributes[k] - compare.from[k])}
               </span>
             </li>
           ) : (

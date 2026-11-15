@@ -601,7 +601,6 @@
   "progress.ovrStart": "OVR na začiatku sledovania",
   "progress.ovrNow": "Aktuálne OVR",
   "progress.ovrDelta": "Rozdiel OVR",
-  "progress.colAttribute": "Atribút",
   "progress.colAcquired": "Pri získaní",
   "progress.colStart": "Začiatok sledovania",
   "progress.colNow": "Teraz",
@@ -611,5 +610,8 @@
   "progress.chartMetric": "Zobraziť",
   "progress.chartStarted": "Sledovanie sa práve začalo – zatiaľ je uložený jeden záznam.",
   "progress.chartAria": "Graf vývoja jazdca",
-  "progress.sourceTraining": "Tréning"
+  "progress.sourceTraining": "Tréning",
+  "progress.showHistory": "Zobraziť históriu",
+  "progress.hideHistory": "Skryť históriu",
+  "progress.compareWith": "Porovnanie so stavom"
 }

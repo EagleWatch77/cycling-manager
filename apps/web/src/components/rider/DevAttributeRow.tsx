@@ -1,4 +1,5 @@
 import type { SegmentLevel } from '@/lib/rider/development';
+import { DELTA_CLASS, deltaTone, formatDelta } from '@/lib/rider/progress';
 import { RiderStatIcon } from './RiderStatIcon';
 
 /**
@@ -14,16 +15,18 @@ import { RiderStatIcon } from './RiderStatIcon';
  * category itself changes (e.g. 3/5 -> 4/5).
  */
 export function DevAttributeRow({
-  icon, label, level, variant, accentClass = 'bg-teal',
+  icon, label, level, variant, accentClass = 'bg-teal', compare,
 }: {
   icon: string | null;
   label: string;
   level: SegmentLevel;
   variant: 'stars' | 'segments';
   accentClass?: string;
+  /** "Zobraziť históriu": real stored baseline vs current EXACT value — only for a PUBLIC attribute (Skúsenosti), never for hidden ones. */
+  compare?: { from: number; now: number; labels: { from: string; now: string; delta: string } };
 }) {
   return (
-    <li className="flex items-center gap-2.5 border-b border-line py-2 last:border-0">
+    <li className="flex flex-wrap items-center gap-x-2.5 border-b border-line py-2 last:border-0">
       <RiderStatIcon src={icon} alt={label} size={24} />
       <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{label}</span>
       {variant === 'stars' ? (
@@ -41,6 +44,13 @@ export function DevAttributeRow({
           </span>
           <span className="text-xs font-semibold tabular-nums text-navy-muted">{level}/5</span>
         </span>
+      )}
+      {compare && (
+        <p className="mt-1 flex w-full items-baseline gap-3 pl-[34px] text-xs tabular-nums text-navy-muted">
+          <span>{compare.labels.from} <b className="text-navy-soft">{compare.from}</b></span>
+          <span>{compare.labels.now} <b className="text-navy">{compare.now}</b></span>
+          <span>{compare.labels.delta} <b className={DELTA_CLASS[deltaTone(compare.now - compare.from)]}>{formatDelta(compare.now - compare.from)}</b></span>
+        </p>
       )}
     </li>
   );

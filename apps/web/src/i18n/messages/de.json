@@ -601,7 +601,6 @@
   "progress.ovrStart": "OVR zu Beginn der Erfassung",
   "progress.ovrNow": "Aktuelles OVR",
   "progress.ovrDelta": "OVR-Differenz",
-  "progress.colAttribute": "Attribut",
   "progress.colAcquired": "Bei Verpflichtung",
   "progress.colStart": "Beginn der Erfassung",
   "progress.colNow": "Jetzt",
@@ -611,5 +610,8 @@
   "progress.chartMetric": "Anzeigen",
   "progress.chartStarted": "Die Erfassung hat gerade begonnen – bisher ist nur ein Eintrag gespeichert.",
   "progress.chartAria": "Diagramm der Fahrerentwicklung",
-  "progress.sourceTraining": "Training"
+  "progress.sourceTraining": "Training",
+  "progress.showHistory": "Verlauf anzeigen",
+  "progress.hideHistory": "Verlauf ausblenden",
+  "progress.compareWith": "Vergleich mit"
 }

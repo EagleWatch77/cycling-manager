@@ -47,25 +47,25 @@ for m in 20261114_01_tour_season_registrations 20261114_02_league_divisions 2026
   psqlc t -f "$ROOT/migrations/$m.sql" >/dev/null 2>&1 || { echo "migration $m failed"; exit 1; }
 done
 mkplayer() { q "insert into auth.users default values returning id" | head -1; }
-P1=$(mkplayer); P2=$(mkplayer); P3=$(mkplayer); P4=$(mkplayer); P5=$(mkplayer); PREM=$(mkplayer)
+P1=$(mkplayer); P2=$(mkplayer); P3=$(mkplayer); P4=$(mkplayer); P5=$(mkplayer); PREM=$(mkplayer); PREM2=$(mkplayer)
 ATTRS=$(python3 -c "
 import json
 keys='climbing hills flat sprint timeTrial endurance acceleration positioning attackTiming reaction energyManagement breakawaySkill descending bikeHandling cornering packRiding roughSurface wetHandling experience'.split()
 print(json.dumps({k:130 for k in keys}))")
 COND='{"energy":70,"fatigue":30,"form":50,"fitness":60,"morale":70}'
 mkrider() { q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values ('$1','Test','$2','Slovakia','SK',20,'$ATTRS','$COND','$COND','allrounder',80,80,70,70) returning id" | head -1; }
-R1=$(mkrider "$P1" One); R2=$(mkrider "$P2" Two); RP=$(mkrider "$PREM" Prem)
+R1=$(mkrider "$P1" One); R2=$(mkrider "$P2" Two); RP=$(mkrider "$PREM" Prem); RP2=$(mkrider "$PREM2" Prem2)
 AI=$(q "insert into public.riders (player_id, is_ai, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values (null,true,'Ai','Filler','Slovakia','SK',21,'$ATTRS','$COND','$COND','climber',90,90,90,90) returning id" | head -1)
 for m in 20261115_01_training_security 20261115_02_training_calendar_rules; do
   psqlc t -f "$ROOT/migrations/$m.sql" >/dev/null 2>&1 || { echo "migration $m failed"; exit 1; }
 done
-q "insert into public.premium_entitlements (user_id) values ('$PREM')" >/dev/null
+q "insert into public.premium_entitlements (user_id) values ('$PREM'), ('$PREM2')" >/dev/null
 BEFORE_RIDERS=$(q "select count(*) from public.riders"); BEFORE_ATTR=$(q "select attributes::text from public.riders where id='$R1'")
 psqlc t -f "$ROOT/migrations/20261115_03_rider_development_tracking.sql" >/dev/null 2>&1 && ok "migration applies on top of legacy data" || { bad "migration applies" "$(psqlc t -f "$ROOT/migrations/20261115_03_rider_development_tracking.sql" | tail -3)"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261115_03_rider_development_tracking.sql" >/dev/null 2>&1 && ok "migration is idempotent (second run)" || bad "second run" "failed"
 
 echo "== 1. existing riders: START OF TRACKING, nothing invented"
-eq "one tracking_start per existing human rider (3), none for the AI filler" "$(q "select count(*) from public.rider_acquisitions where kind='tracking_start'")" "3"
+eq "one tracking_start per existing human rider (4), none for the AI filler" "$(q "select count(*) from public.rider_acquisitions where kind='tracking_start'")" "4"
 eq "no 'acquired' row is invented for legacy riders" "$(q "select count(*) from public.rider_acquisitions where kind='acquired'")" "0"
 eq "AI filler has no snapshot" "$(q "select count(*) from public.rider_acquisitions where rider_id='$AI'")" "0"
 eq "the baseline equals the CURRENT attributes" "$(q "select (a.attributes = r.attributes)::text from public.rider_acquisitions a join public.riders r on r.id=a.rider_id where r.id='$R1'")" "true"
@@ -91,6 +91,11 @@ eq "player sees only own snapshot" "$(as $P1 "select count(*) from public.rider_
 eq "player does not see another manager's snapshot" "$(as $P1 "select count(*) from public.rider_acquisitions where rider_id='$R2';")" "0"
 eq "FREE player cannot read history (Premium, enforced by RLS)" "$(as $P1 "select count(*) from public.rider_attribute_history;")" "0"
 eq "Premium player reads own history" "$(as $PREM "select count(*) from public.rider_attribute_history;")" "1"
+eq "Premium manager A reads ONLY his own rider's history (one row)" "$(as $PREM "select string_agg(rider_id::text, ',') from public.rider_attribute_history;")" "$RP"
+eq "Premium manager B reads ONLY his own rider's history" "$(as $PREM2 "select string_agg(rider_id::text, ',') from public.rider_attribute_history;")" "$RP2"
+eq "Premium manager A cannot read Premium manager B's rider by id" "$(as $PREM "select count(*) from public.rider_attribute_history where rider_id='$RP2';")" "0"
+eq "Premium manager A cannot read B's snapshot either" "$(as $PREM "select count(*) from public.rider_acquisitions where rider_id='$RP2';")" "0"
+eq "Premium manager A cannot read a FREE manager's history" "$(as $PREM "select count(*) from public.rider_attribute_history where manager_id='$P1';")" "0"
 eq "Premium player does not read others' history" "$(as $PREM "select count(*) from public.rider_attribute_history where rider_id='$R1';")" "0"
 
 echo "== 4. real changes are recorded; no-ops are not"

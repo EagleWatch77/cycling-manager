@@ -31,7 +31,7 @@ for (const k of ['group.condition', 'group.development']) {
   check(`heading ${k} uses shared CardTitle`, new RegExp(`<CardTitle icon="[a-z]+">\\{t\\('${k.replace('.', '\\.')}'\\)`).test(page));
 }
 check('no local text-teal-dark heading spans remain', !/<span className="text-sm text-teal-dark">/.test(page));
-check('all 3 detail cards use AttributeGroup with colored icons 24px and bonuses', (page.match(/showStatIcons statIconSize=\{24\} showBars=\{false\} bonuses=\{bonuses\}/g) ?? []).length === 3);
+check('all 3 detail cards use AttributeGroup with colored icons 24px and bonuses', (page.match(/showStatIcons statIconSize=\{24\} showBars=\{false\} bonuses=\{compare \? undefined : bonuses\} compare=\{compare\}/g) ?? []).length === 3);
 check('training mechanics untouched: no new training types, same server action + focus lists', /saveTrainingAction/.test(page) && /PERFORMANCE_FOCUS/.test(page) && /TECHNICAL_FOCUS/.test(page));
 
 // controls

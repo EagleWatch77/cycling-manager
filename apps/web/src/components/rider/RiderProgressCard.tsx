@@ -1,8 +1,6 @@
 import type { T } from '@/i18n/config';
 import { Card } from '@/components/ui/Card';
 import { CardTitle } from '@/components/ui/CardTitle';
-import { getSkillStatIcon } from '@/lib/rider/statIcons';
-import { RiderStatIcon } from './RiderStatIcon';
 import { RiderProgressChart } from './RiderProgressChart';
 import {
   buildProgress, buildSeries, deltaTone, formatDelta, DELTA_CLASS, PROGRESS_ATTRIBUTES,
@@ -10,11 +8,12 @@ import {
 } from '@/lib/rider/progress';
 
 /**
- * "Vývoj jazdca" — real baseline-vs-now comparison (everyone) and, for Premium
- * managers only, a chart of the real stored history. The baseline column is
- * "Pri získaní" only when the snapshot was really captured at acquisition;
+ * "Vývoj jazdca" — compact OVR comparison (everyone: baseline / now / diff) and,
+ * for entitled Premium managers only, a chart of the real stored history. The
+ * per-attribute comparison lives in the Výkon/Taktika/Technika cards behind the
+ * "Zobraziť históriu" toggle, not here. The baseline is "Pri získaní" only when the snapshot was really captured at acquisition;
  * for riders that existed before tracking it is "Začiatok sledovania".
- * Only the 19 public attributes + OVR; hidden values never appear here.
+ * Only public attributes + OVR; hidden values never appear here.
  */
 export function RiderProgressCard({
   t, baseline, baselineKind, current, history,
@@ -54,32 +53,6 @@ export function RiderProgressCard({
           ))}
         </div>
         {isStart && <p className="text-xs leading-snug text-navy-soft">{t('progress.trackingNote')}</p>}
-
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line text-2xs font-semibold uppercase tracking-wide text-navy-muted">
-              <th className="py-1.5 text-left font-semibold">{t('progress.colAttribute')}</th>
-              <th className="py-1.5 text-right font-semibold">{fromLabel}</th>
-              <th className="py-1.5 text-right font-semibold">{t('progress.colNow')}</th>
-              <th className="py-1.5 text-right font-semibold">{t('progress.colDelta')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {p.rows.map((r) => (
-              <tr key={r.attr} className="border-b border-line last:border-0">
-                <td className="py-1">
-                  <span className="flex items-center gap-2">
-                    <RiderStatIcon src={getSkillStatIcon(r.attr)} alt="" size={20} />
-                    <span className="truncate text-navy">{t(`attr.${r.attr}`)}</span>
-                  </span>
-                </td>
-                <td className="py-1 text-right tabular-nums text-navy-soft">{r.from}</td>
-                <td className="py-1 text-right font-bold tabular-nums text-navy">{r.now}</td>
-                <td className={`py-1 text-right font-bold tabular-nums ${DELTA_CLASS[deltaTone(r.delta)]}`}>{formatDelta(r.delta)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
 
         {series && (
           <div className="border-t border-line pt-3">

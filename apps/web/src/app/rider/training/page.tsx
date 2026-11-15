@@ -23,6 +23,7 @@ import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { DevAttributeRow } from '@/components/rider/DevAttributeRow';
 import { ConditionRow, type Trend } from '@/components/rider/ConditionRow';
 import { getConditionStatIcon, getDevStatIcon, getSkillStatIcon, type ConditionKey } from '@/lib/rider/statIcons';
+import { HistoryToggle } from '@/components/training/HistoryToggle';
 import { RiderProgressCard } from '@/components/rider/RiderProgressCard';
 import { getMyRiderProgress } from '@/lib/rider/progressRepository';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
@@ -58,7 +59,11 @@ import { saveTrainingAction } from './actions';
  * engine processes it. Races never gate whether training can be scheduled;
  * `currentWeekHasRace` only drives the informational header badge.
  */
-export default async function RiderTrainingPage() {
+export default async function RiderTrainingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ history?: string }>;
+}) {
   const { t } = await getServerDictionary();
   const riderBeforeProcessing = (await getMyRider())!;
 
@@ -86,6 +91,15 @@ export default async function RiderTrainingPage() {
     // Real baseline + (Premium) history; null (card hidden) when nothing is stored yet.
     getMyRiderProgress(rider.id),
   ]);
+
+  // "Zobraziť históriu": per-attribute baseline/now/diff inside the existing cards. Only with a stored baseline.
+  const showHistory = progress != null && (await searchParams)?.history === '1';
+  const compareLabels = progress ? {
+    from: progress.baseline.kind === 'tracking_start' ? t('progress.colStart') : t('progress.colAcquired'),
+    now: t('progress.colNow'),
+    delta: t('progress.colDelta'),
+  } : null;
+  const compare = showHistory && progress && compareLabels ? { from: progress.baseline.attributes, labels: compareLabels } : undefined;
 
   // Why a NEW plan cannot be made right now (a confirmed plan is always shown locked instead).
   // The Tour conflict is informational here; the database enforces it in both directions.
@@ -236,20 +250,28 @@ export default async function RiderTrainingPage() {
               <DevAttributeRow variant="segments" icon={getDevStatIcon('trainability')} label={t('dev.trainability')} level={trainabilityLevel} accentClass="bg-purple-500" />
               <DevAttributeRow variant="segments" icon={getDevStatIcon('professionalism')} label={t('dev.professionalism')} level={professionalismLevel} accentClass="bg-blue-500" />
               <DevAttributeRow variant="segments" icon={getDevStatIcon('recovery')} label={t('dev.recovery')} level={recoveryLevel} accentClass="bg-green-500" />
-              <DevAttributeRow variant="segments" icon={getSkillStatIcon('experience')} label={t('attr.experience')} level={experienceLevel} accentClass="bg-orange-500" />
+              <DevAttributeRow variant="segments" icon={getSkillStatIcon('experience')} label={t('attr.experience')} level={experienceLevel} accentClass="bg-orange-500"
+                compare={compare ? { from: compare.from.experience, now: rider.attributes.experience, labels: compare.labels } : undefined} />
             </ul>
           </Card>
         </div>
       </div>
 
       {/* BOTTOM — the three detail cards in one row (same card as on Prehľad) */}
+      {progress && (
+        <div className="mb-3">
+          <HistoryToggle on={showHistory} href={showHistory ? '/rider/training' : '/rider/training?history=1'}
+            label={showHistory ? t('progress.hideHistory') : t('progress.showHistory')}
+            hint={`${t('progress.compareWith')}: ${compareLabels?.from}`} />
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}
-          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
+          showStatIcons statIconSize={24} showBars={false} bonuses={compare ? undefined : bonuses} compare={compare} />
         <AttributeGroup t={t} titleKey="group.tactics" icon="bolt" keys={TACTICS_ATTRIBUTES} attributes={rider.attributes}
-          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
+          showStatIcons statIconSize={24} showBars={false} bonuses={compare ? undefined : bonuses} compare={compare} />
         <AttributeGroup t={t} titleKey="group.technique" icon="wheel" keys={TECHNIQUE_ATTRIBUTES} attributes={rider.attributes}
-          showStatIcons statIconSize={24} showBars={false} bonuses={bonuses} />
+          showStatIcons statIconSize={24} showBars={false} bonuses={compare ? undefined : bonuses} compare={compare} />
       </div>
     </>
   );
