@@ -58,6 +58,16 @@ check('no estimates -> every development attribute is unknown (null, not 0)', g(
   && g('development').attributes.every((a) => a.value === null && a.range === null && a.norm === null));
 check('partial estimates -> no misleading joint interval', developmentInterval({ ...NO_DEVELOPMENT_ESTIMATES, potential: { min: 70, max: 80 } }) === null);
 
+// ---- Rozvoj with the player's own 1-5 stars (same as the Rozvoj card) ----
+{
+  const lvl = { potential: 4, trainability: 3, professionalism: 5, recovery: 2 } as const;
+  const gl = buildRadarModel(attrs, NO_DEVELOPMENT_ESTIMATES, (k) => k, lvl).groups.find((x) => x.id === 'development')!;
+  check('stars: all four development attributes carry their level, plotted mid-bucket (no raw value)', gl.attributes.map((a) => a.level).join() === '4,3,5,2' && gl.attributes.every((a) => a.norm !== null && a.value === null && a.range === null));
+  check('stars: Rozvoj group level = rounded mean of the four stars; norm from the same buckets', gl.level === 4 && gl.norm !== null && gl.value === null);
+  const part = buildRadarModel(attrs, NO_DEVELOPMENT_ESTIMATES, (k) => k, { ...lvl, recovery: null }).groups.find((x) => x.id === 'development')!;
+  check('stars: a missing level stays unknown (null) and the group has no joint level', part.attributes[3].level === null && part.attributes[3].norm === null && part.level === null && part.norm === null);
+}
+
 // ---- Rozvoj with estimates ----
 const est: DevelopmentEstimates = {
   potential: { min: 70, max: 80 }, trainability: { min: 60, max: 70 },

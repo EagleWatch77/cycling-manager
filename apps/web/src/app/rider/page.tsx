@@ -7,6 +7,7 @@ import { buildRadarModel } from '@/lib/rider/radar';
 import { getDevelopmentEstimates } from '@/lib/rider/developmentEstimates';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { StrengthsCard } from '@/components/rider/StrengthsCard';
+import type { DevelopmentLevels } from '@/lib/rider/radar';
 import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
 
 /**
@@ -30,6 +31,11 @@ const GROUPS: { titleKey: string; descKey: string; icon: string; keys: readonly 
 export default async function RiderOverviewPage() {
   const { t } = await getServerDictionary();
   const rider = (await getMyRider())!;
+  // 1-5 stars computed in the database for the player's own rider — the raw hidden values never reach the app.
+  const devLevels: DevelopmentLevels = {
+    potential: rider.estimates.potentialStars, trainability: rider.estimates.trainabilityLevel,
+    professionalism: rider.estimates.professionalismLevel, recovery: rider.estimates.recoveryLevel,
+  };
 
   return (
     <>
@@ -37,7 +43,7 @@ export default async function RiderOverviewPage() {
           radar, strengths, Rozvoj, then the detailed attribute cards. */}
       <div className="grid grid-cols-12 gap-3">
         <AbilityRadar title={t('profile.radarTitle')} className="col-span-12 lg:col-span-7"
-          model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t)}
+          model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t, devLevels)}
           labels={{
             overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
             note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
@@ -45,9 +51,7 @@ export default async function RiderOverviewPage() {
 
         <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
           <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} />
-          <DevelopmentCard t={t}
-            potentialLevel={rider.estimates.potentialStars}
-            trainabilityLevel={rider.estimates.trainabilityLevel} />
+          <DevelopmentCard t={t} levels={devLevels} />
         </div>
       </div>
 

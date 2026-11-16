@@ -15,21 +15,27 @@ import { RiderStatIcon } from './RiderStatIcon';
  * category itself changes (e.g. 3/5 -> 4/5).
  */
 export function DevAttributeRow({
-  icon, label, level, variant, accentClass = 'bg-teal', compare,
+  icon, label, level, variant, accentClass = 'bg-teal', compare, tooltip, unknownLabel,
 }: {
   icon: string | null;
   label: string;
-  level: SegmentLevel;
+  /** null = no authorised estimate available -> `unknownLabel` is shown instead of stars. */
+  level: SegmentLevel | null;
+  /** Short explanation of the attribute (native tooltip on the row). */
+  tooltip?: string;
+  unknownLabel?: string;
   variant: 'stars' | 'segments';
   accentClass?: string;
   /** "Zobraziť históriu": real stored baseline vs current EXACT value — only for a PUBLIC attribute (Skúsenosti), never for hidden ones. */
   compare?: { from: number; now: number; labels: { from: string; now: string; delta: string } };
 }) {
   return (
-    <li className="flex flex-wrap items-center gap-x-2.5 border-b border-line py-2 last:border-0">
+    <li title={tooltip} className="flex flex-wrap items-center gap-x-2.5 border-b border-line py-2 last:border-0">
       <RiderStatIcon src={icon} alt={label} size={24} />
       <span className="min-w-0 flex-1 truncate text-[15px] text-navy">{label}</span>
-      {variant === 'stars' ? (
+      {level === null ? (
+        <span className="shrink-0 text-xs font-semibold text-navy-muted">{unknownLabel}</span>
+      ) : variant === 'stars' ? (
         <span className="shrink-0 text-base leading-none tracking-[1px]" aria-label={`${level}/5`}>
           {Array.from({ length: 5 }, (_, i) => (
             <span key={i} className={i < level ? 'text-teal' : 'text-line'}>★</span>

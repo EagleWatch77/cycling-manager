@@ -79,10 +79,13 @@ check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) &&
   check('Rozvoj appears exactly once on the page (old bottom card removed)', (page.match(/<DevelopmentCard/g) ?? []).length === 1 && !/DevAttributeRow|group\.development/.test(page));
   check('right column wraps Silné stránky + Rozvoj (lg:col-span-5), radar is lg:col-span-7', /lg:col-span-7/.test(page) && /col-span-12 flex flex-col gap-3 lg:col-span-5/.test(page));
 }
-const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, potentialLevel: 4, trainabilityLevel: 3 }));
-check('Rozvoj card keeps star potential + segment trainability + icons', dev.includes('aria-label="4/5"') && dev.includes('3/5') && /<img[^>]+ride-icon/.test(dev));
-check('Rozvoj card keeps only the group description + the two rows (no scouting/explanation note)', dev.includes('Potenciál a schopnosť jazdca zlepšovať sa.')
-  && !dev.includes('pribudne neskôr') && !dev.includes('orientačné') && (dev.match(/<p /g) ?? []).length === 1);
+const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, levels: { potential: 4, trainability: 3, professionalism: 5, recovery: 2 } }));
+check('Rozvoj card: four attributes in order Potenciál, Trénovateľnosť, Profesionalita, Regenerácia', (() => { const i = ['Potenciál', 'Trénovateľnosť', 'Profesionalita', 'Regenerácia'].map((n) => dev.indexOf(n)); return i.every((x) => x > 0) && i.every((x, k) => k === 0 || x > i[k - 1]); })());
+check('Rozvoj card: all four use five stars (aria-label N/5), each with its own icon, no segment dashes / purple', ['4/5', '3/5', '5/5', '2/5'].every((l) => dev.includes(`aria-label="${l}"`)) && (dev.match(/<img[^>]+ride-icon/g) ?? []).length === 4 && !/bg-purple|rounded-full bg-line|h-1\.5 w-3/.test(dev) && (dev.match(/★/g) ?? []).length === 20);
+check('Rozvoj card: new description + tooltips for all four attributes', dev.includes('Vrodené vlastnosti ovplyvňujúce rozvoj a pripravenosť jazdca.') && dev.includes('title="Akú úroveň môže jazdec počas kariéry dosiahnuť."') && dev.includes('title="Ako rýchlo sa jazdec zlepšuje tréningom."') && dev.includes('title="Kvalita a konzistentnosť prístupu k príprave."') && dev.includes('title="Schopnosť obnovovať energiu a odbúravať únavu."') && (dev.match(/<p /g) ?? []).length === 1);
+const devUnk = renderToStaticMarkup(createElement(DevelopmentCard, { t, levels: { potential: 4, trainability: 3, professionalism: null, recovery: null } }));
+check('unavailable estimate shows "Neznáme" (no stars, no placeholder value)', (devUnk.match(/Neznáme/g) ?? []).length === 2 && (devUnk.match(/aria-label="\d\/5"/g) ?? []).length === 2);
+check('page feeds the card + radar only from the DB 1-5 estimates', /professionalismLevel/.test(page) && /recoveryLevel/.test(page) && /buildRadarModel\(.*devLevels\)/.test(page));
 check('"dev.scoutNote" removed from all 7 locales', ['sk', 'en', 'cs', 'de', 'es', 'fr', 'pl'].every((l) => !('dev.scoutNote' in JSON.parse(readFileSync(`src/i18n/messages/${l}.json`, 'utf8')))));
 
 // unified card headings

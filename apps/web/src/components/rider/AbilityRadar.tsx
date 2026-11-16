@@ -27,6 +27,8 @@ export interface RadarLabels {
   aria: string;
 }
 
+const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
+
 const CX = 240, CY = 190, R = 102;
 /**
  * Two view boxes with the SAME aspect ratio (so the card height never
@@ -201,7 +203,7 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
           const dev = g.id === 'development';
           const expandable = g.id !== 'experience';
           const dim = selected !== null && selected !== g.id;
-          const value = g.value !== null ? String(g.value) : g.range ? `${fmtRange(g.range)} · ${labels.estimate}` : labels.unknown;
+          const value = g.value !== null ? String(g.value) : g.range ? `${fmtRange(g.range)} · ${labels.estimate}` : g.level ? stars(g.level) : labels.unknown;
           const ty = y + Math.sin(a) * 8;
           return (
             <g key={g.id} opacity={dim ? 0.75 : 1}
@@ -223,7 +225,7 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
 
         {selected === 'development' && (
           <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">
-            {groups[RADAR_GROUP_ORDER.indexOf('development')].range ? labels.note : labels.noteUnknown}
+            {groups[RADAR_GROUP_ORDER.indexOf('development')].range || groups[RADAR_GROUP_ORDER.indexOf('development')].level ? labels.note : labels.noteUnknown}
           </p>
         )}
       </div>
@@ -259,7 +261,7 @@ function Fan({ group, angle, labels }: { group: RadarGroup; angle: number; label
         const [gx, gy] = pt(phi, R);
         const hasPoint = a.norm !== null;
         const [px, py] = hasPoint ? pt(phi, R * (a.norm as number)) : [gx, gy];
-        const value = a.value !== null ? String(a.value) : a.range ? `${fmtRange(a.range)} · ${labels.estimate}` : labels.unknown;
+        const value = a.value !== null ? String(a.value) : a.range ? `${fmtRange(a.range)} · ${labels.estimate}` : a.level ? stars(a.level) : labels.unknown;
         return (
           <g key={a.key}>
             <line x1={CX} y1={CY} x2={f1(gx)} y2={f1(gy)} stroke={color} strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3" />
@@ -275,7 +277,7 @@ function Fan({ group, angle, labels }: { group: RadarGroup; angle: number; label
               fill="none" stroke={color} strokeOpacity="0.55" strokeWidth="1" strokeDasharray={dev ? '3 2' : undefined} />
             <text x={lx} y={ly} textAnchor={left ? 'end' : 'start'} dominantBaseline="middle">
               <tspan x={lx} dy="-6" className="text-[10.5px] font-semibold" fill="#33506a">{a.label}</tspan>
-              <tspan x={lx} dy="13" className="text-[11.5px] font-bold" fill={dev ? (a.range ? ORANGE_TEXT : '#6b8195') : '#12283d'}>{value}</tspan>
+              <tspan x={lx} dy="13" className="text-[11.5px] font-bold" fill={dev ? (a.range || a.level ? ORANGE_TEXT : '#6b8195') : '#12283d'}>{value}</tspan>
             </text>
           </g>
         );

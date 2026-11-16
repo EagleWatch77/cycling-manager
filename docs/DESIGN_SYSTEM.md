@@ -57,7 +57,7 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Reference = the Taktika card. Shared component `ui/CardTitle` (`icon`, children): `flex items-center gap-1.5 text-sm text-teal-dark` + `Icon h-3.5 w-3.5 text-teal`, placed in `Card`'s `title` slot (which supplies `text-2xs font-semibold uppercase tracking-wide`, `px-3.5 py-2.5`). Used by Radar schopností (`radar` icon), Silné stránky jazdca (`trend`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`), Skúsenosti (`trophy`). New outline icons `radar`, `trend`, `sprout` were added to `ui/Icon` (the single icon set). `SectionCard` (other pages) is unchanged.
 - The radar card renders the same header without the bottom divider so it blends into the full-card background.
 - Row typography: attribute name `text-[15px] text-navy`; value `text-base font-bold tabular-nums text-navy` right-aligned; secondary text `text-xs leading-snug text-navy-soft`; rows `gap-2.5 py-2 border-b border-line last:border-0`. Hierarchy stays: heading > name/value > secondary text.
-- Rozvoj card = heading + one description line + Potenciál (stars) + Trénovateľnosť only; no explanatory/scouting text (the player discovers mechanics by playing).
+- Rozvoj card = heading + one description line + four rows (Potenciál, Trénovateľnosť, Profesionalita, Regenerácia), each icon + name + five stars (`DevAttributeRow variant="stars"`, tooltip = `title`), unavailable level = „Neznáme" (muted text, no stars); no scouting text (C-047).
 
 ## Rider → Tréning (CONFIRMED 2026-11-15)
 - Same card system as Prehľad: every card heading is `CardTitle` (teal, icon, same size/padding): Tréning pre týždeň N / M (`calendar`), Stav jazdca (`heart`), Rozvoj (`sprout`), Výkon (`chart`), Taktika (`bolt`), Technika (`wheel`).
@@ -78,7 +78,7 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 
 ## Ability radar (rider/AbilityRadar, CONFIRMED 2026-11-14)
 - Client SVG component, props = pre-translated model (`lib/rider/radar.ts`) + labels; never receives hidden true values.
-- Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy".
+- Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy". With the player's own 1-5 levels (C-047) the value is shown as stars and the point sits mid-bucket.
 - Overview = 5 points. Selecting a group (tab pills or tapping a label) rotates it to the top and fans its attributes as small points with thin leader lines to two label columns (no overlap by fixed row spacing). Works by tap/keyboard; respects `prefers-reduced-motion`.
 - `initialSelected` prop exists for tests/static rendering only.
 - Layout: radar card left (lg:col-span-7, plot vertically centred; the card stretches to the right column's height), right column (lg:col-span-5) = `StrengthsCard` + `DevelopmentCard`; below the attribute group cards.
