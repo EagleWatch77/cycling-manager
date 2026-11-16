@@ -23,6 +23,7 @@ const rider = { id: 'r1', firstName: 'Ján', surname: 'Novák', countryName: 'Sl
 {
   const html = renderToStaticMarkup(<RiderSummaryCard t={t} rider={rider} contractWeeksLeft={6} />);
   check('shows name, country, age, type', html.includes('Ján Novák') && html.includes('Slovensko') && html.includes('Vek 18') && html.includes('Vrchár'));
+  check('portrait/avatar is on the right side of the header', /<img[^>]*width="128"/.test(html) || html.includes('width:128px'));
   const ovr = overallRating((rider as { attributes: never }).attributes);
   check('OVR is the shared overallRating()', Number.isFinite(ovr) && html.includes(`>${ovr}<`), String(ovr));
   check('shows the persisted condition values', ['91', '7', '52', '61', '73'].every((v) => html.includes(`>${v}<`)));
@@ -38,11 +39,14 @@ const rider = { id: 'r1', firstName: 'Ján', surname: 'Novák', countryName: 'Sl
 }
 // Aktuálne Tour
 {
-  const base: CurrentTourView = { id: 'danube-tour', name: 'Danube Tour', term: '2. 11. – 8. 11.', startsInDays: 3, registration: 'selected',
+  const base: CurrentTourView = { id: 'danube-tour', name: 'Danube Tour', term: '2. 11. – 8. 11.', startsInDays: 3, countdownMs: 3 * 86_400_000 + 4 * 3_600_000 + 5 * 60_000 + 6000, registration: 'selected',
     stages: [{ number: 1, name: 'Bratislava — Nitra', distanceKm: 148, difficulty: 'flat', profile: [0.2, 0.4, 0.3] }, { number: 2, name: 'Vyšehrad — Ostrihom', distanceKm: 162, difficulty: 'hilly', profile: [0.3, 0.5, 0.4] }] };
   const html = renderToStaticMarkup(<TourPreviewCard t={t} locale="sk" tour={base} />);
   check('name, term, registration, stage names and lengths', html.includes('Danube Tour') && html.includes('2. 11. – 8. 11.') && html.includes('Vybraná') && html.includes('Bratislava') && html.includes('148') && html.includes('162'));
   check('stages count from real stages', html.includes('2 etáp'));
+  check('total length = sum of visible stages (148+162=310)', html.includes('310'));
+  check('countdown from server value: 3 d 04 h 05 min 06 s', ['>3<', '>04<', '>05<', '>06<'].every((x) => html.includes(x)));
+  check('title is Najbližšie preteky', html.includes('Najbližšie preteky'));
   check('elevation profile drawn when profile data exists', html.includes('<polygon'));
   check('link to existing Tour detail', html.includes('href="/races/danube-tour"') && html.includes('Detail Tour'));
   check('no invented weather/focus', !/Počasie|Zameranie|Premenlivé/.test(html));
@@ -52,6 +56,8 @@ const rider = { id: 'r1', firstName: 'Ján', surname: 'Novák', countryName: 'Sl
   check('other registration states have their own labels', states[0].includes('Tour už začala') && states[1].includes('Termín sa prekrýva') && states[2].includes('Dosiahnutý limit sezóny'));
   const none = renderToStaticMarkup(<TourPreviewCard t={t} locale="sk" tour={null} />);
   check('no Tour left: empty state, link to races', none.includes('href="/races"') && !none.includes('<polygon'));
+  const started = renderToStaticMarkup(<TourPreviewCard t={t} locale="sk" tour={{ ...base, countdownMs: null, startsInDays: 0 }} />);
+  check('started Tour: countdown shows dashes, not a fake time', (started.match(/>—</g) ?? []).length >= 4);
 }
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

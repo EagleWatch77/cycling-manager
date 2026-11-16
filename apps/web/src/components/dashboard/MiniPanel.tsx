@@ -28,7 +28,7 @@ export function MiniPanel({
 }) {
   const empty = rows.length === 0;
   return (
-    <SectionCard icon={icon} title={title} className={className}>
+    <SectionCard icon={icon} title={title} tone="tint" className={className}>
       {empty ? (
         <p data-empty="true" className="px-3.5 py-2.5 text-sm font-semibold text-navy-muted" aria-label="—">—</p>
       ) : (

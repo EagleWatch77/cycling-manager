@@ -108,3 +108,9 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Home layout (C-056): tasks full width, then two-column rows `md:grid-cols-2` (rider | bike) and `lg:grid-cols-2` (calendar+training | Tour+standings), `items-start`; every dashboard card uses `SectionCard` (icon + teal title). `RiderSummaryCard` = avatar header + table rows (OVR, energy, fatigue, form, fitness, morale, contract weeks). `TourPreviewCard` = `CurrentTourView` (term, registration, stages, optional profile).
 - Home skeleton (C-057): `MiniPanel` = SectionCard + short `dl` rows; empty state = one dash (no text/illustration/link). Grid: `lg:grid-cols-12` (8 + 4) with mobile `order` so the right column comes first; bottom row `sm:grid-cols-2 lg:grid-cols-3`. A new feature fills a window by passing `rows` (+ `href`/`linkLabel`).
 
+
+## Home dashboard (2026-11-16, C-058)
+- `SectionCard tone="tint"`: tinted header (`bg-teal-rail`, `border-teal-light`), title `text-xs font-extrabold`, teal icon. Used by all Home windows; `Card` got `headerClassName`.
+- Hierarchy: Najbližšie preteky is the dominant window (teal border, `text-3xl` name, gradient header, elevation profile, countdown tiles). Others are compact.
+- Empty windows (`MiniPanel`, `LiveRaceCard`): title + a single dash, no text, no illustration.
+- Grid: `lg:grid-cols-12`, children placed with explicit `lg:col-*`/`lg:row-*`; mobile = single column in DOM order. No new colours.

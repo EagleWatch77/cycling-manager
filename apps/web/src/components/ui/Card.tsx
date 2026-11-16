@@ -5,20 +5,22 @@ import type { ReactNode } from 'react';
  * radius and shadow stay identical across the grid.
  */
 export function Card({
-  title, action, children, className = '', dense = false,
+  title, action, children, className = '', dense = false, headerClassName = '',
 }: {
   title?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
   dense?: boolean;
+  /** Extra classes for the header band (e.g. a soft tint). */
+  headerClassName?: string;
 }) {
   return (
     <section
       className={`flex flex-col rounded-card border border-line bg-card shadow-card ${className}`}
     >
       {title && (
-        <header className="flex items-center justify-between gap-2 border-b border-line px-3.5 py-2.5">
+        <header className={`flex items-center justify-between gap-2 border-b border-line px-3.5 py-2.5 ${headerClassName}`}>
           <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">
             {title}
           </h2>

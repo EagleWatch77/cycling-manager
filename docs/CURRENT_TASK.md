@@ -1,3 +1,4 @@
-# Current task
-Home dashboard skeleton (C-057, UI only): wide + narrow columns, bottom row of six windows, generic MiniPanel. Files: app/dashboard/page.tsx, components/dashboard/MiniPanel(+test), lib/races/recentResults.ts, 7 i18n JSONs (dashboard.*), docs. No schema/engine/training/contract/league/economy change.
-- Awaiting owner: O-023 bike data model; O-022 lifecycle decisions; earlier pending items (C-052, O-011..O-021, migrations 20261115_03, 20261116_01, 20261116_02).
+# Current task — Home redesign (layout + design only)
+Status: code, i18n (680 keys × 7), typecheck, tests and build OK; waiting for the owner's review of the desktop screenshot.
+Scope: only Home content to the right of the menu (C-058). No functions added yet: Preteky naživo, Priebežné poradie, Sponzori, Manažérske úlohy, Technický riaditeľ are empty windows (title + dash).
+Next (after approval): fill the windows with real data, one at a time.

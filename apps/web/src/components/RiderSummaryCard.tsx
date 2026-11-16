@@ -12,18 +12,18 @@ const FLAGS: Record<string, string> = {
 };
 
 /**
- * "Môj jazdec" - compact overview of the player's own rider: portrait, name,
- * nationality, age, type, the shared overallRating() (no new OVR maths), the
- * persisted condition values and the remaining contract weeks. Values are
- * short table rows, no bars. The full attribute list lives on /rider.
- * `contractWeeksLeft = null` (no active contract / not deployed) hides that row.
+ * "Môj jazdec" (top right of Home): name, nationality, age and type on the
+ * left, the existing portrait/avatar on the right, the shared overallRating()
+ * as a large OVR figure, and the persisted condition values (energy, fatigue,
+ * form, fitness, morale) plus remaining contract weeks as a compact grid. No
+ * new maths, no bars. `contractWeeksLeft = null` hides that cell.
  */
 export function RiderSummaryCard({
   t, rider, contractWeeksLeft = null, className = '',
 }: { t: T; rider: StoredRider | null; contractWeeksLeft?: number | null; className?: string }) {
   if (!rider) {
     return (
-      <SectionCard icon="rider" title={t('rider.title')} dense={false} className={className}>
+      <SectionCard icon="rider" title={t('rider.title')} tone="tint" dense={false} className={className}>
         <div className="flex flex-col items-center justify-center gap-3 py-6 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-teal-rail text-teal">
             <Icon name="rider" className="h-8 w-8" />
@@ -41,38 +41,41 @@ export function RiderSummaryCard({
   }
 
   const c = rider.condition;
-  const rows: { key: string; value: string | number; strong?: boolean }[] = [
-    { key: 'rider.ovr', value: overallRating(rider.attributes), strong: true },
+  const cells: { key: string; value: string | number }[] = [
     { key: 'rider.energy', value: c.energy },
     { key: 'rider.fatigue', value: c.fatigue },
     { key: 'rider.form', value: c.form },
     { key: 'rider.fitness', value: c.fitness },
     { key: 'rider.morale', value: c.morale },
   ];
-  if (contractWeeksLeft != null) rows.push({ key: 'contract.remaining', value: contractWeeksLeft });
+  if (contractWeeksLeft != null) cells.push({ key: 'contract.remaining', value: contractWeeksLeft });
 
   return (
-    <SectionCard icon="rider" title={t('rider.title')} className={className}>
-      <div className="flex items-center gap-3 px-3.5 py-3">
-        <RiderAvatar seed={rider.id} size="md" />
-        <div className="min-w-0">
-          <p className="truncate text-base font-bold leading-tight text-navy">{rider.firstName} {rider.surname}</p>
-          <p className="truncate text-2xs text-navy-muted">
+    <SectionCard icon="rider" title={t('rider.title')} tone="tint" className={className}>
+      <div className="flex items-start justify-between gap-3 p-3.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xl font-extrabold leading-tight text-navy">{rider.firstName} {rider.surname}</p>
+          <p className="mt-0.5 truncate text-xs text-navy-soft">
             {FLAGS[rider.countryIso2] ?? '🏳️'} {rider.countryName} · {t('rider.age')} {rider.age}
           </p>
-          <p className="truncate text-2xs text-navy-muted">{t('rider.style')}: {t(`style.${rider.inferredArchetype}`)}</p>
+          <span className="mt-1.5 inline-block rounded bg-teal-light px-1.5 py-0.5 text-[10px] font-bold uppercase text-teal-dark">
+            {t(`style.${rider.inferredArchetype}`)}
+          </span>
+          <div data-row="rider.ovr" className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-4xl font-extrabold leading-none tabular-nums text-teal-dark">{overallRating(rider.attributes)}</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-navy-muted">{t('rider.ovr')}</span>
+          </div>
         </div>
+        <RiderAvatar seed={rider.id} size="xl" />
       </div>
-      <table className="w-full border-t border-line text-xs">
-        <tbody className="divide-y divide-line">
-          {rows.map((r) => (
-            <tr key={r.key} data-row={r.key}>
-              <th scope="row" className="px-3.5 py-1.5 text-left font-normal text-navy-soft">{t(r.key)}</th>
-              <td className={`px-3.5 py-1.5 text-right tabular-nums ${r.strong ? 'text-sm font-bold text-teal-dark' : 'font-bold text-navy'}`}>{r.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <dl className="grid grid-cols-2 gap-px border-t border-line bg-line text-xs">
+        {cells.map((r) => (
+          <div key={r.key} data-row={r.key} className="flex items-baseline justify-between gap-2 bg-card px-3.5 py-1.5">
+            <dt className="truncate text-navy-soft">{t(r.key)}</dt>
+            <dd className="font-bold tabular-nums text-navy">{r.value}</dd>
+          </div>
+        ))}
+      </dl>
       <CardLink label={t('rider.detail')} href="/rider" />
     </SectionCard>
   );

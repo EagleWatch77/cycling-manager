@@ -5,15 +5,11 @@ import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
-import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { findMyBikeCondition } from '@/lib/facilities/bike';
 import { buildComponentView, type BikeComponentView } from '@/lib/facilities/bikeDisplay';
-import { ensureMyDivision, getMyDivisionMembers } from '@/lib/league/repository';
-import { getMyRecentResults } from '@/lib/races/recentResults';
-import { getMarketPoolSummary } from '@/lib/market/repository';
-import { getMyFacilities } from '@/lib/facilities/repository';
-import { FACILITY_IDS } from '@/lib/facilities/config';
-import { MiniPanel, type MiniRow } from '@/components/dashboard/MiniPanel';
+import { ensureMyDivision } from '@/lib/league/repository';
+import { MiniPanel } from '@/components/dashboard/MiniPanel';
+import { LiveRaceCard } from '@/components/LiveRaceCard';
 import { divisionCode } from '@/lib/league/divisions';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
 import { dateRange, fullDate } from '@/lib/format';
@@ -22,22 +18,24 @@ import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalen
 import { TourPreviewCard, type CurrentTourView } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
 import { BikeCard } from '@/components/BikeCard';
-import { ManagerTasksCard, type ManagerTask } from '@/components/ManagerTasksCard';
-import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
 
 /**
- * Home dashboard for a signed-in player.
+ * Home dashboard (layout per the Cycling Dynasty reference, our own content).
  *
- * The rider is real: on first load ensureStarterRider() generates one starter
- * Rookie and persists it, and every later load reads that same rider back.
- * Training overview and the bike card (wear = 100 - stored condition) read real persisted data; manager
- * tasks are derived from that same real state. Standings stay a genuine empty
- * state until a race has been processed — no mock races, standings or
- * analysis for a real account.
+ * Desktop: 8/4 split. Left: Preteky naživo, then Kalendár sezóny (3) +
+ * Najbližšie preteky (5, dominant), then Priebežné poradie + Môj bicykel.
+ * Right: Môj jazdec only (the space below it is intentionally free). Bottom
+ * row: Sponzori | Manažérske úlohy | Technický riaditeľ. Mobile: one column in
+ * DOM order. Real data only; windows without data are an intentional dash.
  *
- * DANUBE_TOUR stays: it is shared game content (the stage/profile art for
- * this card), not per-player data. Its schedule position (startsInDays) is
- * computed live from the real season calendar, not hardcoded.
+ * Manažérske úlohy are now long-term career goals (not implemented yet). The
+ * old short-term reminders live on, unrendered, in
+ * lib/dashboard/shortTermReminders.ts. Training overview, facilities, market,
+ * finance, staff, achievements and the other earlier small windows are no
+ * longer on Home (their pages are unchanged).
+ *
+ * DANUBE_TOUR stays: shared game content (the stage/profile art), not
+ * per-player data. Everything about timing comes from the real season calendar.
  */
 export default async function DashboardPage() {
   const { t, locale } = await getServerDictionary();
@@ -92,6 +90,8 @@ export default async function DashboardPage() {
         heroImage: pick.tour.heroImage || undefined,
         term: dateRange(pick.weekStart, pick.weekEnd, locale),
         startsInDays: pick.startsInDays,
+        // Real start of the Tour week minus server "now"; null once it has started.
+        countdownMs: pick.startsInDays > 0 ? Math.max(0, pick.weekStart.getTime() - season.now.getTime()) : null,
         registration: getSelectionState(pick.tour.id, scheduled, selectedTourIds, maxSlots),
         // Elevation profiles exist only for Danube (mock/dashboard.ts, unchanged).
         stages: visibleStages(pick.tour.masterStages, league as never).map((st) => ({
@@ -101,19 +101,9 @@ export default async function DashboardPage() {
       }
     : null;
 
-  // Same plannable-week rule as the Training page (see
-  // lib/training/repository.ts): training is planned one week ahead. This
-  // page only reads; it never processes plans (that stays on the Training page).
-  const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
-  const [plan, recent, bike, contract, members, results, market, facilities] = await Promise.all([
-    getTrainingPlan(season.seasonId, plannableWeek),
-    listRecentCompletedTrainings(1),
+  const [bike, contract] = await Promise.all([
     rider ? findMyBikeCondition(rider.id) : Promise.resolve(null),
     rider ? getMyRiderContract() : Promise.resolve(null),
-    getMyDivisionMembers(),
-    rider ? getMyRecentResults(rider.id) : Promise.resolve([]),
-    getMarketPoolSummary(season.seasonId),
-    getMyFacilities(),
   ]);
 
   // Only the stored components. Wheel condition and component levels are not
@@ -126,83 +116,35 @@ export default async function DashboardPage() {
         buildComponentView({ id: 'drivetrain', condition: bike.drivetrain, level: null }),
       ]
     : null;
-
-  // Manager tasks: only reminders that follow from real state, no task system.
-  const tasks: ManagerTask[] = [];
-  if (rider && !plan) {
-    tasks.push({ id: 'training', text: t('dashboard.taskPlanTraining', { n: plannableWeek }), href: '/rider/training' });
-  }
-  const canPickTour =
-    events.length < maxSlots &&
-    scheduled.some((v) => v.schedule.registrationOpen && v.startsInDays > 0 && !selectedTourIds.has(v.tour.id));
-  if (rider && canPickTour) {
-    tasks.push({ id: 'tours', text: t('dashboard.taskPickTours', { n: events.length, max: maxSlots }), href: '/races' });
-  }
-
   const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;
-
-  // Small windows. Real data only; a window with nothing real behind it gets
-  // no rows (renders the neutral dash) and no link.
-  const FACILITY_LABEL: Record<(typeof FACILITY_IDS)[number], string> = {
-    training: 'facilities.trainingCenter', recovery: 'facilities.recoveryCenter', scouting: 'facilities.scoutingDept',
-    technical: 'facilities.technicalFacility', teamCenter: 'facilities.teamCenter',
-  };
-  const divisionRows: MiniRow[] = division
-    ? [
-        { key: 'division', label: t('dashboard.division'), value: divisionLabel ?? '—' },
-        { key: 'members', label: t('dashboard.divisionMembers'), value: members.length },
-        { key: 'rank', label: t('standings.title'), value: '—' },
-      ]
-    : [];
-  const resultRows: MiniRow[] = results.map((r) => ({
-    key: r.id, label: r.tourName, value: t('dashboard.resultValue', { pos: r.position, pts: r.points }),
-  }));
-  const marketRows: MiniRow[] = market.active ? [{ key: 'free', label: t('dashboard.marketFree'), value: market.freeCount }] : [];
-  const facilityRows: MiniRow[] = FACILITY_IDS.map((id) => ({ key: id, label: t(FACILITY_LABEL[id]), value: facilities[id] }));
 
   return (
     <AppShell activeId="home" locale={locale}>
-      <div className="space-y-3">
-        {/* Manager tasks across the full width. */}
-        <ManagerTasksCard t={t} tasks={tasks} />
+      <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-12">
+        <LiveRaceCard t={t} className="lg:col-span-8 lg:col-start-1 lg:row-start-1" />
+        <RiderSummaryCard t={t} rider={rider} contractWeeksLeft={contractWeeksLeft} className="self-start lg:col-span-4 lg:col-start-9 lg:row-span-2 lg:row-start-1" />
+        <TourPreviewCard t={t} locale={locale} tour={currentTour} className="lg:col-span-5 lg:col-start-4 lg:row-start-2" />
+        <SeasonCalendarCard
+          t={t}
+          events={events}
+          maxSlots={maxSlots}
+          todayLabel={fullDate(season.now, locale)}
+          seasonNumber={season.seasonNumber}
+          currentWeek={season.currentWeek}
+          weeks={weeks}
+          className="lg:col-span-3 lg:col-start-1 lg:row-start-2"
+        />
+        <MiniPanel
+          icon="trophy"
+          title={<>{t('dashboard.liveStandingsTitle')}{divisionLabel && <span className="font-medium normal-case text-navy-soft"> · {divisionLabel}</span>}</>}
+          className="self-start lg:col-span-4 lg:col-start-1 lg:row-start-3"
+        />
+        <BikeCard t={t} items={bikeItems} className="lg:col-span-4 lg:col-start-5 lg:row-start-3" />
 
-        {/* Wide main column + narrow right column. On mobile the right column
-            (rider, bike, news) comes first: it is what a manager checks first. */}
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
-          <div className="order-2 flex flex-col gap-3 lg:order-1 lg:col-span-8">
-            <SeasonCalendarCard
-              t={t}
-              events={events}
-              maxSlots={maxSlots}
-              todayLabel={fullDate(season.now, locale)}
-              seasonNumber={season.seasonNumber}
-              currentWeek={season.currentWeek}
-              weeks={weeks}
-            />
-            <TourPreviewCard t={t} locale={locale} tour={currentTour} />
-            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
-              <MiniPanel icon="trophy" title={t('dashboard.divisionTitle')} rows={divisionRows} href="/rankings/division" linkLabel={t('dashboard.detail')} />
-              <MiniPanel icon="flag" title={t('dashboard.resultsTitle')} rows={resultRows} href="/rankings" linkLabel={t('dashboard.detail')} />
-              <MiniPanel icon="chart" title={t('analysis.title')} />
-              <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
-            </div>
-          </div>
-          <div className="order-1 flex flex-col gap-3 lg:order-2 lg:col-span-4">
-            <RiderSummaryCard t={t} rider={rider} contractWeeksLeft={contractWeeksLeft} />
-            <BikeCard t={t} items={bikeItems} />
-            <MiniPanel icon="bell" title={t('dashboard.newsTitle')} />
-          </div>
-        </div>
-
-        {/* Bottom row: future management windows. */}
-        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <MiniPanel icon="coin" title={t('nav.finance')} />
-          <MiniPanel icon="heart" title={t('dashboard.sponsorsTitle')} />
-          <MiniPanel icon="staff" title={t('nav.staff')} />
-          <MiniPanel icon="cart" title={t('nav.transfers')} rows={marketRows} href="/transfers" linkLabel={t('dashboard.detail')} />
-          <MiniPanel icon="building" title={t('nav.facilities')} rows={facilityRows} href="/facilities" linkLabel={t('dashboard.detail')} />
-          <MiniPanel icon="crown" title={t('ranking.tabAchievements')} />
-        </div>
+        {/* Bottom row across the full width. Contents are empty on purpose. */}
+        <MiniPanel icon="heart" title={t('dashboard.sponsorsTitle')} className="self-start lg:col-span-4 lg:col-start-1 lg:row-start-4" />
+        <MiniPanel icon="bell" title={t('dashboard.tasksTitle')} className="self-start lg:col-span-4 lg:col-start-5 lg:row-start-4" />
+        <MiniPanel icon="staff" title={t('dashboard.technicalDirectorTitle')} className="self-start lg:col-span-4 lg:col-start-9 lg:row-start-4" />
       </div>
     </AppShell>
   );

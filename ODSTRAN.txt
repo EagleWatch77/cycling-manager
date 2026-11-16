@@ -1,2 +1,4 @@
-DELETE: apps/web/src/components/EquipmentCard.tsx
-DELETE (z predchádzajúceho ZIPu): apps/web/src/components/BikeCard.test.ts
+Zmaž ručne (ak existujú):
+apps/web/src/components/EquipmentCard.tsx
+apps/web/src/components/BikeCard.test.ts
+apps/web/src/lib/races/recentResults.ts

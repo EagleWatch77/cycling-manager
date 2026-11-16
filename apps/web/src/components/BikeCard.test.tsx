@@ -65,7 +65,7 @@ const views = (c: { tires: number; brakes: number; drivetrain: number }) => [
 // 7. Mobile: table has no fixed widths wider than the card; checked by markup (w-full, no min-w).
 {
   const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
-  check('responsive markup: w-full table, no fixed widths', html.includes('<table class="w-full') && !/min-w-|w-\[\d+px\]/.test(html));
+  check('responsive markup: 2 x 2 tile grid, no fixed widths', html.includes('grid grid-cols-2') && !/min-w-\[|w-\[\d+px\]/.test(html));
 }
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
