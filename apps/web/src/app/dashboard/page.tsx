@@ -1,21 +1,26 @@
 import { getServerDictionary } from '@/i18n/server';
 import { DANUBE_TOUR } from '@/mock/dashboard';
+import { getMyRiderContract } from '@/lib/contract/repository';
 import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
-import { getSeasonSchedule } from '@/data/tourSchedule';
+import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
 import { findMyBikeCondition } from '@/lib/facilities/bike';
 import { buildComponentView, type BikeComponentView } from '@/lib/facilities/bikeDisplay';
-import { ensureMyDivision } from '@/lib/league/repository';
+import { ensureMyDivision, getMyDivisionMembers } from '@/lib/league/repository';
+import { getMyRecentResults } from '@/lib/races/recentResults';
+import { getMarketPoolSummary } from '@/lib/market/repository';
+import { getMyFacilities } from '@/lib/facilities/repository';
+import { FACILITY_IDS } from '@/lib/facilities/config';
+import { MiniPanel, type MiniRow } from '@/components/dashboard/MiniPanel';
 import { divisionCode } from '@/lib/league/divisions';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
 import { dateRange, fullDate } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
 import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalendarCard';
-import { TourPreviewCard } from '@/components/TourPreviewCard';
+import { TourPreviewCard, type CurrentTourView } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
-import { StandingsCard } from '@/components/StandingsCard';
 import { BikeCard } from '@/components/BikeCard';
 import { ManagerTasksCard, type ManagerTask } from '@/components/ManagerTasksCard';
 import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
@@ -71,17 +76,44 @@ export default async function DashboardPage() {
     return { week, range: dateRange(start, end, locale) };
   });
 
-  const danubeSchedule = scheduled.find((v) => v.tour.id === DANUBE_TOUR.id);
-  const danubeTour = { ...DANUBE_TOUR, startsInDays: danubeSchedule?.startsInDays ?? 0 };
+  // "Aktuálne Tour": the player's own next selected Tour that has not ended
+  // yet, else the next Tour with open registration, else the next upcoming
+  // one. Real schedule + registrations only; no Tour left = empty state.
+  const upcoming = scheduled.filter((v) => v.weekEnd.getTime() >= season.now.getTime());
+  const pick =
+    upcoming.find((v) => selectedTourIds.has(v.tour.id)) ??
+    upcoming.find((v) => v.schedule.registrationOpen && v.startsInDays > 0) ??
+    upcoming[0] ??
+    null;
+  const currentTour: CurrentTourView | null = pick
+    ? {
+        id: pick.tour.id,
+        name: pick.tour.name,
+        heroImage: pick.tour.heroImage || undefined,
+        term: dateRange(pick.weekStart, pick.weekEnd, locale),
+        startsInDays: pick.startsInDays,
+        registration: getSelectionState(pick.tour.id, scheduled, selectedTourIds, maxSlots),
+        // Elevation profiles exist only for Danube (mock/dashboard.ts, unchanged).
+        stages: visibleStages(pick.tour.masterStages, league as never).map((st) => ({
+          ...st,
+          profile: pick.tour.id === DANUBE_TOUR.id ? DANUBE_TOUR.masterStages.find((d) => d.number === st.number)?.profile : undefined,
+        })),
+      }
+    : null;
 
   // Same plannable-week rule as the Training page (see
   // lib/training/repository.ts): training is planned one week ahead. This
   // page only reads; it never processes plans (that stays on the Training page).
   const plannableWeek = Math.min(season.currentWeek + 1, season.totalWeeks);
-  const [plan, recent, bike] = await Promise.all([
+  const [plan, recent, bike, contract, members, results, market, facilities] = await Promise.all([
     getTrainingPlan(season.seasonId, plannableWeek),
     listRecentCompletedTrainings(1),
     rider ? findMyBikeCondition(rider.id) : Promise.resolve(null),
+    rider ? getMyRiderContract() : Promise.resolve(null),
+    getMyDivisionMembers(),
+    rider ? getMyRecentResults(rider.id) : Promise.resolve([]),
+    getMarketPoolSummary(season.seasonId),
+    getMyFacilities(),
   ]);
 
   // Only the stored components. Wheel condition and component levels are not
@@ -107,37 +139,69 @@ export default async function DashboardPage() {
     tasks.push({ id: 'tours', text: t('dashboard.taskPickTours', { n: events.length, max: maxSlots }), href: '/races' });
   }
 
+  const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;
+
+  // Small windows. Real data only; a window with nothing real behind it gets
+  // no rows (renders the neutral dash) and no link.
+  const FACILITY_LABEL: Record<(typeof FACILITY_IDS)[number], string> = {
+    training: 'facilities.trainingCenter', recovery: 'facilities.recoveryCenter', scouting: 'facilities.scoutingDept',
+    technical: 'facilities.technicalFacility', teamCenter: 'facilities.teamCenter',
+  };
+  const divisionRows: MiniRow[] = division
+    ? [
+        { key: 'division', label: t('dashboard.division'), value: divisionLabel ?? '—' },
+        { key: 'members', label: t('dashboard.divisionMembers'), value: members.length },
+        { key: 'rank', label: t('standings.title'), value: '—' },
+      ]
+    : [];
+  const resultRows: MiniRow[] = results.map((r) => ({
+    key: r.id, label: r.tourName, value: t('dashboard.resultValue', { pos: r.position, pts: r.points }),
+  }));
+  const marketRows: MiniRow[] = market.active ? [{ key: 'free', label: t('dashboard.marketFree'), value: market.freeCount }] : [];
+  const facilityRows: MiniRow[] = FACILITY_IDS.map((id) => ({ key: id, label: t(FACILITY_LABEL[id]), value: facilities[id] }));
+
   return (
     <AppShell activeId="home" locale={locale}>
       <div className="space-y-3">
-        {/* Top row: compact season calendar + wider upcoming race with elevation profile. */}
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-          <SeasonCalendarCard
-            t={t}
-            events={events}
-            maxSlots={maxSlots}
-            todayLabel={fullDate(season.now, locale)}
-            seasonNumber={season.seasonNumber}
-            currentWeek={season.currentWeek}
-            weeks={weeks}
-            className="lg:col-span-4"
-          />
-          <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} className="lg:col-span-8" />
+        {/* Manager tasks across the full width. */}
+        <ManagerTasksCard t={t} tasks={tasks} />
+
+        {/* Wide main column + narrow right column. On mobile the right column
+            (rider, bike, news) comes first: it is what a manager checks first. */}
+        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
+          <div className="order-2 flex flex-col gap-3 lg:order-1 lg:col-span-8">
+            <SeasonCalendarCard
+              t={t}
+              events={events}
+              maxSlots={maxSlots}
+              todayLabel={fullDate(season.now, locale)}
+              seasonNumber={season.seasonNumber}
+              currentWeek={season.currentWeek}
+              weeks={weeks}
+            />
+            <TourPreviewCard t={t} locale={locale} tour={currentTour} />
+            <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+              <MiniPanel icon="trophy" title={t('dashboard.divisionTitle')} rows={divisionRows} href="/rankings/division" linkLabel={t('dashboard.detail')} />
+              <MiniPanel icon="flag" title={t('dashboard.resultsTitle')} rows={resultRows} href="/rankings" linkLabel={t('dashboard.detail')} />
+              <MiniPanel icon="chart" title={t('analysis.title')} />
+              <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
+            </div>
+          </div>
+          <div className="order-1 flex flex-col gap-3 lg:order-2 lg:col-span-4">
+            <RiderSummaryCard t={t} rider={rider} contractWeeksLeft={contractWeeksLeft} />
+            <BikeCard t={t} items={bikeItems} />
+            <MiniPanel icon="bell" title={t('dashboard.newsTitle')} />
+          </div>
         </div>
 
-        {/* Bottom: rider + bike | tasks + training | standings. items-start keeps cards content-height. */}
-        <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <div className="flex flex-col gap-3">
-            <RiderSummaryCard t={t} rider={rider} />
-            <BikeCard t={t} items={bikeItems} />
-          </div>
-          <div className="flex flex-col gap-3">
-            <ManagerTasksCard t={t} tasks={tasks} />
-            <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
-          </div>
-          <div className="flex flex-col gap-3 md:col-span-2 md:grid md:grid-cols-2 md:items-start lg:col-span-1 lg:flex lg:flex-col">
-            <StandingsCard t={t} rows={[]} subtitle={divisionLabel} />
-          </div>
+        {/* Bottom row: future management windows. */}
+        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <MiniPanel icon="coin" title={t('nav.finance')} />
+          <MiniPanel icon="heart" title={t('dashboard.sponsorsTitle')} />
+          <MiniPanel icon="staff" title={t('nav.staff')} />
+          <MiniPanel icon="cart" title={t('nav.transfers')} rows={marketRows} href="/transfers" linkLabel={t('dashboard.detail')} />
+          <MiniPanel icon="building" title={t('nav.facilities')} rows={facilityRows} href="/facilities" linkLabel={t('dashboard.detail')} />
+          <MiniPanel icon="crown" title={t('ranking.tabAchievements')} />
         </div>
       </div>
     </AppShell>
