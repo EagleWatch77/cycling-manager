@@ -779,6 +779,8 @@ create table if not exists public.bike_condition (
   tires       int not null default 100 check (tires between 0 and 100),
   brakes      int not null default 100 check (brakes between 0 and 100),
   drivetrain  int not null default 100 check (drivetrain between 0 and 100),
+  frame       int not null default 100 check (frame between 0 and 100),   -- added by 20261116_03
+  wheels      int not null default 100 check (wheels between 0 and 100),  -- added by 20261116_03
   updated_at  timestamptz not null default now()
 );
 

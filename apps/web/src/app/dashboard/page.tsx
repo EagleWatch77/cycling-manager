@@ -5,9 +5,8 @@ import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
-import { BASE_BIKE_LEVEL } from '@/lib/bike/equipment';
-import { findMyBikeCondition } from '@/lib/facilities/bike';
-import { stateFromCondition } from '@/lib/bike/overview';
+import { BASE_BIKE_LEVEL, BIKE_EQUIPMENT_IDS } from '@/lib/bike/equipment';
+import { findMyBikeComponentStates } from '@/lib/facilities/bike';
 import { ensureMyDivision } from '@/lib/league/repository';
 import { MiniPanel } from '@/components/dashboard/MiniPanel';
 import { LiveRaceCard } from '@/components/LiveRaceCard';
@@ -103,20 +102,14 @@ export default async function DashboardPage() {
     : null;
 
   const [bike, contract] = await Promise.all([
-    rider ? findMyBikeCondition(rider.id) : Promise.resolve(null),
+    rider ? findMyBikeComponentStates(rider.id) : Promise.resolve(null),
     rider ? getMyRiderContract() : Promise.resolve(null),
   ]);
 
-  // Same source as /bike: bike_condition (condition, 100 = new = the "state" shown here). Frame and wheels
-  // have no stored condition yet (null = dash) and component levels are not stored (base level for all).
+  // Same source as /bike: bike_condition (condition, 100 = new = the "state" shown here). Frame and wheels come
+  // from migration 20261116_03; until it is run they are null (dash). Component levels are not stored (base level).
   const bikeItems: BikeOverviewItem[] | null = rider
-    ? [
-        { id: 'frame', level: BASE_BIKE_LEVEL, state: null },
-        { id: 'wheels', level: BASE_BIKE_LEVEL, state: null },
-        { id: 'tires', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.tires) : null },
-        { id: 'brakes', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.brakes) : null },
-        { id: 'drivetrain', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.drivetrain) : null },
-      ]
+    ? BIKE_EQUIPMENT_IDS.map((id) => ({ id, level: BASE_BIKE_LEVEL, state: bike ? bike[id] : null }))
     : null;
   const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;
 

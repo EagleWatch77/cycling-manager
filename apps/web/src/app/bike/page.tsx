@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getServerDictionary } from '@/i18n/server';
 import sk from '@/i18n/messages/sk.json';
 import { getMyRider } from '@/lib/rider/repository';
-import { findMyBikeCondition } from '@/lib/facilities/bike';
+import { findMyBikeComponentStates } from '@/lib/facilities/bike';
 import { getMyLeague } from '@/lib/facilities/repository';
 import { buildComponentView } from '@/lib/facilities/bikeDisplay';
 import { BASE_BIKE_LEVEL, BIKE_EQUIPMENT_IDS, isBikeEquipmentId, type BikeEquipmentId } from '@/lib/bike/equipment';
@@ -26,11 +26,11 @@ export default async function BikePage({ searchParams }: { searchParams: Promise
   const { component, previewFrame } = await searchParams;
   const initial: BikeEquipmentId = isBikeEquipmentId(component) ? component : 'frame';
   const rider = await getMyRider();
-  const [bike, league] = await Promise.all([rider ? findMyBikeCondition(rider.id) : Promise.resolve(null), getMyLeague()]);
+  const [bike, league] = await Promise.all([rider ? findMyBikeComponentStates(rider.id) : Promise.resolve(null), getMyLeague()]);
 
   const wearOf = (condition: number | null) => buildComponentView({ id: 'tires', condition, level: BASE_BIKE_LEVEL });
   const stored: Record<BikeEquipmentId, number | null> = {
-    frame: null, wheels: null, tires: bike?.tires ?? null, brakes: bike?.brakes ?? null, drivetrain: bike?.drivetrain ?? null,
+    frame: bike?.frame ?? null, wheels: bike?.wheels ?? null, tires: bike?.tires ?? null, brakes: bike?.brakes ?? null, drivetrain: bike?.drivetrain ?? null,
   };
   const components: WorkshopComponent[] = BIKE_EQUIPMENT_IDS.map((id) => {
     const v = wearOf(stored[id]);

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentSeasonInfo, type SeasonInfo } from '@/lib/calendar/season';
 import { getScheduleForTour } from '@/data/tourSchedule';
 import { TOURS } from '@/data/tours';
+import { statesFromBikeRow, type BikeComponentStates } from '@/lib/bike/states';
 import { toBikeCondition, computeTourWear, clamp0to100, type BikeCondition } from './bikeCalc';
 
 export type { BikeCondition, ServiceQuote, ServiceQuoteItem, TourWear } from './bikeCalc';
@@ -33,6 +34,19 @@ export async function findMyBikeCondition(riderId: string): Promise<BikeConditio
     .maybeSingle();
   if (error || !data) return null;
   return toBikeCondition(data);
+}
+
+/**
+ * The five component states of the current rider's bike (Home + /bike read this
+ * one source). select('*') on purpose: it works both before and after migration
+ * 20261116_03 (frame/wheels missing -> null = dash, never an invented value).
+ * Returns null when there is no row at all.
+ */
+export async function findMyBikeComponentStates(riderId: string): Promise<BikeComponentStates | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('bike_condition').select('*').eq('rider_id', riderId).maybeSingle();
+  if (error || !data) return null;
+  return statesFromBikeRow(data as Record<string, unknown>);
 }
 
 export type PerformServiceResult = { ok: true } | { ok: false; reason: 'no-rider' | 'error' };

@@ -60,9 +60,9 @@ export const BIKE_PROPERTIES: Record<BikeEquipmentId, readonly string[]> = {
   drivetrain: ['efficiency', 'quality', 'wear'],
 };
 
-/** Components that have a stored wear value today. Frame has no wear by design; wheels have no stored condition yet. */
+/** All five components have a stored condition (frame + wheels since migration 20261116_03; a missing value still shows a dash). */
 export const BIKE_WEAR_STORED: Record<BikeEquipmentId, boolean> = {
-  frame: false, wheels: false, tires: true, brakes: true, drivetrain: true,
+  frame: true, wheels: true, tires: true, brakes: true, drivetrain: true,
 };
 
 export function isBikeEquipmentId(v: string | null | undefined): v is BikeEquipmentId {

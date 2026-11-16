@@ -62,3 +62,10 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_cont
 
 Migration 8 runs AFTER 20261116_01, whole file, idempotent, additive: deletes nothing and is OFF until `update public.rider_swap_settings set enabled = true`.
 Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_swaps.test.sh` (as `postgres`).
+
+
+## 2026-11-16 — Bike frame + wheels condition (NOT yet run)
+
+| File | What it does |
+|------|--------------|
+| `20261116_03_bike_frame_wheels.sql` | Adds `bike_condition.frame` / `.wheels` (0-100, default 100 = new). Additive, idempotent, no UPDATE of existing values. The app works with or without it (dash until run). |

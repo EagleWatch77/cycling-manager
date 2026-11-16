@@ -20,6 +20,7 @@ const stateOf = (h: string, id: string) => new RegExp(`data-state="${id}">([^<]*
   const h = html(PREVIEW_BEFORE_TOUR);
   check('before first Tour: five 100 %, all green', ['frame', 'wheels', 'tires', 'brakes', 'drivetrain'].every((id) => stateOf(h, id) === '100 %' && band(h, id) === 'good'));
   check('level badge "Úroveň bicykla: 1"', h.includes('Úroveň bicykla: 1<'));
+  check('level badge centred at the top, not at the saddle', /data-testid="bike-level"[^>]*left:50%/.test(h) && /top:1\.7857/.test(h));
   check('no warning when everything is good', !h.includes('data-testid="bike-warning"'));
   check('steel picture for frame LVL 1', h.includes('data-visual="steel"') && h.includes('/images/bikes/steel-lvl1.webp'));
 }
@@ -32,7 +33,7 @@ const stateOf = (h: string, id: string) => new RegExp(`data-state="${id}">([^<]*
 }
 {
   const h = html(NEW_BIKE_ROWS);
-  check('missing frame/wheels: dash, never an invented 100 %', stateOf(h, 'frame') === '—' && stateOf(h, 'wheels') === '—' && band(h, 'frame') === 'unknown');
+  check('missing frame/wheels (migration not run): dash, never an invented 100 %', stateOf(h, 'frame') === '—' && stateOf(h, 'wheels') === '—' && band(h, 'frame') === 'unknown');
   check('real stored components shown as state 100 %', stateOf(h, 'tires') === '100 %' && stateOf(h, 'drivetrain') === '100 %');
   check('dash has an explanation title', h.includes('title="Údaj sa zatiaľ neeviduje"'));
 }

@@ -22,6 +22,8 @@ const TONE: Record<StateBand, string> = { good: 'text-teal-dark', low: 'text-war
 const W = 400, H = 224;
 const IMG = { x: 80, y: 50, w: 240, h: 160 } as const;
 const CHIP = { w: 74, h: 34 } as const;
+/** The level badge sits centred right under the header, above the whole bike (no leader line reaches it). */
+const BADGE_TOP = 4;
 const CHIPS: Record<BikeEquipmentId, { x: number; y: number; side: 'left' | 'right' }> = {
   frame: { x: 4, y: 10, side: 'left' },
   drivetrain: { x: 4, y: 176, side: 'left' },
@@ -33,7 +35,7 @@ const pct = (v: number, total: number) => `${(v / total) * 100}%`;
 
 /**
  * "Môj bicykel" on Home: the owned bike picture (chosen only by the frame level,
- * same logic as the detail page), the overall level above the saddle and the
+ * same logic as the detail page), the overall level centred at the top and the
  * STATE (100 % = new) of the five components with a leader line each. Everything
  * links to the existing /bike page; there are no service/purchase buttons here.
  * `items = null` = no rider/bike. A missing value is a dash, never an invented 100 %.
@@ -52,7 +54,6 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
   const level = formatBikeLevel(overallBikeLevel(items.map((i) => i.level)), t('bikeCard.decimalSep'));
   const critical = items.filter((i) => i.state != null && stateBand(i.state) === 'critical');
   const point = (id: BikeEquipmentId) => ({ x: IMG.x + visual.anchors[id].x * IMG.w, y: IMG.y + visual.anchors[id].y * IMG.h });
-  const saddle = { x: IMG.x + visual.saddle.x * IMG.w, y: IMG.y + visual.saddle.y * IMG.h };
 
   return (
     <SectionCard icon="frame" title={t('bikeCard.title')} tone="tint" className={className}>
@@ -81,8 +82,8 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
 
         <span
           data-testid="bike-level"
-          className="pointer-events-none absolute -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full border border-teal/40 bg-teal-rail px-2 py-0.5 text-2xs font-extrabold text-teal-dark"
-          style={{ left: pct(saddle.x, W), top: pct(saddle.y - 2, H) }}
+          className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-full border border-teal/40 bg-teal-rail px-2.5 py-0.5 text-2xs font-extrabold text-teal-dark"
+          style={{ left: '50%', top: pct(BADGE_TOP, H) }}
         >
           {t('bikeCard.overallLevel', { n: level })}
         </span>
