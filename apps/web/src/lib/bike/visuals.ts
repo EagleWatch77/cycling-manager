@@ -14,18 +14,14 @@ export interface BikeVisual {
   key: BikeVisualKey;
   /** Frame levels that use this picture. */
   levels: readonly number[];
-  /** Existing file under public/. Elite has no picture yet and temporarily uses the Pro one. */
+  /** Existing file under public/. */
   file: string;
-  /** True when the picture is borrowed from a lower variant until its own one exists. */
+  /** True when the picture is borrowed from a lower variant until its own one exists (none at the moment). */
   temporary: boolean;
   anchors: Record<BikeEquipmentId, { x: number; y: number }>;
 }
 
 const fr = (px: number, py: number) => ({ x: +(px / 1536).toFixed(4), y: +(py / 1024).toFixed(4) });
-const PRO_FILE = '/images/bikes/pro-lvl8.webp';
-const PRO_ANCHORS: BikeVisual['anchors'] = {
-  frame: fr(800, 290), wheels: fr(1440, 690), tires: fr(1445, 890), brakes: fr(1150, 630), drivetrain: fr(290, 665),
-};
 
 export const BIKE_VISUALS: readonly BikeVisual[] = [
   { key: 'steel', levels: [1], file: '/images/bikes/steel-lvl1.webp', temporary: false,
@@ -36,9 +32,10 @@ export const BIKE_VISUALS: readonly BikeVisual[] = [
     anchors: { frame: fr(800, 270), wheels: fr(1440, 640), tires: fr(1430, 880), brakes: fr(1145, 385), drivetrain: fr(315, 655) } },
   { key: 'continental', levels: [5, 6], file: '/images/bikes/continental-lvl6.webp', temporary: false,
     anchors: { frame: fr(800, 300), wheels: fr(1440, 650), tires: fr(1430, 890), brakes: fr(1145, 395), drivetrain: fr(310, 665) } },
-  { key: 'pro', levels: [7, 8], file: PRO_FILE, temporary: false, anchors: PRO_ANCHORS },
-  // TEMPORARY: no Elite picture yet, the Pro one is used. Replace `file` (and anchors) when it exists.
-  { key: 'elite', levels: [9, 10], file: PRO_FILE, temporary: true, anchors: PRO_ANCHORS },
+  { key: 'pro', levels: [7, 8], file: '/images/bikes/pro-lvl8.webp', temporary: false,
+    anchors: { frame: fr(800, 290), wheels: fr(1440, 690), tires: fr(1445, 890), brakes: fr(1150, 630), drivetrain: fr(290, 665) } },
+  { key: 'elite', levels: [9, 10], file: '/images/bikes/elite-lvl10.webp', temporary: false,
+    anchors: { frame: fr(780, 270), wheels: fr(1450, 640), tires: fr(1420, 880), brakes: fr(1150, 630), drivetrain: fr(290, 660) } },
 ];
 
 /** The picture for an owned frame level; unknown levels fall back to the basic steel bike. */

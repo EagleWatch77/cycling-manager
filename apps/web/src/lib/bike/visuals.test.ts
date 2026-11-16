@@ -19,5 +19,6 @@ for (const v of BIKE_VISUALS) {
   // right-side parts must lie right of the drivetrain anchor (sanity of orientation)
   assert.ok(v.anchors.brakes.x > v.anchors.drivetrain.x && v.anchors.wheels.x > v.anchors.frame.x);
 }
-assert.equal(BIKE_VISUALS.filter((v) => v.temporary).map((v) => v.key).join(), 'elite');
+assert.equal(BIKE_VISUALS.filter((v) => v.temporary).length, 0);
+assert.equal(new Set(BIKE_VISUALS.map((v) => v.file)).size, 6); // six different pictures
 console.log('visuals OK');

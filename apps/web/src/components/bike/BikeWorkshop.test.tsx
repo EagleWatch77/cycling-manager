@@ -62,7 +62,7 @@ const render = (over: Partial<Parameters<typeof BikeWorkshop>[0]> = {}) =>
   check('league does not change the picture (Elite league, frame 1 -> steel)', vis(render({ league: 'elite' })) === 'steel');
   check('frame 2/4/6/8 -> rookie/amateur/continental/pro', [2, 4, 6, 8].map((n) => vis(render({ components: lv(n) }))).join() === 'rookie,amateur,continental,pro');
   const e = render({ components: lv(10) });
-  check('frame 10 -> elite uses the existing Pro file (no missing link)', vis(e) === 'elite' && e.includes('/images/bikes/pro-lvl8.webp') && !e.includes('elite-lvl10'));
+  check('frame 9/10 -> elite picture', vis(e) === 'elite' && e.includes('/images/bikes/elite-lvl10.webp'));
   // picking a level in the upgrade panel is client state only; the SSR with a different initial pick never changes the picture
   check('other components keep their own level with a different frame', render({ components: lv(6) }).includes('data-tile="brakes"') && /data-tile-wear="brakes">45 %</.test(render({ components: lv(6) })));
   check('dev preview badge only when requested', !render().includes('data-testid="dev-preview"') && render({ devPreview: true }).includes('data-testid="dev-preview"'));
