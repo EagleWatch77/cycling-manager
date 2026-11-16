@@ -1,31 +1,20 @@
 import { getServerDictionary } from '@/i18n/server';
-import { Card } from '@/components/ui/Card';
-import { Icon } from '@/components/ui/Icon';
+import { getMyRider } from '@/lib/rider/repository';
+import { getMyCareerEvents } from '@/lib/contract/repository';
+import { CareerHistoryCard } from '@/components/rider/CareerHistoryCard';
 
 /**
- * História tab — "čo jazdec zažil počas kariéry" (see the chat report's UX
- * goal). This is meant to be a chronological career timeline (rider
- * created, contract signed/extended, transfer, first race, first win,
- * podium, major result, training milestone, injury, award, retirement...),
- * not another attribute dashboard — but no persistent rider event/history
- * table exists in the DB yet (see supabase/schema.sql), so there is nothing
- * real to list. A compact career summary (seasons/races/wins/podiums/best
- * result) belongs above this list once it can be computed from genuine
- * persisted race results — not before. Building the real feature needs a
- * new rider_events (or similar) table; that is reported to the user, not
- * invented here.
+ * História tab — the rider's career timeline from real stored events
+ * (career start with the league at that moment, contract signed). It lives
+ * only as long as the rider does; manager results are stored elsewhere.
  */
 export default async function RiderHistoryPage() {
   const { t } = await getServerDictionary();
-
+  const rider = await getMyRider();
+  const events = rider ? await getMyCareerEvents(rider.id) : [];
   return (
-    <Card className="col-span-12">
-      <div className="flex flex-col items-center gap-3 py-10 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-teal-rail text-teal">
-          <Icon name="calendar" className="h-8 w-8" />
-        </span>
-        <p className="max-w-xs text-sm text-navy-soft">{t('profile.historyEmpty')}</p>
-      </div>
-    </Card>
+    <div className="grid grid-cols-12 gap-3">
+      <CareerHistoryCard t={t} events={events} className="col-span-12 lg:col-span-6" />
+    </div>
   );
 }

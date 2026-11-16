@@ -362,7 +362,7 @@
   "market.premiumLockedTitle": "Marché Premium",
   "market.premiumLockedText": "Débloque l'accès Premium pour un plus grand choix de coureurs et des filtres avancés.",
   "market.applyFilters": "Filtrer",
-  "profile.contractEmpty": "Ce coureur n'a pas encore de contrat enregistré.",
+  "profile.contractEmpty": "Le coureur n'a pas de contrat enregistré.",
   "profile.historyEmpty": "Aucun événement de carrière n'a encore été enregistré.",
   "ranking.subtitle": "Classement des coureurs selon les résultats de la saison en cours.",
   "ranking.tabRiders": "Coureurs",
@@ -617,5 +617,18 @@
   "progress.sourceTraining": "Entraînement",
   "progress.showHistory": "Afficher l'historique",
   "progress.hideHistory": "Masquer l'historique",
-  "progress.compareWith": "Comparé à"
+  "progress.compareWith": "Comparé à",
+  "contract.status": "Statut du contrat",
+  "contract.state.active": "Actif",
+  "contract.state.expired": "Expiré",
+  "contract.state.ended": "Terminé",
+  "contract.start": "Début",
+  "contract.end": "Fin",
+  "contract.duration": "Durée (semaines)",
+  "contract.remaining": "Restant (semaines)",
+  "contract.seasonWeek": "Saison {season} · Semaine {week}",
+  "history.careerStart": "Début de la carrière professionnelle",
+  "history.purchasedInto": "Recruté dans la ligue {league}",
+  "history.contractStart": "Contrat signé",
+  "history.contractDuration": "Contrat de {weeks} semaines"
 }

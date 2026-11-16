@@ -298,6 +298,8 @@ has "a later save cannot change it" "$(as $PS "select * from public.save_my_trai
 eq "plan unchanged after the later attempt" "$(q "select focus from public.training_plans where rider_id='$PSR'")" "$FIRSTFOCUS"
 q "delete from public.tour_registrations where tour_id like 'test-tour%' or tour_id='some-future-tour'; delete from public.tour_schedule where tour_id like 'test-tour%';" >/dev/null
 
+# schema.sql also contains the later migration 07 (contracts); apply it to A so both sides compare like with like.
+psqlc t -f "$ROOT/migrations/20261116_01_rider_contracts.sql" >/dev/null 2>&1 || { echo "migration 07 failed"; exit 1; }
 echo "== Scenario B: fresh database from supabase/schema.sql == scenario A"
 psqlc fresh -f "$SCHEMA" >/dev/null 2>&1 && ok "full schema.sql applies on a fresh database" || bad "full schema.sql applies" "$(psqlc fresh -f "$SCHEMA" | tail -3)"
 cat_of() { psqlc "$1" -c "select string_agg(p.oid::regprocedure::text||':'||p.prosecdef::text||':'||coalesce(p.proacl::text,''), E'\n' order by p.oid::regprocedure::text) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'" | md5sum; }

@@ -362,7 +362,7 @@
   "market.premiumLockedTitle": "Premium market",
   "market.premiumLockedText": "Unlock Premium access for a wider rider pool and advanced filters.",
   "market.applyFilters": "Apply filters",
-  "profile.contractEmpty": "This rider has no recorded contract yet.",
+  "profile.contractEmpty": "The rider has no recorded contract.",
   "profile.historyEmpty": "No career events have been recorded yet.",
   "ranking.subtitle": "Ranking of riders by results in the current season.",
   "ranking.tabRiders": "Riders",
@@ -617,5 +617,18 @@
   "progress.sourceTraining": "Training",
   "progress.showHistory": "Show history",
   "progress.hideHistory": "Hide history",
-  "progress.compareWith": "Compared with"
+  "progress.compareWith": "Compared with",
+  "contract.status": "Contract status",
+  "contract.state.active": "Active",
+  "contract.state.expired": "Expired",
+  "contract.state.ended": "Ended",
+  "contract.start": "Start",
+  "contract.end": "End",
+  "contract.duration": "Duration (weeks)",
+  "contract.remaining": "Remaining (weeks)",
+  "contract.seasonWeek": "Season {season} · Week {week}",
+  "history.careerStart": "Start of professional career",
+  "history.purchasedInto": "Signed into league {league}",
+  "history.contractStart": "Contract signed",
+  "history.contractDuration": "{weeks}-week contract"
 }

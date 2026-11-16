@@ -50,3 +50,11 @@ Run 04 first (if not yet applied), then 05. 04 is never edited once applied; 05 
 Needs 04 (`20261115_01`) already applied (uses `season_id_at` / `season_week_at`); does NOT need 05. Whole file, idempotent, additive, never changes or deletes
 riders/plans. Either deploy order is safe: without the SQL the new card simply does not render. Verify locally:
 `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_development.test.sh` (as `postgres`).
+
+## 2026-11-16 — Rider contracts V1 + career history
+
+| 7 | `20261116_01_rider_contracts.sql` | `rider_contracts` (10 game weeks, exact `expires_at`), `rider_career_events`, league + sub-league frozen in `rider_acquisitions`, internal `start_rider_contract_internal()` (no client access; no purchase function exists yet, so nothing creates contracts today), `my_rider_contract()`, prepared-but-INACTIVE `purge_unsold_young_market_riders()` (dry run, not called, not granted) |
+
+Run AFTER 20261115_03 (which is itself still waiting to be applied), whole file, idempotent, additive: changes no rider data, deletes nothing.
+The app code is safe before and after: without the migration the Kontrakt/História tabs show their empty line.
+Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_contracts.test.sh` (run as `postgres`).

@@ -362,7 +362,7 @@
   "market.premiumLockedTitle": "Premium-Markt",
   "market.premiumLockedText": "Schalte Premium frei für eine größere Fahrerauswahl und erweiterte Filter.",
   "market.applyFilters": "Filtern",
-  "profile.contractEmpty": "Für diesen Fahrer ist noch kein Vertrag erfasst.",
+  "profile.contractEmpty": "Für den Fahrer ist kein Vertrag erfasst.",
   "profile.historyEmpty": "Es wurden noch keine Karriereereignisse erfasst.",
   "ranking.subtitle": "Rangliste der Fahrer nach Ergebnissen der aktuellen Saison.",
   "ranking.tabRiders": "Fahrer",
@@ -617,5 +617,18 @@
   "progress.sourceTraining": "Training",
   "progress.showHistory": "Verlauf anzeigen",
   "progress.hideHistory": "Verlauf ausblenden",
-  "progress.compareWith": "Vergleich mit"
+  "progress.compareWith": "Vergleich mit",
+  "contract.status": "Vertragsstatus",
+  "contract.state.active": "Aktiv",
+  "contract.state.expired": "Abgelaufen",
+  "contract.state.ended": "Beendet",
+  "contract.start": "Beginn",
+  "contract.end": "Ende",
+  "contract.duration": "Dauer (Wochen)",
+  "contract.remaining": "Verbleibend (Wochen)",
+  "contract.seasonWeek": "Saison {season} · Woche {week}",
+  "history.careerStart": "Beginn der Profikarriere",
+  "history.purchasedInto": "Verpflichtet in die Liga {league}",
+  "history.contractStart": "Vertrag abgeschlossen",
+  "history.contractDuration": "Vertrag über {weeks} Wochen"
 }

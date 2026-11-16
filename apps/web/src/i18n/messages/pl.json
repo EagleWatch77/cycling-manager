@@ -362,7 +362,7 @@
   "market.premiumLockedTitle": "Rynek Premium",
   "market.premiumLockedText": "Odblokuj dostęp Premium dla szerszego wyboru zawodników i zaawansowanych filtrów.",
   "market.applyFilters": "Filtruj",
-  "profile.contractEmpty": "Zawodnik nie ma jeszcze zarejestrowanego kontraktu.",
+  "profile.contractEmpty": "Zawodnik nie ma zapisanego kontraktu.",
   "profile.historyEmpty": "Nie odnotowano jeszcze żadnych wydarzeń kariery.",
   "ranking.subtitle": "Ranking kolarzy według wyników w bieżącym sezonie.",
   "ranking.tabRiders": "Kolarze",
@@ -617,5 +617,18 @@
   "progress.sourceTraining": "Trening",
   "progress.showHistory": "Pokaż historię",
   "progress.hideHistory": "Ukryj historię",
-  "progress.compareWith": "Porównanie ze stanem"
+  "progress.compareWith": "Porównanie ze stanem",
+  "contract.status": "Status kontraktu",
+  "contract.state.active": "Aktywny",
+  "contract.state.expired": "Wygasł",
+  "contract.state.ended": "Zakończony",
+  "contract.start": "Początek",
+  "contract.end": "Koniec",
+  "contract.duration": "Czas trwania (tygodnie)",
+  "contract.remaining": "Pozostało (tygodnie)",
+  "contract.seasonWeek": "Sezon {season} · Tydzień {week}",
+  "history.careerStart": "Początek kariery zawodowej",
+  "history.purchasedInto": "Pozyskany do ligi {league}",
+  "history.contractStart": "Zawarcie kontraktu",
+  "history.contractDuration": "Kontrakt na {weeks} tygodni"
 }

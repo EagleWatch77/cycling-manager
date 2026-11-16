@@ -94,3 +94,8 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - P-D1: add a semantic `success` token matching the current green.
 - P-D2: let SVG components use `currentColor` / CSS variables instead of hex.
 - P-D3: document a table density convention (row height, `text-2xs` usage) after reviewing real pages.
+
+## Rider → Kontrakt / História (2026-11-16, C-050)
+- Both tabs: `grid-cols-12`, one card `col-span-12 lg:col-span-6`, shared `Card` + `CardTitle` (teal; icons `coin` / `calendar`). No decorative icons, no buttons, no explanatory paragraphs.
+- Kontrakt (`ContractCard`): five compact rows with thin dividers, label `text-[15px] text-navy-soft` left, value `text-[15px] font-semibold tabular-nums` right (status "Aktívny" in teal): Stav kontraktu, Začiatok, Koniec ("Sezóna 2 · Týždeň 4"), Trvanie (týždne), Zostáva (týždne). Units live in the label so no plural forms are needed in 7 languages. No contract = one quiet `text-sm text-navy-soft` line.
+- História (`CareerHistoryCard`): vertical timeline (thin `border-line` rail, small teal dot), heading "Sezóna N · Týždeň M" (`text-xs font-semibold text-teal-dark`), events of one week grouped, title `text-[15px] text-navy`, detail `text-xs text-navy-soft` ("Zakúpený do ligy Rookie 1.1", "Kontrakt na 10 týždňov"). Oldest first. Empty = one quiet line.

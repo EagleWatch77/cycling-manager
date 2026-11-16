@@ -41,7 +41,7 @@ Zdroj: `lib/training/config.ts`. `[KÓD]`
 - **Regenerácia:** vrodený skrytý atribút, nemení sa, netrénuje sa; kondícia, fyzioterapeut a Recovery Center zlepšujú skutočnú regeneráciu, nie vrodenú hodnotu. Rozsah a koeficienty neschválené.
 - **Premium skauting:** vlastný jazdec; potenciál, trénovateľnosť, regenerácia, profesionalita; komplexný 10 týždňov a výsledky naraz na konci; cielený = 1 atribút, 2 alebo 3 týždne (potvrdiť); výsledky ostávajú pri jazdcovi, vidí ich Premium, nie Free; presné hodnoty nikdy ku klientovi.
 - **Rookie:** dva OVR limity (pri získaní nižší, pri ponechaní vyšší; 75/95 pracovné); prekročenie limitu ponechania = bez novej zmluvy, ak manažér ostáva v Rookie; pri postupe do Amateur si jazdca môže ponechať.
-- **Kontrakty:** platia do konca sezóny; v prípravnom týždni prednostné právo na doterajšieho jazdca; jazdec môže žiadať vyšší plat; bez zmluvy odchádza ako voľný jazdec.
+- **Kontrakty:** *(trvanie nahradené schváleným V1 v sekcii 12: 10 herných týždňov od nákupu, nie do konca sezóny)*; v prípravnom týždni prednostné právo na doterajšieho jazdca; jazdec môže žiadať vyšší plat; bez zmluvy odchádza ako voľný jazdec `[NEIMPLEMENTOVANÉ]`.
 - **Sezónny prechod:** postupy/zostupy, podligy, nové tabuľky a Tour kalendár; história a schopnosti sa zachovávajú (nie reset). Výber Tour zatiaľ neurčený.
 
 ## 4. Zázemie (Facilities)
@@ -103,6 +103,14 @@ Podrobné ID rozhodnutí: `DECISIONS.md` C-015 až C-021.
 - **Dashboard:** pred kvalifikáciou (MS, týždeň 6, kvalifikácia na konci 4. týždňa) → priama pozvánka (gratulácia, poradie, termín, Prijať/Odmietnuť) → pozvánka náhradníka (poradie, podmienky, Prijať/Odmietnuť, „Čakáš na voľné miesto“) → po povýšení („Účasť potvrdená“) → po uzávierke (pridelený šampionát a termín, alebo „MS sa nezúčastníš“). MS sa zobrazujú v kalendári aj hráčom bez pozvánky.
 - **Mimo rozsah:** simulácia MS, výsledky a tituly, dúhové dresy, odmeny/body, nové mechaniky tréningu/energie/regenerácie, olympiáda a ďalšie špeciálne preteky.
 - **Závisí od:** líg a podlíg (V1 rozpracované), bodovania a rebríčkov, definície „oprávnený aktívny jazdec“, plánovaných úloh (cron) a overenia kapacity race enginu.
+
+## 12. Kontrakty jazdcov a história kariéry V1 `[SCHVÁLENÉ 2026-11-16]` (podrobnosti C-050, otvorené O-013 až O-017)
+- **Mladí jazdci na trhu:** vstup vo veku 17, na trhu môžu byť 17–20. Ak ho do konca obdobia, keď má 20, nikto nikdy nekúpil, ukončí kariéru a je úplne vymazaný (bez archívu a histórie). Platí iba pre jazdcov, ktorí nikdy nemali manažéra. `[PRIPRAVENÉ, NEAKTÍVNE]` `purge_unsold_young_market_riders()` (dry-run, nikým nevolaná). Generátor trhu zatiaľ vyrába 18–22 rokov (O-014).
+- **Kontrakt:** každý novo zakúpený jazdec = 10 herných týždňov, týždeň nákupu je 1. týždeň, koniec = koniec 10. započítaného týždňa, prechod sezóny kontrakt neukončí (S2T1→S2T10, S2T4→S3T3, S2T10→S3T9). Globálny UTC kalendár a serverový čas; ukladá sa presný `expires_at`. `[KÓD]` migrácia 20261116_01 (nenasadená), `lib/contract/contract.ts`.
+- **Stav:** `active` / `expired` (odvodený zo serverového času). Vypršanie zatiaľ nemá žiadny následok (plat, predĺženie, odchod, predčasné ukončenie, poplatky, postup/zostup: neriešené).
+- **Vznik:** iba interná funkcia `start_rider_contract_internal()` v tej istej transakcii ako zmena vlastníka; klient nič nezapisuje. Trh zatiaľ nemá funkčný nákup, preto dnes kontrakt nevzniká nikomu; štartovací a existujúci jazdci kontrakt nemajú a nič sa im nedopočítava. `[CHÝBA]` nákup z trhu (O-013).
+- **História jazdca:** udalosti `career_start` (pri prvom zakúpení) a `contract_signed`, s ligou a podligou manažéra v okamihu nákupu (uložené v `rider_acquisitions`, nemenné). História existuje len počas kariéry jazdca a maže sa s ním; výsledky a úspechy manažéra sú nezávislé (budúca Sieň slávy).
+- **UI:** Jazdec → Kontrakt (stav, začiatok, koniec, trvanie, zostáva) a Jazdec → História (časová os). Zatiaľ bez počtu pretekov, etáp, víťazstiev, kilometrov (po implementácii Tour).
 
 ## Čo treba doplniť (potrebujeme od vlastníka)
 1. Ktoré rozhodnutia zo špecifikácie v9 sa neskôr zmenili (a ako).

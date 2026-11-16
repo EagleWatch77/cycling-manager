@@ -362,7 +362,7 @@
   "market.premiumLockedTitle": "Premium trh",
   "market.premiumLockedText": "Odemkni si Premium přístup pro širší výběr jezdců a pokročilé filtry.",
   "market.applyFilters": "Filtrovat",
-  "profile.contractEmpty": "Jezdec zatím nemá evidovanou smlouvu.",
+  "profile.contractEmpty": "Jezdec nemá evidovaný kontrakt.",
   "profile.historyEmpty": "Zatím nejsou zaznamenány žádné události kariéry.",
   "ranking.subtitle": "Pořadí jezdců podle výsledků v aktuální sezóně.",
   "ranking.tabRiders": "Jezdci",
@@ -617,5 +617,18 @@
   "progress.sourceTraining": "Trénink",
   "progress.showHistory": "Zobrazit historii",
   "progress.hideHistory": "Skrýt historii",
-  "progress.compareWith": "Porovnání se stavem"
+  "progress.compareWith": "Porovnání se stavem",
+  "contract.status": "Stav kontraktu",
+  "contract.state.active": "Aktivní",
+  "contract.state.expired": "Vypršel",
+  "contract.state.ended": "Ukončený",
+  "contract.start": "Začátek",
+  "contract.end": "Konec",
+  "contract.duration": "Trvání (týdny)",
+  "contract.remaining": "Zbývá (týdny)",
+  "contract.seasonWeek": "Sezóna {season} · Týden {week}",
+  "history.careerStart": "Začátek profesionální kariéry",
+  "history.purchasedInto": "Zakoupen do ligy {league}",
+  "history.contractStart": "Vznik kontraktu",
+  "history.contractDuration": "Kontrakt na {weeks} týdnů"
 }
