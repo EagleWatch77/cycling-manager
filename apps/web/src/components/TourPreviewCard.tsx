@@ -1,93 +1,89 @@
 import type { T, Locale } from '@/i18n/config';
-import type { LeagueId } from '@/lib/leagues';
-import { visibleStages } from '@/lib/leagues';
-import type { TourStage } from '@/mock/dashboard';
+import type { TourStage } from '@/data/tours';
 import { km } from '@/lib/format';
-import { Card } from './ui/Card';
+import { CardLink } from './ui/Card';
+import { SectionCard } from './ui/SectionCard';
 import { ElevationProfile } from './ui/ElevationProfile';
+import { EmptyState } from './ui/EmptyState';
 import { Icon } from './ui/Icon';
 
+export type TourRegistrationState = 'selected' | 'available' | 'started' | 'overlap' | 'season-limit';
+const REG_KEY: Record<TourRegistrationState, string> = {
+  selected: 'races.selected', available: 'tour.regOpen', started: 'races.tourStarted',
+  overlap: 'races.dateOverlap', 'season-limit': 'races.limitReached',
+};
+
+export interface CurrentTourView {
+  id: string;
+  name: string;
+  heroImage?: string;
+  /** Already formatted real date range of the Tour's week. */
+  term: string;
+  startsInDays: number;
+  registration: TourRegistrationState;
+  /** Stages visible to the league (real masterStages), with an elevation profile only where one exists. */
+  stages: (TourStage & { profile?: readonly number[] })[];
+}
+
 /**
- * Featured Tour preview.
- *
- * League visibility comes from `visibleStages()`. Stages above the league's
- * limit are NOT rendered as locked or greyed out — they are absent, so a
- * promotion reveals them as new content rather than removing a padlock.
+ * "Aktuálne Tour": the current / nearest relevant Tour from the real season
+ * schedule (the player's own next selected Tour first, else the next open
+ * one). Term, registration state, stages and lengths are real data; the
+ * elevation profile is drawn only for Tours that have authored profile data
+ * (Danube today). `tour = null` = nothing left this season.
  */
-export function TourPreviewCard({
-  t, locale, league, tour, className = '',
-}: {
-  t: T;
-  className?: string;
-  locale: Locale;
-  league: LeagueId;
-  tour: { name: string; heroImage?: string; startsInDays: number; focusKey: string; weather: string; masterStages: TourStage[] };
-}) {
-  const stages = visibleStages(tour.masterStages, league);
-  const combined = stages.flatMap((s) => s.profile);
-  const markers = stages
-    .map((s, i) => ({ stage: s, i }))
-    .filter(({ stage }) => stage.difficulty !== 'flat')
-    .map(({ stage, i }) => ({
-      at: (i + 0.5) / stages.length,
-      tone: stage.difficulty === 'mountain' ? ('cat1' as const) : ('cat2' as const),
-    }));
+export function TourPreviewCard({ t, locale, tour, className = '' }: { t: T; locale: Locale; tour: CurrentTourView | null; className?: string }) {
+  if (!tour) {
+    return (
+      <SectionCard icon="mountain" title={t('tour.current')} className={className}>
+        <EmptyState compact icon="mountain" text={t('tour.none')} />
+        <CardLink label={t('nav.races')} href="/races" />
+      </SectionCard>
+    );
+  }
+  const withProfile = tour.stages.filter((s) => s.profile && s.profile.length > 1);
+  const combined = withProfile.flatMap((s) => [...(s.profile as readonly number[])]);
+  const markers = withProfile
+    .map((s, i) => ({ s, i }))
+    .filter(({ s }) => s.difficulty !== 'flat')
+    .map(({ s, i }) => ({ at: (i + 0.5) / withProfile.length, tone: s.difficulty === 'mountain' ? ('cat1' as const) : ('cat2' as const) }));
 
   return (
-    <Card className={className} dense>
-      {tour.heroImage ? (
-        <div className="relative h-24 w-full overflow-hidden rounded-t-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={tour.heroImage} alt="" className="h-full w-full object-cover object-right" />
-          {/* Fade the left edge into the card so the title sits on clean white. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-card via-card/70 to-transparent" />
-          <div className="absolute inset-0 flex items-end p-3.5">
-            <div>
-              <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('tour.next')}</span>
-              <h2 className="text-xl font-bold leading-tight text-navy">{tour.name}</h2>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-start gap-3 p-3.5 pb-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-light text-teal">
-            <Icon name="mountain" className="h-5 w-5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <span className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">{t('tour.next')}</span>
-            <h2 className="truncate text-xl font-bold leading-tight text-navy">{tour.name}</h2>
-          </div>
+    <SectionCard icon="mountain" title={t('tour.current')} className={className}>
+      <div className="flex items-center justify-between gap-2 px-3.5 pt-3">
+        <h3 className="truncate text-lg font-bold leading-tight text-navy">{tour.name}</h3>
+      </div>
+
+      <dl className="mx-3.5 mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
+        <Facet icon="calendar" label={t('tour.term')} value={tour.term} />
+        <Facet icon="bolt" label={t('tour.startsIn')} value={t('calendar.days', { n: tour.startsInDays })} />
+        <Facet icon="pin" label={t('tour.stages')} value={t('calendar.stages', { n: tour.stages.length })} />
+        <Facet icon="flag" label={t('tour.registration')} value={t(REG_KEY[tour.registration])} />
+      </dl>
+
+      {combined.length > 1 && (
+        <div className="px-3.5 pt-3">
+          <ElevationProfile samples={combined} height={56} markers={markers} showEnds />
         </div>
       )}
 
-      <dl className="mx-3.5 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-4">
-        <Facet icon="calendar" label={t('tour.startsIn')} value={t('calendar.days', { n: tour.startsInDays })} />
-        <Facet icon="pin" label={t('tour.stages')} value={t('calendar.stages', { n: stages.length })} />
-        <Facet icon="mountain" label={t('tour.focus')} value={t(tour.focusKey)} />
-        <Facet icon="cloud" label={t('tour.weather')} value={tour.weather} />
-      </dl>
-
-      <div className="px-3.5 py-3">
-        <ElevationProfile samples={combined} height={72} markers={markers} showEnds />
-        <ol className="mt-1 grid gap-px" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0,1fr))` }}>
-          {stages.map((s) => (
-            <li key={s.number} className="border-t-2 border-teal-rail pt-1.5 text-center">
-              <span className="block text-2xs font-bold text-navy">{t('tour.stageShort', { n: s.number })}</span>
-              <span className="block truncate text-2xs text-navy-muted" title={s.name}>{s.name}</span>
-              <span className="block text-2xs text-navy-soft">{km(s.distanceKm, locale)}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <p className="mt-auto border-t border-line px-3.5 py-2 text-2xs text-navy-muted">{t('tour.visibleNote')}</p>
-    </Card>
+      <ol className="mx-3.5 my-3 divide-y divide-line rounded-lg border border-line text-xs">
+        {tour.stages.map((s) => (
+          <li key={s.number} className="flex items-center gap-2 px-2.5 py-1.5">
+            <span className="w-7 shrink-0 font-bold text-navy">{t('tour.stageShort', { n: s.number })}</span>
+            <span className="min-w-0 flex-1 truncate text-navy-soft" title={s.name}>{s.name}</span>
+            <span className="shrink-0 tabular-nums text-navy-muted">{km(s.distanceKm, locale)}</span>
+          </li>
+        ))}
+      </ol>
+      <CardLink label={t('tour.detail')} href={`/races/${tour.id}`} />
+    </SectionCard>
   );
 }
 
 function Facet({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 bg-card px-3 py-2">
+    <div className="flex items-center gap-2 bg-card px-2.5 py-1.5">
       <span className="text-navy-muted"><Icon name={icon} className="h-4 w-4" /></span>
       <span className="min-w-0">
         <dt className="text-2xs text-navy-muted">{label}</dt>

@@ -1,7 +1,8 @@
 import type { T } from '@/i18n/config';
 import type { StandingRow } from '@/mock/dashboard';
 import { elapsed, gap } from '@/lib/format';
-import { Card, CardLink } from './ui/Card';
+import { CardLink } from './ui/Card';
+import { SectionCard } from './ui/SectionCard';
 import { EmptyState } from './ui/EmptyState';
 
 /**
@@ -13,9 +14,9 @@ export function StandingsCard({
   t, rows, subtitle = null, className = '',
 }: { t: T; rows: StandingRow[]; /** e.g. "Rookie 1.1" — the player's real sub-league. */ subtitle?: string | null; className?: string }) {
   return (
-    <Card
+    <SectionCard
+      icon="trophy"
       title={subtitle ? <>{t('standings.title')} <span className="font-medium normal-case text-navy-soft">· {subtitle}</span></> : t('standings.title')}
-      dense
       className={className}
     >
       {rows.length === 0 ? (
@@ -46,6 +47,6 @@ export function StandingsCard({
         </table>
       )}
       <CardLink label={t('standings.viewAll')} href="/rankings" />
-    </Card>
+    </SectionCard>
   );
 }

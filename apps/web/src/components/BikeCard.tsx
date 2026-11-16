@@ -1,5 +1,6 @@
 import type { T } from '@/i18n/config';
-import { Card, CardLink } from './ui/Card';
+import { CardLink } from './ui/Card';
+import { SectionCard } from './ui/SectionCard';
 import { EmptyState } from './ui/EmptyState';
 import { Icon } from './ui/Icon';
 import { attentionCount, type BikeComponentView, type ComponentStatus } from '@/lib/facilities/bikeDisplay';
@@ -23,7 +24,7 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
   const showLevel = !!items && items.some((i) => i.level != null);
   const attention = items ? attentionCount(items) : 0;
   return (
-    <Card title={t('bikeCard.title')} dense className={className}>
+    <SectionCard icon="frame" title={t('bikeCard.title')} className={className}>
       {items ? (
         <>
           <table className="w-full text-xs">
@@ -72,6 +73,6 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
         <EmptyState compact icon="chain" text={t('equipment.bikeEmpty')} />
       )}
       <CardLink label={t('bikeCard.detail')} href="/facilities" />
-    </Card>
+    </SectionCard>
   );
 }

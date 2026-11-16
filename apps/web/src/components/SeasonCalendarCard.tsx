@@ -1,5 +1,6 @@
 import type { T } from '@/i18n/config';
-import { Card, CardLink } from './ui/Card';
+import { CardLink } from './ui/Card';
+import { SectionCard } from './ui/SectionCard';
 
 export interface CalendarEvent {
   id: string;
@@ -45,7 +46,7 @@ export function SeasonCalendarCard({
   const current = weeks.find((w) => w.week === currentWeek);
 
   return (
-    <Card title={t('calendar.title')} dense className={className}>
+    <SectionCard icon="calendar" title={t('calendar.title')} className={className}>
       <div className="flex h-full flex-col">
         <div className="space-y-2.5 px-3.5 py-3">
           <div>
@@ -117,6 +118,6 @@ export function SeasonCalendarCard({
         </ul>
         <CardLink label={t('nav.calendar')} href="/calendar" />
       </div>
-    </Card>
+    </SectionCard>
   );
 }
