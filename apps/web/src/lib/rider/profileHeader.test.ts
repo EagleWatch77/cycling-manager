@@ -103,7 +103,7 @@ for (const [name, html] of headings) {
   const h = html.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
   check(`${name}: heading uses the shared teal title (icon 3.5, text-sm teal-dark) in the standard Card header`, TITLE.test(h) && h.includes('h-3.5 w-3.5 text-teal') && h.includes('px-3.5 py-2.5') && h.includes('uppercase') && h.includes('tracking-wide'), h.slice(0, 260));
 }
-const radarHtml = renderToStaticMarkup(createElement(AbilityRadar, { model: buildRadarModel(attributes, NO_DEVELOPMENT_ESTIMATES, (k: string) => k), labels: { overview: 'o', estimate: 'e', unknown: 'u', note: 'n', noteUnknown: 'nu', experienceDesc: 'ed', aria: 'a' }, title: 'Radar schopností' }));
+const radarHtml = renderToStaticMarkup(createElement(AbilityRadar, { model: buildRadarModel(attributes, NO_DEVELOPMENT_ESTIMATES, (k: string) => k), labels: { overview: 'o', estimate: 'e', unknown: 'u', note: 'n', noteUnknown: 'nu', aria: 'a' }, title: 'Radar schopností' }));
 const rh = radarHtml.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
 check('Radar schopností: same shared title + header padding/typography', TITLE.test(rh) && rh.includes('h-3.5 w-3.5 text-teal') && rh.includes('px-3.5 py-2.5') && rh.includes('uppercase') && rh.includes('tracking-wide'), rh.slice(0, 260));
 const iconOf = (html: string) => (html.match(/<header[\s\S]*?<path d="([^"]+)"/)?.[1] ?? '');

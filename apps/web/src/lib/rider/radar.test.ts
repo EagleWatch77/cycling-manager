@@ -88,7 +88,7 @@ check('out-of-scale/inverted ranges are clamped and ordered', (() => {
 })());
 
 // ---- render smoke ----
-const labels = { overview: 'Prehľad', estimate: 'odhad', unknown: 'Neznámy', note: 'NOTE', noteUnknown: 'NOTE-UNKNOWN', experienceDesc: 'EXP-DESC', aria: 'Radar' };
+const labels = { overview: 'Prehľad', estimate: 'odhad', unknown: 'Neznámy', note: 'NOTE', noteUnknown: 'NOTE-UNKNOWN', aria: 'Radar' };
 const R = (model: typeof m, sel: 'performance' | 'tactics' | 'technique' | 'experience' | 'development' | null) =>
   renderToStaticMarkup(createElement(AbilityRadar, { model, labels, title: 'Radar schopností', initialSelected: sel }));
 const overview = R(m, null);
@@ -106,8 +106,9 @@ for (const id of ['performance', 'tactics', 'technique'] as const) {
   const tabs = overview.match(/<button[^>]*aria-pressed[^>]*>([^<]*)<\/button>/g)!.map((b) => b.replace(/<[^>]+>/g, ''));
   check('six tabs in order Prehľad | Výkon | Taktika | Technika | Skúsenosti | Rozvoj', tabs.join('|') === 'Prehľad|Výkon|Taktika|Technika|Skúsenosti|Rozvoj', tabs.join('|'));
   const ex = R(m, 'experience');
-  check('Skúsenosti detail: icon, title, real value, description, no fan / no sub-attributes', /<img[^>]+skusenosti\.png/.test(ex) && ex.includes('>Skúsenosti<') && ex.includes(`>${attrs.experience}<`) && ex.includes('EXP-DESC') && !ex.includes('Stúpanie'));
-  check('Skúsenosti detail replaces the plot (no polygon) and uses the real 100-160 scale', !/<polygon/.test(ex.replace(/<svg aria-hidden[\s\S]*?<\/svg>/, '')) && g('experience').scale?.min === 100 && g('experience').scale?.max === 160 && ex.includes('>100<') && ex.includes('>160<'));
+  check('Skúsenosti tab = same radar as other tabs: all five axes + values stay, no detail panel / bar / icon / description', ['Výkon', 'Taktika', 'Technika', 'Skúsenosti', 'Rozvoj'].every((l) => ex.includes(l)) && ex.includes(`>${attrs.experience}<`) && (ex.match(/<polygon/g) ?? []).length === (overview.match(/<polygon/g) ?? []).length && !/<img/.test(ex) && !ex.includes('rounded-full bg-line') && !ex.includes('>100<') && !ex.includes('>160<'));
+  const poly = (h: string) => h.match(/<polygon[^>]*fill="#0e9384"[^>]*points="([^"]+)"|<polygon[^>]*points="([^"]+)"[^>]*fill="#0e9384"/)?.slice(1).join('');
+  check('Skúsenosti selected: radar is rotated (polygon differs from overview, axis moved up) like the other group tabs', !!poly(ex) && poly(ex) !== poly(overview) && poly(R(m, 'technique')) !== poly(overview));
   check('overview keeps the five-axis radar incl. Skúsenosti axis', (overview.match(/<polygon/g) ?? []).length >= 5 && overview.includes('Skúsenosti'));
 }
 check('only one group expanded at a time (Výkon open hides Taktika attrs)', !R(m, 'performance').includes('Načasovanie útoku'));

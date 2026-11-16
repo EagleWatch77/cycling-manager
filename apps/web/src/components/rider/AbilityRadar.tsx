@@ -6,8 +6,6 @@ import {
   RADAR_GROUP_ORDER, RADAR_TABS,
   type RadarGroupId, type RadarGroup, type RadarModel,
 } from '@/lib/rider/radar';
-import { getSkillStatIcon } from '@/lib/rider/statIcons';
-import { RiderStatIcon } from './RiderStatIcon';
 
 /**
  * Interactive ability radar: five main axes (Výkon, Taktika, Technika,
@@ -26,9 +24,10 @@ export interface RadarLabels {
   unknown: string;
   note: string;
   noteUnknown: string;
-  experienceDesc: string;
   aria: string;
 }
+
+const selIdx = (id: RadarGroupId | null) => (id ? RADAR_GROUP_ORDER.indexOf(id) : -1);
 
 const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -85,16 +84,15 @@ const fmtRange = (r: { min: number; max: number }) => (r.min === r.max ? `${r.mi
 
 export function AbilityRadar({ model, labels, title, className = '', initialSelected = null }: { model: RadarModel; labels: RadarLabels; title: string; className?: string; initialSelected?: RadarGroupId | null }) {
   const [selected, setSelected] = useState<RadarGroupId | null>(initialSelected);
-  const [rot, setRot] = useState(fanIndex(initialSelected) >= 0 ? -fanIndex(initialSelected) * STEP : 0);
+  const [rot, setRot] = useState(selIdx(initialSelected) >= 0 ? -selIdx(initialSelected) * STEP : 0);
   const [settled, setSettled] = useState(true);
-  const [zoom, setZoom] = useState(fanIndex(initialSelected) >= 0 ? 1 : 0);
-  const zoomRef = useRef(fanIndex(initialSelected) >= 0 ? 1 : 0);
-  const rotRef = useRef(fanIndex(initialSelected) >= 0 ? -fanIndex(initialSelected) * STEP : 0);
+  const [zoom, setZoom] = useState(selIdx(initialSelected) >= 0 ? 1 : 0);
+  const zoomRef = useRef(selIdx(initialSelected) >= 0 ? 1 : 0);
+  const rotRef = useRef(selIdx(initialSelected) >= 0 ? -selIdx(initialSelected) * STEP : 0);
   const rafRef = useRef<number | null>(null);
 
   const groups = model.groups;
-  // Skúsenosti has no fan: it keeps the overview geometry and shows its own detail instead.
-  const selIndex = fanIndex(selected);
+  const selIndex = selIdx(selected);
 
   // Rotate so the selected group's axis points up; back to 0 for the overview.
   useEffect(() => {
@@ -131,7 +129,6 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
   const known = groups.map((g, i) => ({ g, i })).filter(({ g }) => g.norm !== null);
   const poly = known.map(({ g, i }) => pt(angleOf(i), R * (g.norm as number)).map(f1).join(',')).join(' ');
   const selGroup = selIndex >= 0 ? groups[selIndex] : null;
-  const expGroup = groups[RADAR_GROUP_ORDER.indexOf('experience')];
 
   return (
     <section className={`relative flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-card ${className}`}
@@ -160,9 +157,6 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
           ))}
         </div>
 
-      {selected === 'experience' ? (
-        <ExperienceDetail group={expGroup} desc={labels.experienceDesc} />
-      ) : (
       <svg viewBox={`${f1(lerp(OV.x, EX.x, zoom))} ${f1(lerp(OV.y, EX.y, zoom))} ${f1(lerp(OV.w, EX.w, zoom))} ${f1(lerp(OV.h, EX.h, zoom))}`}
         className="relative block h-auto w-full max-w-[680px]" role="img" aria-label={labels.aria}>
         {[0.25, 0.5, 0.75, 1].map((ring) => (
@@ -230,7 +224,6 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
           );
         })}
       </svg>
-      )}
 
         {selected === 'development' && (
           <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">
@@ -239,38 +232,6 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
         )}
       </div>
     </section>
-  );
-}
-
-/** fan index of a group, or -1 when nothing fans out (overview / Skúsenosti). */
-function fanIndex(id: RadarGroupId | null): number {
-  return id && id !== 'experience' ? RADAR_GROUP_ORDER.indexOf(id) : -1;
-}
-
-/**
- * Skúsenosti is ONE attribute: no artificial multi-point radar. Same box
- * proportions as the radar svg (OV_W x OV_H) so the card never changes height.
- */
-function ExperienceDetail({ group, desc }: { group: RadarGroup; desc: string }) {
-  const sc = group.scale;
-  const frac = group.norm === null ? 0 : Math.max(0, Math.min(1, group.norm));
-  return (
-    <div className="relative flex w-full max-w-[680px] items-center justify-center" style={{ aspectRatio: `${OV_W} / ${OV_H}` }}>
-      <div className="flex w-full max-w-[300px] flex-col items-center gap-2 text-center">
-        <RiderStatIcon src={getSkillStatIcon('experience')} alt="" size={56} />
-        <h3 className="text-base font-semibold text-teal-dark">{group.label}</h3>
-        <p className="text-4xl font-bold leading-none text-navy" aria-label={`${group.label} ${group.value}`}>{group.value}</p>
-        {sc && (
-          <div className="w-full px-2" aria-hidden="true">
-            <div className="h-1.5 w-full rounded-full bg-line">
-              <div className="h-full rounded-full bg-teal" style={{ width: `${f1(frac * 100)}%` }} />
-            </div>
-            <div className="mt-1 flex justify-between text-2xs text-navy-muted"><span>{sc.min}</span><span>{sc.max}</span></div>
-          </div>
-        )}
-        <p className="text-xs leading-snug text-navy-soft">{desc}</p>
-      </div>
-    </div>
   );
 }
 

@@ -63,8 +63,6 @@ export interface RadarGroup {
   range: DevRange | null;
   norm: number | null;
   normRange: { min: number; max: number } | null;
-  /** Real attribute scale (Skúsenosti detail indicator). */
-  scale?: { min: number; max: number };
   /** Rozvoj only: mean of the four stars rounded to whole stars, when all four are available. */
   level: SegmentLevel | null;
   attributes: RadarAttribute[];
@@ -150,7 +148,7 @@ export function buildRadarModel(
       {
         id: 'experience', label: label('attr.experience'),
         value: attributes.experience, range: null, norm: frac(attributes.experience, ATTR_MIN, ATTR_MAX),
-        normRange: null, level: null, scale: { min: ATTR_MIN, max: ATTR_MAX }, attributes: [],
+        normRange: null, level: null, attributes: [],
       },
       development,
     ],
