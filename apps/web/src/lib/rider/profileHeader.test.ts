@@ -70,7 +70,8 @@ check('AttributeGroup no longer has an average prop', !/average/.test(readFileSy
 const page = readFileSync('src/app/rider/page.tsx', 'utf8');
 check('standalone Celkové skóre card removed from the page', !/SummaryCard|score\.overall|riderOverall/.test(page));
 check('"Hlavné oblasti" card removed', !/areas\./.test(page));
-check('"Ostatné" renamed to Skúsenosti', /group\.experience/.test(page) && !/group\.other/.test(page));
+check('bottom Skúsenosti card removed; Skúsenosti lives in the Rozvoj card (no group.experience on the page, no group.other)', !/group\.experience/.test(page) && !/group\.other/.test(page) && /<DevelopmentCard[^>]*experience=\{rider\.attributes\.experience\}/.test(page));
+check('three equal cards Výkon/Taktika/Technika across the full width (lg:col-span-4 each)', (page.match(/<AttributeGroup/g) ?? []).length === 1 && /lg:col-span-4/.test(page) && !/xl:col-span-3/.test(page) && (page.match(/titleKey: 'group\./g) ?? []).length === 3);
 check('Silné stránky card present', /StrengthsCard/.test(page));
 check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) && /AttributeGroup/.test(page) && /<DevelopmentCard/.test(page));
 {
@@ -79,11 +80,12 @@ check('radar + attribute cards + Rozvoj card kept', /AbilityRadar/.test(page) &&
   check('Rozvoj appears exactly once on the page (old bottom card removed)', (page.match(/<DevelopmentCard/g) ?? []).length === 1 && !/DevAttributeRow|group\.development/.test(page));
   check('right column wraps Silné stránky + Rozvoj (lg:col-span-5), radar is lg:col-span-7', /lg:col-span-7/.test(page) && /col-span-12 flex flex-col gap-3 lg:col-span-5/.test(page));
 }
-const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, levels: { potential: 4, trainability: 3, professionalism: 5, recovery: 2 } }));
+const dev = renderToStaticMarkup(createElement(DevelopmentCard, { t, experience: 129, levels: { potential: 4, trainability: 3, professionalism: 5, recovery: 2 } }));
 check('Rozvoj card: four attributes in order Potenciál, Trénovateľnosť, Profesionalita, Regenerácia', (() => { const i = ['Potenciál', 'Trénovateľnosť', 'Profesionalita', 'Regenerácia'].map((n) => dev.indexOf(n)); return i.every((x) => x > 0) && i.every((x, k) => k === 0 || x > i[k - 1]); })());
-check('Rozvoj card: all four use five stars (aria-label N/5), each with its own icon, no segment dashes / purple', ['4/5', '3/5', '5/5', '2/5'].every((l) => dev.includes(`aria-label="${l}"`)) && (dev.match(/<img[^>]+ride-icon/g) ?? []).length === 4 && !/bg-purple|rounded-full bg-line|h-1\.5 w-3/.test(dev) && (dev.match(/★/g) ?? []).length === 20);
-check('Rozvoj card: new description + tooltips for all four attributes', dev.includes('Vrodené vlastnosti ovplyvňujúce rozvoj a pripravenosť jazdca.') && dev.includes('title="Akú úroveň môže jazdec počas kariéry dosiahnuť."') && dev.includes('title="Ako rýchlo sa jazdec zlepšuje tréningom."') && dev.includes('title="Kvalita a konzistentnosť prístupu k príprave."') && dev.includes('title="Schopnosť obnovovať energiu a odbúravať únavu."') && (dev.match(/<p /g) ?? []).length === 1);
-const devUnk = renderToStaticMarkup(createElement(DevelopmentCard, { t, levels: { potential: 4, trainability: 3, professionalism: null, recovery: null } }));
+check('Rozvoj card: all four use five stars (aria-label N/5), each with its own icon, no segment dashes / purple', ['4/5', '3/5', '5/5', '2/5'].every((l) => dev.includes(`aria-label="${l}"`)) && (dev.match(/<img[^>]+ride-icon/g) ?? []).length === 5 && !/bg-purple|rounded-full bg-line|h-1\.5 w-3/.test(dev) && (dev.match(/★/g) ?? []).length === 20);
+check('Rozvoj card: no sub-heading/description texts at all (only title + rows), tooltips instead', !dev.includes('Vrodené vlastnosti') && !dev.includes('Pretekárske skúsenosti získané počas kariéry.</') && (dev.match(/<p /g) ?? []).length === 0 && dev.includes('title="Akú úroveň môže jazdec počas kariéry dosiahnuť."') && dev.includes('title="Ako rýchlo sa jazdec zlepšuje tréningom."') && dev.includes('title="Kvalita a konzistentnosť prístupu k príprave."') && dev.includes('title="Schopnosť obnovovať energiu a odbúravať únavu."') );
+check('Rozvoj card: five rows, Skúsenosti last = icon + name + public number 129 (no stars), tooltip', (dev.match(/<li /g) ?? []).length === 5 && dev.indexOf('Regenerácia') < dev.indexOf('Skúsenosti') && />129</.test(dev) && /<img[^>]+skusenosti\.png/.test(dev) && dev.includes('title="Pretekárske skúsenosti získané počas kariéry."') && (dev.match(/★/g) ?? []).length === 20);
+const devUnk = renderToStaticMarkup(createElement(DevelopmentCard, { t, experience: 129, levels: { potential: 4, trainability: 3, professionalism: null, recovery: null } }));
 check('unavailable estimate shows "Neznáme" (no stars, no placeholder value)', (devUnk.match(/Neznáme/g) ?? []).length === 2 && (devUnk.match(/aria-label="\d\/5"/g) ?? []).length === 2);
 check('page feeds the card + radar only from the DB 1-5 estimates', /professionalismLevel/.test(page) && /recoveryLevel/.test(page) && /buildRadarModel\(.*devLevels\)/.test(page));
 check('"dev.scoutNote" removed from all 7 locales', ['sk', 'en', 'cs', 'de', 'es', 'fr', 'pl'].every((l) => !('dev.scoutNote' in JSON.parse(readFileSync(`src/i18n/messages/${l}.json`, 'utf8')))));
@@ -95,7 +97,7 @@ const groupHtml = (tk: string, icon: string, keys: readonly SkillAttribute[]) =>
 const headings: [string, string][] = [
   ['Silné stránky jazdca', strengthsHtml], ['Rozvoj', dev],
   ['Výkon', groupHtml('group.performance', 'chart', PERFORMANCE_FOCUS)], ['Taktika', groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)],
-  ['Technika', groupHtml('group.technique', 'wheel', TECHNIQUE_ATTRIBUTES)], ['Skúsenosti', groupHtml('group.experience', 'trophy', ['experience'])],
+  ['Technika', groupHtml('group.technique', 'wheel', TECHNIQUE_ATTRIBUTES)],
 ];
 for (const [name, html] of headings) {
   const h = html.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '';
@@ -112,9 +114,9 @@ check('heading icons are outline SVG (not the coloured PNG attribute icons)', !/
 const cls = (html: string, re: RegExp) => (html.match(re) ?? []).length;
 check('attribute names share one style (text-[15px] text-navy) in Strengths, groups and Rozvoj', /text-\[15px\] text-navy/.test(strengthsHtml) && /text-\[15px\] text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && /text-\[15px\] text-navy/.test(dev) && !/text-\[15px\] font-semibold/.test(strengthsHtml));
 check('values share one style (text-base font-bold tabular-nums text-navy) in Strengths and groups', /text-base font-bold tabular-nums text-navy/.test(strengthsHtml) && /text-base font-bold tabular-nums text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && !/text-lg/.test(strengthsHtml));
-check('secondary texts share text-xs leading-snug text-navy-soft (group descriptions, Rozvoj, strengths)', cls(strengthsHtml, /text-xs leading-snug text-navy-soft/g) >= 4 && /text-xs leading-snug text-navy-soft/.test(dev) && /text-xs leading-snug text-navy-soft/.test(grp));
+check('secondary texts share text-xs leading-snug text-navy-soft (group descriptions, Rozvoj, strengths)', cls(strengthsHtml, /text-xs leading-snug text-navy-soft/g) >= 4 && /text-xs leading-snug text-navy-soft/.test(grp));
 check('rows share one rhythm (gap-2.5, py-2, border-b border-line)', [strengthsHtml, grp].every((h) => /gap-2\.5 border-b border-line py-2 last:border-0/.test(h)));
-check('Rozvoj card shows no raw numeric development value', !/>\d{2,3}</.test(dev));
+check('Rozvoj card shows no raw numeric HIDDEN value (only the public Skúsenosti number)', (dev.match(/>\d{2,3}</g) ?? []).join() === '>129<');
 const radarSrc = readFileSync('src/components/rider/AbilityRadar.tsx', 'utf8');
 check('radar keeps tabs + interactive handlers', /aria-pressed/.test(radarSrc) && /onClick/.test(radarSrc) && /onKeyDown/.test(radarSrc));
 check('radar background is pure CSS/SVG (gradient + contour paths), no external images', /radial-gradient/.test(radarSrc) && /CONTOURS/.test(radarSrc) && !/<img|url\(/.test(radarSrc));

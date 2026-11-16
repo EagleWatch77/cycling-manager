@@ -13,13 +13,12 @@ import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
 /**
  * Attribute groups, following the reference layout, filled ONLY with the
  * attributes the engine actually has. Performance / Tactics / Technique split
- * the 19 canonical skills into readable families; Experience sits on its own.
+ * the 18 skills below into readable families; Skúsenosti lives in the Rozvoj card.
  */
 const GROUPS: { titleKey: string; descKey: string; icon: string; keys: readonly SkillAttribute[]; }[] = [
   { titleKey: 'group.performance', descKey: 'groupDesc.performance', icon: 'chart', keys: PERFORMANCE_FOCUS },
   { titleKey: 'group.tactics', descKey: 'groupDesc.tactics', icon: 'bolt', keys: TACTICS_ATTRIBUTES },
   { titleKey: 'group.technique', descKey: 'groupDesc.technique', icon: 'wheel', keys: TECHNIQUE_ATTRIBUTES },
-  { titleKey: 'group.experience', descKey: 'groupDesc.experience', icon: 'trophy', keys: ['experience'] },
 ];
 
 /**
@@ -51,7 +50,7 @@ export default async function RiderOverviewPage() {
 
         <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
           <StrengthsCard t={t} attributes={rider.attributes} archetype={rider.inferredArchetype} />
-          <DevelopmentCard t={t} levels={devLevels} />
+          <DevelopmentCard t={t} levels={devLevels} experience={rider.attributes.experience} />
         </div>
       </div>
 
@@ -62,7 +61,7 @@ export default async function RiderOverviewPage() {
             keys={g.keys} attributes={rider.attributes}
             descriptionKey={g.descKey}
             showStatIcons statIconSize={24}
-            className="col-span-12 sm:col-span-6 xl:col-span-3" />
+            className="col-span-12 lg:col-span-4" />
         ))}
       </div>
     </>

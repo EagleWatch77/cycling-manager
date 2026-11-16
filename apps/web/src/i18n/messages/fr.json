@@ -567,7 +567,6 @@
   "groupDesc.tactics": "Capacité du coureur à lire la course et à décider.",
   "groupDesc.technique": "Maîtrise du vélo et gestion des conditions techniques.",
   "groupDesc.experience": "Expérience de course acquise au fil de la carrière.",
-  "groupDesc.development": "Traits innés qui influencent le développement et la disponibilité du coureur.",
   "attrDesc.climbing": "Performance dans les longues montées.",
   "attrDesc.hills": "Performance dans les montées courtes et intenses.",
   "attrDesc.flat": "Performance sur parcours plat.",
