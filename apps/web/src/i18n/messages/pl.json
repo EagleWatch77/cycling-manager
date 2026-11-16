@@ -630,5 +630,15 @@
   "history.careerStart": "Początek kariery zawodowej",
   "history.purchasedInto": "Pozyskany do ligi {league}",
   "history.contractStart": "Zawarcie kontraktu",
-  "history.contractDuration": "Kontrakt na {weeks} tygodni"
+  "history.contractDuration": "Kontrakt na {weeks} tygodni",
+  "market.buy": "Kup zawodnika",
+  "market.buyNote": "Zamiana nastąpi przy najbliższym tygodniowym zamknięciu.",
+  "market.buyError.swapPending": "Masz już zaplanowaną zamianę.",
+  "market.buyError.notAvailable": "Ten zawodnik nie jest już dostępny.",
+  "market.buyError.notEligible": "Nie możesz pozyskać tego zawodnika w swojej lidze.",
+  "market.buyError.generic": "Zakup się nie powiódł.",
+  "swap.planned": "Planowana zamiana",
+  "swap.newRider": "Nowy zawodnik",
+  "swap.takeover": "Przejęcie",
+  "history.contractEnd": "Koniec kontraktu"
 }

@@ -18,7 +18,7 @@ export interface RiderContractView {
   expiresAt: string;
 }
 
-export type CareerEventType = 'career_start' | 'contract_signed';
+export type CareerEventType = 'career_start' | 'contract_signed' | 'contract_ended';
 export interface CareerEventView {
   id: string;
   type: CareerEventType;
@@ -60,7 +60,7 @@ export async function getMyCareerEvents(riderId: string): Promise<CareerEventVie
     .order('id', { ascending: true });
   if (error || !data) return [];
   return data.flatMap((e) => {
-    if (e.event_type !== 'career_start' && e.event_type !== 'contract_signed') return [];
+    if (e.event_type !== 'career_start' && e.event_type !== 'contract_signed' && e.event_type !== 'contract_ended') return [];
     return [{
       id: e.id as string, type: e.event_type as CareerEventType,
       season: seasonNo(e.season_id), week: e.season_week as number,

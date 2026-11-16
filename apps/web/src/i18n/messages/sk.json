@@ -630,5 +630,15 @@
   "history.careerStart": "Začiatok profesionálnej kariéry",
   "history.purchasedInto": "Zakúpený do ligy {league}",
   "history.contractStart": "Vznik kontraktu",
-  "history.contractDuration": "Kontrakt na {weeks} týždňov"
+  "history.contractDuration": "Kontrakt na {weeks} týždňov",
+  "market.buy": "Kúpiť jazdca",
+  "market.buyNote": "Výmena prebehne pri najbližšej týždennej uzávierke.",
+  "market.buyError.swapPending": "Už máš naplánovanú výmenu.",
+  "market.buyError.notAvailable": "Tento jazdec už nie je dostupný.",
+  "market.buyError.notEligible": "Tohto jazdca nemôžeš v tvojej lige získať.",
+  "market.buyError.generic": "Nákup sa nepodaril.",
+  "swap.planned": "Plánovaná výmena",
+  "swap.newRider": "Nový jazdec",
+  "swap.takeover": "Prevzatie",
+  "history.contractEnd": "Koniec kontraktu"
 }

@@ -630,5 +630,15 @@
   "history.careerStart": "Beginn der Profikarriere",
   "history.purchasedInto": "Verpflichtet in die Liga {league}",
   "history.contractStart": "Vertrag abgeschlossen",
-  "history.contractDuration": "Vertrag über {weeks} Wochen"
+  "history.contractDuration": "Vertrag über {weeks} Wochen",
+  "market.buy": "Fahrer kaufen",
+  "market.buyNote": "Der Wechsel erfolgt beim nächsten Wochenabschluss.",
+  "market.buyError.swapPending": "Du hast bereits einen Wechsel geplant.",
+  "market.buyError.notAvailable": "Dieser Fahrer ist nicht mehr verfügbar.",
+  "market.buyError.notEligible": "Diesen Fahrer kannst du in deiner Liga nicht verpflichten.",
+  "market.buyError.generic": "Der Kauf ist fehlgeschlagen.",
+  "swap.planned": "Geplanter Wechsel",
+  "swap.newRider": "Neuer Fahrer",
+  "swap.takeover": "Übernahme",
+  "history.contractEnd": "Vertragsende"
 }

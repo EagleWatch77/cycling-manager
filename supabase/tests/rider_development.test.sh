@@ -151,6 +151,7 @@ eq "calling create_my_starter_rider again creates no second snapshot" "$(q "sele
 
 # schema.sql also contains the later migration 07 (contracts); apply it to A so both sides compare like with like.
 psqlc t -f "$ROOT/migrations/20261116_01_rider_contracts.sql" >/dev/null 2>&1 || { echo "migration 07 failed"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261116_02_market_purchase_and_swap.sql" >/dev/null 2>&1 || { echo "migration 08 failed"; exit 1; }
 echo "== Scenario B: fresh database from supabase/schema.sql == scenario A"
 psqlc fresh -f "$SCHEMA" >/dev/null 2>&1 && ok "full schema.sql applies on a fresh database" || bad "full schema.sql applies" "$(psqlc fresh -f "$SCHEMA" | tail -3)"
 cat_of() { psqlc "$1" -c "select string_agg(p.oid::regprocedure::text||':'||p.prosecdef::text||':'||coalesce(p.proacl::text,''), E'\n' order by p.oid::regprocedure::text) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'" | md5sum; }

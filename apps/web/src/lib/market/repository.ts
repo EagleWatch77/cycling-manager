@@ -5,7 +5,7 @@ import type { SkillAttribute } from '@/lib/rider/config';
 import { MARKET_FREE_POOL_SIZE, MARKET_PREMIUM_POOL_SIZE } from './config';
 
 export type MarketTier = 'free' | 'premium';
-export type MarketRiderStatus = 'available' | 'acquired';
+export type MarketRiderStatus = 'available' | 'reserved' | 'acquired';
 /** Which trigger created a batch — the same generateMarketPool() serves both; see that file. */
 export type MarketGenerationSource = 'admin' | 'week6';
 
@@ -171,6 +171,7 @@ export async function resetAvailableMarketPool(seasonId: string): Promise<{ ok: 
     .delete()
     .eq('season_id', seasonId)
     .eq('status', 'available')
+    .is('acquired_rider_id', null)
     .select('id');
 
   if (error) return { ok: false, deleted: 0 };

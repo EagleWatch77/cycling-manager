@@ -1,5 +1,6 @@
 import 'server-only';
 import { ensureSeasonTransitionsProcessed } from '@/lib/calendar/seasonAging';
+import { processDueRiderSwaps } from '@/lib/market/swap';
 
 /**
  * The single lazy game-state entry point, called once per request from
@@ -20,4 +21,7 @@ import { ensureSeasonTransitionsProcessed } from '@/lib/calendar/seasonAging';
  */
 export async function ensureGameStateProcessed(): Promise<void> {
   await ensureSeasonTransitionsProcessed();
+  // Weekly closure: season aging runs first so a swap is judged against the new season's league.
+  // The database does nothing while rider_swap_settings.enabled is false.
+  await processDueRiderSwaps();
 }

@@ -66,6 +66,7 @@ M="$ROOT/migrations/20261116_01_rider_contracts.sql"
 BEFORE_ACQ=$(q "select count(*) from public.rider_acquisitions"); BEFORE_HIST=$(q "select count(*) from public.rider_attribute_history")
 psqlc t -f "$M" >/dev/null 2>&1 && ok "migration applies on top of legacy data" || { bad "migration applies" "$(psqlc t -f "$M" | tail -3)"; exit 1; }
 psqlc t -f "$M" >/dev/null 2>&1 && ok "migration is idempotent (second run)" || bad "second run" "$(psqlc t -f "$M" | tail -3)"
+psqlc t -f "$ROOT/migrations/20261116_02_market_purchase_and_swap.sql" >/dev/null 2>&1 || { echo "migration 08 failed"; exit 1; }
 
 
 echo "== 1. legacy data untouched, nothing invented"

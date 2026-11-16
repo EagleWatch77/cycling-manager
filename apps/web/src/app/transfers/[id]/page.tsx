@@ -10,6 +10,10 @@ import { Icon } from '@/components/ui/Icon';
 import { RiderAvatar } from '@/components/rider/RiderAvatar';
 import { AttributeGroup } from '@/components/rider/AttributeGroup';
 import { archetypeIcon } from '@/lib/rider/archetypeIcon';
+import { getMyPendingSwap, isSwapEnabled } from '@/lib/market/swap';
+import { BuyRiderButton } from '@/components/market/BuyRiderButton';
+import { PendingSwapRows } from '@/components/rider/PendingSwapRows';
+import { CardTitle } from '@/components/ui/CardTitle';
 
 // TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES now come from lib/rider/config.ts (previously duplicated locally here).
 
@@ -32,6 +36,7 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
   const { id } = await params;
   const rider = await getMarketRiderDetail(id);
   if (!rider) notFound();
+  const [enabled, pendingSwap] = await Promise.all([isSwapEnabled(), getMyPendingSwap()]);
 
   return (
     <AppShell activeId="transfers" locale={locale}>
@@ -58,9 +63,20 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
                   <Icon name="crown" className="h-3 w-3" /> Premium
                 </span>
               )}
+              {enabled && !pendingSwap && (
+                <BuyRiderButton marketRiderId={rider.id} label={t('market.buy')} note={t('market.buyNote')}
+                  errors={{ swapPending: t('market.buyError.swapPending'), notAvailable: t('market.buyError.notAvailable'),
+                    notEligible: t('market.buyError.notEligible'), generic: t('market.buyError.generic') }} />
+              )}
             </div>
           </div>
         </Card>
+
+        {pendingSwap && (
+          <Card title={<CardTitle icon="calendar">{t('swap.planned')}</CardTitle>} dense>
+            <PendingSwapRows t={t} swap={pendingSwap} />
+          </Card>
+        )}
 
         <div className="grid grid-cols-12 gap-3">
           <AttributeGroup t={t} titleKey="group.performance" icon="chart" keys={PERFORMANCE_FOCUS} attributes={rider.attributes}

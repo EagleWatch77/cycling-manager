@@ -39,7 +39,7 @@ export function CareerHistoryCard({ t, events, className = '' }: { t: T; events:
                   const league = e.type === 'career_start' ? leagueLabel(t, e) : null;
                   return (
                     <li key={e.id}>
-                      <p className="text-[15px] text-navy">{t(e.type === 'career_start' ? 'history.careerStart' : 'history.contractStart')}</p>
+                      <p className="text-[15px] text-navy">{t(e.type === 'career_start' ? 'history.careerStart' : e.type === 'contract_ended' ? 'history.contractEnd' : 'history.contractStart')}</p>
                       {league && <p className="text-xs leading-snug text-navy-soft">{t('history.purchasedInto', { league })}</p>}
                       {e.type === 'contract_signed' && e.durationWeeks != null && (
                         <p className="text-xs leading-snug text-navy-soft">{t('history.contractDuration', { weeks: e.durationWeeks })}</p>

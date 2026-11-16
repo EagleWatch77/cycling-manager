@@ -117,3 +117,10 @@ Podrobné ID rozhodnutí: `DECISIONS.md` C-015 až C-021.
 2. Pravidlá trhu, financií, personálu, tímu, scoutingu a rebríčkov.
 3. Pravidlá bodovania a odmien v pretekoch.
 4. Ladenie pre ligy vyššie ako Rookie.
+
+## 13. Nákup jazdca z trhu a týždenná výmena `[SCHVÁLENÉ 2026-11-16]` (podrobnosti C-052, otvorené O-018 až O-021)
+- Nákup je kedykoľvek (aj počas Tour a platného kontraktu), ale nevymení nič hneď: kúpený jazdec je rezervovaný, nikto iný ho nekúpi. Manažér má najviac jednu čakajúcu výmenu.
+- Aktuálny jazdec dokončí prebiehajúcu Tour a tréningový týždeň. Výmena prebehne pri najbližšej týždennej uzávierke (nedeľa 24:00 UTC = pondelok 00:00 UTC): najprv sa uzavrie starý jazdec (preteky, výsledky, tréningy, rozvoj), potom výmena.
+- Starý jazdec končí kontrakt a vracia sa na trh s rovnakou identitou, vekom, schopnosťami, skrytými atribútmi a históriou. Nový jazdec sa stáva aktívnym a dostane nový 10-týždňový kontrakt od týždňa skutočného prevzatia (nákup S2 T4 -> prevzatie S2 T5 -> kontrakt do konca S3 T4).
+- Úspechy manažéra zostávajú manažérovi. Limity OVR podľa ligy majú prednosť pred platným kontraktom; čísla limitov nie sú určené. Funkcia je v databáze vypnutá, kým ju majiteľ nezapne.
+

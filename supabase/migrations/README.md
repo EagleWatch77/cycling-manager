@@ -54,7 +54,11 @@ riders/plans. Either deploy order is safe: without the SQL the new card simply d
 ## 2026-11-16 — Rider contracts V1 + career history
 
 | 7 | `20261116_01_rider_contracts.sql` | `rider_contracts` (10 game weeks, exact `expires_at`), `rider_career_events`, league + sub-league frozen in `rider_acquisitions`, internal `start_rider_contract_internal()` (no client access; no purchase function exists yet, so nothing creates contracts today), `my_rider_contract()`, prepared-but-INACTIVE `purge_unsold_young_market_riders()` (dry run, not called, not granted) |
+| 8 | `20261116_02_market_purchase_and_swap.sql` | market purchase = reservation (`reserved`), `rider_swaps` (one pending per manager / per market rider), weekly swap at Monday 00:00 UTC, riders third state `on_market`, permanent `market_riders.acquired_rider_id` link, `league_rider_limits` (all NULL), `rider_swap_settings` (**OFF by default**), `reserve_market_rider()`, `process_due_rider_swaps()`, `my_pending_swap()`, `process_season_aging()` patched (no double aging) |
 
 Run AFTER 20261115_03 (which is itself still waiting to be applied), whole file, idempotent, additive: changes no rider data, deletes nothing.
 The app code is safe before and after: without the migration the Kontrakt/História tabs show their empty line.
 Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_contracts.test.sh` (run as `postgres`).
+
+Migration 8 runs AFTER 20261116_01, whole file, idempotent, additive: deletes nothing and is OFF until `update public.rider_swap_settings set enabled = true`.
+Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_swaps.test.sh` (as `postgres`).

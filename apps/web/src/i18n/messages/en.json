@@ -630,5 +630,15 @@
   "history.careerStart": "Start of professional career",
   "history.purchasedInto": "Signed into league {league}",
   "history.contractStart": "Contract signed",
-  "history.contractDuration": "{weeks}-week contract"
+  "history.contractDuration": "{weeks}-week contract",
+  "market.buy": "Buy rider",
+  "market.buyNote": "The swap happens at the next weekly closure.",
+  "market.buyError.swapPending": "You already have a swap planned.",
+  "market.buyError.notAvailable": "This rider is no longer available.",
+  "market.buyError.notEligible": "You cannot sign this rider in your league.",
+  "market.buyError.generic": "The purchase failed.",
+  "swap.planned": "Planned swap",
+  "swap.newRider": "New rider",
+  "swap.takeover": "Takeover",
+  "history.contractEnd": "Contract ended"
 }
