@@ -746,5 +746,9 @@
   "bikePage.statUpgrades": "Upgrady",
   "bikePage.statKm": "Najazdené km",
   "bikePage.components": "Komponenty",
-  "bikePage.devPreview": "Vývojový náhľad"
+  "bikePage.devPreview": "Vývojový náhľad",
+  "bikeCard.overallLevel": "Úroveň bicykla: {n}",
+  "bikeCard.decimalSep": ",",
+  "bikeCard.missing": "Údaj sa zatiaľ neeviduje",
+  "bikeCard.criticalWarning": "Kritický stav, potrebuje servis: {names}"
 }

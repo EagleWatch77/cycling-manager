@@ -746,5 +746,9 @@
   "bikePage.statUpgrades": "Mejoras",
   "bikePage.statKm": "Km recorridos",
   "bikePage.components": "Componentes",
-  "bikePage.devPreview": "Vista previa de desarrollo"
+  "bikePage.devPreview": "Vista previa de desarrollo",
+  "bikeCard.overallLevel": "Nivel de la bicicleta: {n}",
+  "bikeCard.decimalSep": ",",
+  "bikeCard.missing": "Este dato aún no se registra",
+  "bikeCard.criticalWarning": "Estado crítico, necesita servicio: {names}"
 }

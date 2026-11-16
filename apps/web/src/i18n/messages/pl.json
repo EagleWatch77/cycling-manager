@@ -746,5 +746,9 @@
   "bikePage.statUpgrades": "Ulepszenia",
   "bikePage.statKm": "Przejechane km",
   "bikePage.components": "Komponenty",
-  "bikePage.devPreview": "Podgląd deweloperski"
+  "bikePage.devPreview": "Podgląd deweloperski",
+  "bikeCard.overallLevel": "Poziom roweru: {n}",
+  "bikeCard.decimalSep": ",",
+  "bikeCard.missing": "Ta wartość nie jest jeszcze rejestrowana",
+  "bikeCard.criticalWarning": "Stan krytyczny, wymaga serwisu: {names}"
 }

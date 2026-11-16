@@ -16,6 +16,7 @@ for (const v of BIKE_VISUALS) {
     const a = v.anchors[id];
     assert.ok(a.x > 0 && a.x < 1 && a.y > 0 && a.y < 1, `${v.key}.${id}`);
   }
+  assert.ok(v.saddle.x > 0 && v.saddle.x < 0.5 && v.saddle.y > 0 && v.saddle.y < 0.2, `${v.key}.saddle`);
   // right-side parts must lie right of the drivetrain anchor (sanity of orientation)
   assert.ok(v.anchors.brakes.x > v.anchors.drivetrain.x && v.anchors.wheels.x > v.anchors.frame.x);
 }

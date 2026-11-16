@@ -7,7 +7,7 @@ import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
 import { BASE_BIKE_LEVEL } from '@/lib/bike/equipment';
 import { findMyBikeCondition } from '@/lib/facilities/bike';
-import { buildComponentView, type BikeComponentView } from '@/lib/facilities/bikeDisplay';
+import { stateFromCondition } from '@/lib/bike/overview';
 import { ensureMyDivision } from '@/lib/league/repository';
 import { MiniPanel } from '@/components/dashboard/MiniPanel';
 import { LiveRaceCard } from '@/components/LiveRaceCard';
@@ -18,7 +18,7 @@ import { AppShell } from '@/components/AppShell';
 import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalendarCard';
 import { TourPreviewCard, type CurrentTourView } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
-import { BikeCard } from '@/components/BikeCard';
+import { BikeCard, type BikeOverviewItem } from '@/components/BikeCard';
 
 /**
  * Home dashboard (layout per the Cycling Dynasty reference, our own content).
@@ -107,14 +107,15 @@ export default async function DashboardPage() {
     rider ? getMyRiderContract() : Promise.resolve(null),
   ]);
 
-  // Only the stored components. Wheel condition and component levels are not
-  // stored yet (null = shown as "-" / hidden), never assumed.
-  const bikeItems: BikeComponentView[] | null = bike
+  // Same source as /bike: bike_condition (condition, 100 = new = the "state" shown here). Frame and wheels
+  // have no stored condition yet (null = dash) and component levels are not stored (base level for all).
+  const bikeItems: BikeOverviewItem[] | null = rider
     ? [
-        buildComponentView({ id: 'wheels', condition: null, level: BASE_BIKE_LEVEL }),
-        buildComponentView({ id: 'tires', condition: bike.tires, level: BASE_BIKE_LEVEL }),
-        buildComponentView({ id: 'brakes', condition: bike.brakes, level: BASE_BIKE_LEVEL }),
-        buildComponentView({ id: 'drivetrain', condition: bike.drivetrain, level: BASE_BIKE_LEVEL }),
+        { id: 'frame', level: BASE_BIKE_LEVEL, state: null },
+        { id: 'wheels', level: BASE_BIKE_LEVEL, state: null },
+        { id: 'tires', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.tires) : null },
+        { id: 'brakes', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.brakes) : null },
+        { id: 'drivetrain', level: BASE_BIKE_LEVEL, state: bike ? stateFromCondition(bike.drivetrain) : null },
       ]
     : null;
   const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;

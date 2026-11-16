@@ -746,5 +746,9 @@
   "bikePage.statUpgrades": "Upgrades",
   "bikePage.statKm": "Gefahrene km",
   "bikePage.components": "Komponenten",
-  "bikePage.devPreview": "Entwicklervorschau"
+  "bikePage.devPreview": "Entwicklervorschau",
+  "bikeCard.overallLevel": "Radstufe: {n}",
+  "bikeCard.decimalSep": ",",
+  "bikeCard.missing": "Dieser Wert wird noch nicht erfasst",
+  "bikeCard.criticalWarning": "Kritischer Zustand, Wartung nötig: {names}"
 }

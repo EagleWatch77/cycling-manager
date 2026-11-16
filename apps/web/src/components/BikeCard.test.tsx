@@ -1,76 +1,55 @@
 /**
- * Home bike card: wear display, status bands, service alert, missing data,
- * link to the existing bike page. Run: npx tsx --tsconfig tsconfig.json src/components/BikeCard.test.tsx
+ * Home "Môj bicykel": picture by frame level, overall level, component STATE
+ * (100 = new) with colour bands, links, no old tiles/buttons.
+ * Run: npx tsx --tsconfig tsconfig.json src/components/BikeCard.test.tsx
  */
 import './BikeCard.setup';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { BikeCard } from './BikeCard';
-import { wearPct, componentStatus, buildComponentView, attentionCount } from '@/lib/facilities/bikeDisplay';
-import { BIKE_COMPONENT_STATUS } from '@/lib/facilities/config';
-import { NEW_BIKE_ROWS } from './BikeCard.fixtures';
+import { NEW_BIKE_ROWS, PREVIEW_BEFORE_TOUR, PREVIEW_AFTER_TOUR } from './BikeCard.fixtures';
 import sk from '@/i18n/messages/sk.json';
 
 let pass = 0, fail = 0;
 const check = (n: string, c: boolean, d = '') => { if (c) { pass++; console.log('  PASS ', n); } else { fail++; console.log('  FAIL ', n, d); } };
 const t = ((k: string, v?: Record<string, string | number>) => ((sk as Record<string, string>)[k] ?? k).replace(/\{(\w+)\}/g, (_: string, n: string) => String(v?.[n] ?? ''))) as never;
-const views = (c: { tires: number; brakes: number; drivetrain: number }) => [
-  buildComponentView({ id: 'wheels', condition: null, level: null }),
-  buildComponentView({ id: 'tires', condition: c.tires, level: null }),
-  buildComponentView({ id: 'brakes', condition: c.brakes, level: null }),
-  buildComponentView({ id: 'drivetrain', condition: c.drivetrain, level: null }),
-];
+const html = (items: Parameters<typeof BikeCard>[0]['items']) => renderToStaticMarkup(<BikeCard t={t} items={items} />);
+const band = (h: string, id: string) => new RegExp(`data-component="${id}" data-state-band="(\\w+)"`).exec(h)?.[1];
+const stateOf = (h: string, id: string) => new RegExp(`data-state="${id}">([^<]*)<`).exec(h)?.[1];
 
-// 1. New bike = 0 % wear, all OK, no alert.
 {
-  const v = views({ tires: 100, brakes: 100, drivetrain: 100 });
-  const html = renderToStaticMarkup(<BikeCard t={t} items={v} />);
-  check('new bike: three stored components show 0 %', (html.match(/0 %/g) ?? []).length === 3);
-  check('new bike: no service alert', !html.includes('role="status"') && attentionCount(v) === 0);
-  check('new bike: all stored components OK', v.filter((x) => x.id !== 'wheels').every((x) => x.status === 'ok'));
+  const h = html(PREVIEW_BEFORE_TOUR);
+  check('before first Tour: five 100 %, all green', ['frame', 'wheels', 'tires', 'brakes', 'drivetrain'].every((id) => stateOf(h, id) === '100 %' && band(h, id) === 'good'));
+  check('level badge "Úroveň bicykla: 1"', h.includes('Úroveň bicykla: 1<'));
+  check('no warning when everything is good', !h.includes('data-testid="bike-warning"'));
+  check('steel picture for frame LVL 1', h.includes('data-visual="steel"') && h.includes('/images/bikes/steel-lvl1.webp'));
 }
-// 2. Mixed wear: stored condition 82/55/30 -> wear 18/45/70, statuses ok/service/maintenance.
 {
-  check('wear = 100 - condition', wearPct(82) === 18 && wearPct(55) === 45 && wearPct(30) === 70 && wearPct(100) === 0 && wearPct(0) === 100);
-  check('status bands follow existing risk bands', componentStatus(75) === 'ok' && componentStatus(74) === 'service' && componentStatus(50) === 'service' && componentStatus(49) === 'maintenance' && componentStatus(0) === 'maintenance');
-  check('status mapping is the central config', BIKE_COMPONENT_STATUS.normal === 'ok' && BIKE_COMPONENT_STATUS.veryHigh === 'maintenance');
-  const v = views({ tires: 82, brakes: 55, drivetrain: 30 });
-  const html = renderToStaticMarkup(<BikeCard t={t} items={v} />);
-  check('mixed: shows 18 %, 45 %, 70 %', html.includes('18 %') && html.includes('45 %') && html.includes('70 %'));
-  check('mixed: Servis and Údržba labels', html.includes('Servis') && html.includes('Údržba'));
-  // 3. Alert counts the two worn components.
-  check('alert: 2 components need service', attentionCount(v) === 2 && html.includes('Potrebujú servis: 2'));
+  const h = html(PREVIEW_AFTER_TOUR);
+  check('after Tour: 70 / 40 / 10 / 10 / 40', [['frame', '70 %'], ['wheels', '40 %'], ['tires', '10 %'], ['brakes', '10 %'], ['drivetrain', '40 %']].every(([id, v]) => stateOf(h, id) === v));
+  check('colours: 70 green, 40 orange, 10 red', band(h, 'frame') === 'good' && band(h, 'wheels') === 'low' && band(h, 'drivetrain') === 'low' && band(h, 'tires') === 'critical' && band(h, 'brakes') === 'critical');
+  check('overall level stays 1 (wear does not lower it)', h.includes('Úroveň bicykla: 1<'));
+  check('critical warning names tires and brakes only', /data-testid="bike-warning"[^>]*>[^<]*Plášte, Brzdy/.test(h) && !/bike-warning"[^>]*>[^<]*Pohon/.test(h));
 }
-// 4. Missing data: wheels unknown never counted or invented; no bike data = empty state, no numbers.
 {
-  const v = views({ tires: 100, brakes: 100, drivetrain: 100 });
-  const w = v.find((x) => x.id === 'wheels')!;
-  check('wheels unknown: wear/status null', w.wear === null && w.status === null);
-  const html = renderToStaticMarkup(<BikeCard t={t} items={v} />);
-  check('no level column when no level data', !html.includes('Úroveň'));
-  const empty = renderToStaticMarkup(<BikeCard t={t} items={null} />);
-  check('no bike data: empty state, no %', !empty.includes(' %') && empty.includes(sk['equipment.bikeEmpty']));
-  check('no invented bike name/frame/weight', !/Rookie Road|kg|Hliník/.test(html));
+  const h = html(NEW_BIKE_ROWS);
+  check('missing frame/wheels: dash, never an invented 100 %', stateOf(h, 'frame') === '—' && stateOf(h, 'wheels') === '—' && band(h, 'frame') === 'unknown');
+  check('real stored components shown as state 100 %', stateOf(h, 'tires') === '100 %' && stateOf(h, 'drivetrain') === '100 %');
+  check('dash has an explanation title', h.includes('title="Údaj sa zatiaľ neeviduje"'));
 }
-// 5. Detail link goes to the existing bike page.
 {
-  const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
-  check('link to /bike with the new label', html.includes('href="/bike"') && html.includes('Detail bicykla a servis'));
+  const lv = (levels: number[]) => PREVIEW_BEFORE_TOUR.map((r, i) => ({ ...r, level: levels[i] }));
+  check('levels 2,2,1,1,1 -> 1,4', html(lv([2, 2, 1, 1, 1])).includes('Úroveň bicykla: 1,4<'));
+  check('all level 4 -> 4', html(lv([4, 4, 4, 4, 4])).includes('Úroveň bicykla: 4<'));
+  check('picture follows the FRAME level only', html(lv([6, 1, 1, 1, 1])).includes('data-visual="continental"') && html(lv([1, 8, 8, 8, 8])).includes('data-visual="steel"'));
+  check('frame 9 -> elite picture', html(lv([9, 1, 1, 1, 1])).includes('/images/bikes/elite-lvl10.webp'));
 }
-// 5b. Each tile links to the detail page with the component preselected.
 {
-  const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
-  check('tiles link to /bike?component=', ['wheels', 'tires', 'brakes', 'drivetrain'].every((id) => html.includes(`href="/bike?component=${id}"`)));
-}
-// 6. Only the current manager's bike: the card renders exactly the rows it is given.
-{
-  const mine = views({ tires: 90, brakes: 90, drivetrain: 90 });
-  const html = renderToStaticMarkup(<BikeCard t={t} items={mine} />);
-  check('renders only given rows (4 components)', (html.match(/data-component=/g) ?? []).length === 4 && html.includes('10 %'));
-}
-// 7. Mobile: table has no fixed widths wider than the card; checked by markup (w-full, no min-w).
-{
-  const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
-  check('responsive markup: 2 x 2 tile grid, no fixed widths', html.includes('grid grid-cols-2') && !/min-w-\[|w-\[\d+px\]/.test(html));
+  const h = html(PREVIEW_BEFORE_TOUR);
+  check('clickable: picture -> /bike, each component -> /bike?component=<id>', h.includes('data-testid="bike-picture-link"') && ['frame', 'wheels', 'tires', 'brakes', 'drivetrain'].every((id) => h.includes(`href="/bike?component=${id}"`)) && h.includes('href="/bike"'));
+  check('left: frame + drivetrain, right: brakes + wheels + tires (five leader lines)', ['frame', 'wheels', 'tires', 'brakes', 'drivetrain'].every((id) => h.includes(`data-line="${id}"`)));
+  check('old tiles, wear bars and bottom link removed', !h.includes('Detail bicykla a servis') && !h.includes('Opotrebovanie') && !h.includes('<ul') && !/<button/.test(h));
+  const e = html(null);
+  check('no rider: empty state, no numbers', !e.includes(' %') && e.includes(sk['equipment.bikeEmpty']));
 }
 console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+if (fail) process.exit(1);

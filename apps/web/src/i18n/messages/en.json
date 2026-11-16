@@ -746,5 +746,9 @@
   "bikePage.statUpgrades": "Upgrades",
   "bikePage.statKm": "Distance ridden",
   "bikePage.components": "Components",
-  "bikePage.devPreview": "Dev preview"
+  "bikePage.devPreview": "Dev preview",
+  "bikeCard.overallLevel": "Bike level: {n}",
+  "bikeCard.decimalSep": ".",
+  "bikeCard.missing": "This value is not tracked yet",
+  "bikeCard.criticalWarning": "Critical condition, needs service: {names}"
 }
