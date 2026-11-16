@@ -7,7 +7,8 @@ import {
   frameMaterial, isLevelAvailable, unlockLeague, upgradeLevels, maxBikeLevel, type BikeEquipmentId,
 } from '@/lib/bike/equipment';
 import { Icon } from '@/components/ui/Icon';
-import { BikeIllustration, BIKE_ANCHORS, BIKE_VIEWBOX } from './BikeIllustration';
+import { BikeIllustration, anchorPoint, BIKE_VIEWBOX } from './BikeIllustration';
+import { bikeVisualForFrameLevel } from '@/lib/bike/visuals';
 import { BikeGlyph } from './BikeGlyph';
 import { makeT, type MessageMap } from './makeT';
 
@@ -35,7 +36,7 @@ const CALLOUT: Record<BikeEquipmentId, { left: string; top: string; side: 'left'
 const CARD_W = 152;
 
 export function BikeWorkshop({
-  components, league, messages, initialSelected, weightKg, kilometres,
+  components, league, messages, initialSelected, weightKg, kilometres, devPreview = false,
 }: {
   components: readonly WorkshopComponent[];
   league: LeagueId;
@@ -43,6 +44,8 @@ export function BikeWorkshop({
   initialSelected: BikeEquipmentId;
   weightKg: number | null;
   kilometres: number | null;
+  /** Development preview of a bike picture (frame level overridden by the page); never set in production. */
+  devPreview?: boolean;
 }) {
   const t = makeT(messages);
   const [selected, setSelected] = useState<BikeEquipmentId>(initialSelected);
@@ -63,6 +66,8 @@ export function BikeWorkshop({
   const upgrades = components.reduce((s, c) => s + (c.level - BASE_BIKE_LEVEL), 0);
   const upgradeCapacity = BIKE_EQUIPMENT_IDS.length * (maxBikeLevel(league) - BASE_BIKE_LEVEL);
   const frame = byId.get('frame')!;
+  // The picture follows the OWNED frame level only (not the league, not the level picked in the upgrade panel).
+  const visual = bikeVisualForFrameLevel(frame.level);
   const dash = '—';
 
   return (
@@ -73,17 +78,18 @@ export function BikeWorkshop({
           <Icon name="frame" className="h-5 w-5" />
           <h2 className="text-xl font-extrabold">{t('bikePage.bikeName')}</h2>
           <span className="rounded-full bg-teal-light px-2.5 py-0.5 text-xs font-bold text-teal-dark">{t(`league.${league}`)}</span>
+          {devPreview && <span className="rounded-full bg-warn px-2.5 py-0.5 text-xs font-bold text-white" data-testid="dev-preview">{t('bikePage.devPreview')}</span>}
           <span className="ml-auto text-xs font-medium text-teal-light">{t('bikePage.baseKit')}</span>
         </header>
 
-        <div className="relative bg-gradient-to-b from-teal-rail to-card px-2 pb-2 pt-3" data-testid="bike-drawing">
-          <div className="relative mx-auto w-full" style={{ aspectRatio: `${BIKE_VIEWBOX.w} / ${BIKE_VIEWBOX.h}` }}>
-            <BikeIllustration selected={selected} onSelect={select} className="absolute inset-0 h-full w-full" />
+        <div className="relative bg-gradient-to-b from-teal-rail to-card px-2 pb-2 pt-3" data-testid="bike-drawing" data-visual={visual.key}>
+          <div className="relative mx-auto aspect-[3/2] w-full md:aspect-[760/400]">
+            <BikeIllustration visual={visual} selected={selected} onSelect={select} className="absolute inset-0 h-full w-full" />
             {/* leader lines (desktop only) */}
             <svg viewBox={`0 0 ${BIKE_VIEWBOX.w} ${BIKE_VIEWBOX.h}`} className="pointer-events-none absolute inset-0 hidden h-full w-full md:block" aria-hidden="true" focusable="false">
               {BIKE_EQUIPMENT_IDS.map((id) => {
                 const c = CALLOUT[id];
-                const a = BIKE_ANCHORS[id];
+                const a = anchorPoint(visual, id);
                 const x1 = c.side === 'left' ? CARD_W : BIKE_VIEWBOX.w - CARD_W;
                 const on = id === selected;
                 return (

@@ -745,5 +745,6 @@
   "bikePage.statFrame": "Rám",
   "bikePage.statUpgrades": "Upgrady",
   "bikePage.statKm": "Najeté km",
-  "bikePage.components": "Komponenty"
+  "bikePage.components": "Komponenty",
+  "bikePage.devPreview": "Vývojový náhled"
 }

@@ -21,9 +21,9 @@ const CLIENT_KEY = /^(bikePage\.|league\.|bikeCard\.status)/;
  * stored yet, so every component shows the base level; nothing is purchased,
  * serviced or written here.
  */
-export default async function BikePage({ searchParams }: { searchParams: Promise<{ component?: string }> }) {
+export default async function BikePage({ searchParams }: { searchParams: Promise<{ component?: string; previewFrame?: string }> }) {
   const { t } = await getServerDictionary();
-  const { component } = await searchParams;
+  const { component, previewFrame } = await searchParams;
   const initial: BikeEquipmentId = isBikeEquipmentId(component) ? component : 'frame';
   const rider = await getMyRider();
   const [bike, league] = await Promise.all([rider ? findMyBikeCondition(rider.id) : Promise.resolve(null), getMyLeague()]);
@@ -36,6 +36,14 @@ export default async function BikePage({ searchParams }: { searchParams: Promise
     const v = wearOf(stored[id]);
     return { id, level: BASE_BIKE_LEVEL, wear: v.wear, status: v.status };
   });
+
+  // DEV-ONLY preview of a higher bike picture (?previewFrame=6). Ignored in production builds; never stored.
+  const preview = process.env.NODE_ENV !== 'production' ? Number(previewFrame) : NaN;
+  const devPreview = Number.isInteger(preview) && preview >= 1 && preview <= 10;
+  if (devPreview) {
+    const frame = components.find((c) => c.id === 'frame');
+    if (frame) frame.level = preview;
+  }
 
   const messages: Record<string, string> = {};
   for (const key of Object.keys(sk)) if (CLIENT_KEY.test(key)) messages[key] = t(key);
@@ -54,7 +62,7 @@ export default async function BikePage({ searchParams }: { searchParams: Promise
       </div>
       <div className="mt-3">
         {rider ? (
-          <BikeWorkshop components={components} league={league} messages={messages} initialSelected={initial} weightKg={null} kilometres={null} />
+          <BikeWorkshop components={components} league={league} messages={messages} initialSelected={initial} weightKg={null} kilometres={null} devPreview={devPreview} />
         ) : (
           <EmptyState icon="chain" text={t('equipment.bikeEmpty')} />
         )}

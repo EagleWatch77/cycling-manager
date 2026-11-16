@@ -55,5 +55,18 @@ const render = (over: Partial<Parameters<typeof BikeWorkshop>[0]> = {}) =>
   check('no invented values: no kg, no euro amount', !/\d+(,\d)? kg/.test(render()) && !/\d\s?€/.test(render()));
   check('stat weight/km shown when provided', render({ weightKg: 8.4, kilometres: 120 }).includes('8.4 kg'));
 }
+{
+  const lv = (frame: number) => comps.map((c) => (c.id === 'frame' ? { ...c, level: frame } : c));
+  const vis = (h: string) => /data-visual="(\w+)"/.exec(h)?.[1];
+  check('frame LVL1 -> steel picture, file linked', vis(render()) === 'steel' && render().includes('/images/bikes/steel-lvl1.webp'));
+  check('league does not change the picture (Elite league, frame 1 -> steel)', vis(render({ league: 'elite' })) === 'steel');
+  check('frame 2/4/6/8 -> rookie/amateur/continental/pro', [2, 4, 6, 8].map((n) => vis(render({ components: lv(n) }))).join() === 'rookie,amateur,continental,pro');
+  const e = render({ components: lv(10) });
+  check('frame 10 -> elite uses the existing Pro file (no missing link)', vis(e) === 'elite' && e.includes('/images/bikes/pro-lvl8.webp') && !e.includes('elite-lvl10'));
+  // picking a level in the upgrade panel is client state only; the SSR with a different initial pick never changes the picture
+  check('other components keep their own level with a different frame', render({ components: lv(6) }).includes('data-tile="brakes"') && /data-tile-wear="brakes">45 %</.test(render({ components: lv(6) })));
+  check('dev preview badge only when requested', !render().includes('data-testid="dev-preview"') && render({ devPreview: true }).includes('data-testid="dev-preview"'));
+  check('image is a separate asset (no inline bike paths)', !render().includes('M355 292'));
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail) process.exit(1);

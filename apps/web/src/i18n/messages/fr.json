@@ -745,5 +745,6 @@
   "bikePage.statFrame": "Cadre",
   "bikePage.statUpgrades": "Améliorations",
   "bikePage.statKm": "Km parcourus",
-  "bikePage.components": "Composants"
+  "bikePage.components": "Composants",
+  "bikePage.devPreview": "Aperçu de développement"
 }

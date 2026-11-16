@@ -745,5 +745,6 @@
   "bikePage.statFrame": "Frame",
   "bikePage.statUpgrades": "Upgrades",
   "bikePage.statKm": "Distance ridden",
-  "bikePage.components": "Components"
+  "bikePage.components": "Components",
+  "bikePage.devPreview": "Dev preview"
 }
