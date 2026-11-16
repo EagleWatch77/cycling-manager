@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { CardTitle } from '../ui/CardTitle';
 import {
-  EXPANDABLE_GROUPS, RADAR_GROUP_ORDER,
-  type ExpandableGroupId, type RadarGroup, type RadarModel,
+  RADAR_GROUP_ORDER, RADAR_TABS,
+  type RadarGroupId, type RadarGroup, type RadarModel,
 } from '@/lib/rider/radar';
+import { getSkillStatIcon } from '@/lib/rider/statIcons';
+import { RiderStatIcon } from './RiderStatIcon';
 
 /**
  * Interactive ability radar: five main axes (Výkon, Taktika, Technika,
@@ -24,6 +26,7 @@ export interface RadarLabels {
   unknown: string;
   note: string;
   noteUnknown: string;
+  experienceDesc: string;
   aria: string;
 }
 
@@ -80,17 +83,18 @@ const pt = (ang: number, radius: number): [number, number] => [CX + Math.cos(ang
 const f1 = (n: number) => Math.round(n * 10) / 10;
 const fmtRange = (r: { min: number; max: number }) => (r.min === r.max ? `${r.min}` : `${r.min}–${r.max}`);
 
-export function AbilityRadar({ model, labels, title, className = '', initialSelected = null }: { model: RadarModel; labels: RadarLabels; title: string; className?: string; initialSelected?: ExpandableGroupId | null }) {
-  const [selected, setSelected] = useState<ExpandableGroupId | null>(initialSelected);
-  const [rot, setRot] = useState(initialSelected ? -RADAR_GROUP_ORDER.indexOf(initialSelected) * STEP : 0);
+export function AbilityRadar({ model, labels, title, className = '', initialSelected = null }: { model: RadarModel; labels: RadarLabels; title: string; className?: string; initialSelected?: RadarGroupId | null }) {
+  const [selected, setSelected] = useState<RadarGroupId | null>(initialSelected);
+  const [rot, setRot] = useState(fanIndex(initialSelected) >= 0 ? -fanIndex(initialSelected) * STEP : 0);
   const [settled, setSettled] = useState(true);
-  const [zoom, setZoom] = useState(initialSelected ? 1 : 0);
-  const zoomRef = useRef(initialSelected ? 1 : 0);
-  const rotRef = useRef(initialSelected ? -RADAR_GROUP_ORDER.indexOf(initialSelected) * STEP : 0);
+  const [zoom, setZoom] = useState(fanIndex(initialSelected) >= 0 ? 1 : 0);
+  const zoomRef = useRef(fanIndex(initialSelected) >= 0 ? 1 : 0);
+  const rotRef = useRef(fanIndex(initialSelected) >= 0 ? -fanIndex(initialSelected) * STEP : 0);
   const rafRef = useRef<number | null>(null);
 
   const groups = model.groups;
-  const selIndex = selected ? RADAR_GROUP_ORDER.indexOf(selected) : -1;
+  // Skúsenosti has no fan: it keeps the overview geometry and shows its own detail instead.
+  const selIndex = fanIndex(selected);
 
   // Rotate so the selected group's axis points up; back to 0 for the overview.
   useEffect(() => {
@@ -121,12 +125,13 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [selIndex]);
 
-  const toggle = (id: ExpandableGroupId) => setSelected((cur) => (cur === id ? null : id));
+  const toggle = (id: RadarGroupId) => setSelected((cur) => (cur === id ? null : id));
   const angleOf = (i: number) => -Math.PI / 2 + i * STEP + rot;
 
   const known = groups.map((g, i) => ({ g, i })).filter(({ g }) => g.norm !== null);
   const poly = known.map(({ g, i }) => pt(angleOf(i), R * (g.norm as number)).map(f1).join(',')).join(' ');
-  const selGroup = selected ? groups[selIndex] : null;
+  const selGroup = selIndex >= 0 ? groups[selIndex] : null;
+  const expGroup = groups[RADAR_GROUP_ORDER.indexOf('experience')];
 
   return (
     <section className={`relative flex flex-col overflow-hidden rounded-card border border-line bg-card shadow-card ${className}`}
@@ -149,12 +154,15 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
       <div className="relative flex flex-1 flex-col items-center justify-center gap-2 px-2 pb-3">
         <div role="group" aria-label={labels.aria} className="flex flex-wrap justify-center gap-1.5">
           <TabButton active={selected === null} onClick={() => setSelected(null)} label={labels.overview} />
-          {EXPANDABLE_GROUPS.map((id) => (
+          {RADAR_TABS.map((id) => (
             <TabButton key={id} active={selected === id} dev={id === 'development'}
               onClick={() => setSelected(id)} label={groups[RADAR_GROUP_ORDER.indexOf(id)].label} />
           ))}
         </div>
 
+      {selected === 'experience' ? (
+        <ExperienceDetail group={expGroup} desc={labels.experienceDesc} />
+      ) : (
       <svg viewBox={`${f1(lerp(OV.x, EX.x, zoom))} ${f1(lerp(OV.y, EX.y, zoom))} ${f1(lerp(OV.w, EX.w, zoom))} ${f1(lerp(OV.h, EX.h, zoom))}`}
         className="relative block h-auto w-full max-w-[680px]" role="img" aria-label={labels.aria}>
         {[0.25, 0.5, 0.75, 1].map((ring) => (
@@ -201,7 +209,7 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
           const c = Math.cos(a);
           const anchor = c > 0.25 ? 'start' : c < -0.25 ? 'end' : 'middle';
           const dev = g.id === 'development';
-          const expandable = g.id !== 'experience';
+          const expandable = true;
           const dim = selected !== null && selected !== g.id;
           const value = g.value !== null ? String(g.value) : g.range ? `${fmtRange(g.range)} · ${labels.estimate}` : g.level ? stars(g.level) : labels.unknown;
           const ty = y + Math.sin(a) * 8;
@@ -211,8 +219,8 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
               aria-pressed={expandable ? selected === g.id : undefined}
               aria-label={`${g.label} ${value}`}
               style={{ cursor: expandable ? 'pointer' : 'default', outline: 'none' }}
-              onClick={expandable ? () => toggle(g.id as ExpandableGroupId) : undefined}
-              onKeyDown={expandable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(g.id as ExpandableGroupId); } } : undefined}>
+              onClick={expandable ? () => toggle(g.id) : undefined}
+              onKeyDown={expandable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(g.id); } } : undefined}>
               <rect x={anchor === 'start' ? x - 4 : anchor === 'end' ? x - 96 : x - 50} y={ty - 17} width={100} height={34} fill="transparent" />
               <text x={f1(x)} y={f1(ty)} textAnchor={anchor} dominantBaseline="middle">
                 <tspan x={f1(x)} dy="-6" className="text-[11px] font-semibold" fill="#33506a">{g.label}</tspan>
@@ -222,6 +230,7 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
           );
         })}
       </svg>
+      )}
 
         {selected === 'development' && (
           <p className="max-w-[420px] text-center text-2xs leading-snug text-navy-soft">
@@ -230,6 +239,38 @@ export function AbilityRadar({ model, labels, title, className = '', initialSele
         )}
       </div>
     </section>
+  );
+}
+
+/** fan index of a group, or -1 when nothing fans out (overview / Skúsenosti). */
+function fanIndex(id: RadarGroupId | null): number {
+  return id && id !== 'experience' ? RADAR_GROUP_ORDER.indexOf(id) : -1;
+}
+
+/**
+ * Skúsenosti is ONE attribute: no artificial multi-point radar. Same box
+ * proportions as the radar svg (OV_W x OV_H) so the card never changes height.
+ */
+function ExperienceDetail({ group, desc }: { group: RadarGroup; desc: string }) {
+  const sc = group.scale;
+  const frac = group.norm === null ? 0 : Math.max(0, Math.min(1, group.norm));
+  return (
+    <div className="relative flex w-full max-w-[680px] items-center justify-center" style={{ aspectRatio: `${OV_W} / ${OV_H}` }}>
+      <div className="flex w-full max-w-[300px] flex-col items-center gap-2 text-center">
+        <RiderStatIcon src={getSkillStatIcon('experience')} alt="" size={56} />
+        <h3 className="text-base font-semibold text-teal-dark">{group.label}</h3>
+        <p className="text-4xl font-bold leading-none text-navy" aria-label={`${group.label} ${group.value}`}>{group.value}</p>
+        {sc && (
+          <div className="w-full px-2" aria-hidden="true">
+            <div className="h-1.5 w-full rounded-full bg-line">
+              <div className="h-full rounded-full bg-teal" style={{ width: `${f1(frac * 100)}%` }} />
+            </div>
+            <div className="mt-1 flex justify-between text-2xs text-navy-muted"><span>{sc.min}</span><span>{sc.max}</span></div>
+          </div>
+        )}
+        <p className="text-xs leading-snug text-navy-soft">{desc}</p>
+      </div>
+    </div>
   );
 }
 

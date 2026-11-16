@@ -79,6 +79,7 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 ## Ability radar (rider/AbilityRadar, CONFIRMED 2026-11-14)
 - Client SVG component, props = pre-translated model (`lib/rider/radar.ts`) + labels; never receives hidden true values.
 - Known abilities: teal (`#0e9384`, filled points). Rozvoj: muted orange (`#d0944f`, text `#9a5b1c`), hollow point, dashed lines, short segment = estimated range, label "odhad"; unknown = no point, "Neznámy". With the player's own 1-5 levels (C-047) the value is shown as stars and the point sits mid-bucket.
+- Radar tabs (pills): Prehľad | Výkon | Taktika | Technika | Skúsenosti | Rozvoj (wrap on small screens). Skúsenosti tab = single-attribute detail replacing the plot (same aspect box as the radar, so no height jump): icon, teal title, big value, thin teal bar on the real 100–160 scale, one description line (C-048).
 - Overview = 5 points. Selecting a group (tab pills or tapping a label) rotates it to the top and fans its attributes as small points with thin leader lines to two label columns (no overlap by fixed row spacing). Works by tap/keyboard; respects `prefers-reduced-motion`.
 - `initialSelected` prop exists for tests/static rendering only.
 - Layout: radar card left (lg:col-span-7, plot vertically centred; the card stretches to the right column's height), right column (lg:col-span-5) = `StrengthsCard` + `DevelopmentCard`; below the attribute group cards.

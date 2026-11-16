@@ -20,8 +20,11 @@ import type { SegmentLevel } from './development';
  */
 
 export type RadarGroupId = 'performance' | 'tactics' | 'technique' | 'experience' | 'development';
+/** Groups that fan out into several attributes (Skúsenosti is a single attribute -> own detail, no fan). */
 export type ExpandableGroupId = Exclude<RadarGroupId, 'experience'>;
 export const RADAR_GROUP_ORDER: readonly RadarGroupId[] = ['performance', 'tactics', 'technique', 'experience', 'development'];
+/** Tab order: Prehľad | Výkon | Taktika | Technika | Skúsenosti | Rozvoj. */
+export const RADAR_TABS: readonly RadarGroupId[] = RADAR_GROUP_ORDER;
 export const EXPANDABLE_GROUPS: readonly ExpandableGroupId[] = ['performance', 'tactics', 'technique', 'development'];
 
 export const DEVELOPMENT_KEYS = ['potential', 'trainability', 'professionalism', 'recovery'] as const;
@@ -60,6 +63,8 @@ export interface RadarGroup {
   range: DevRange | null;
   norm: number | null;
   normRange: { min: number; max: number } | null;
+  /** Real attribute scale (Skúsenosti detail indicator). */
+  scale?: { min: number; max: number };
   /** Rozvoj only: mean of the four stars rounded to whole stars, when all four are available. */
   level: SegmentLevel | null;
   attributes: RadarAttribute[];
@@ -145,7 +150,7 @@ export function buildRadarModel(
       {
         id: 'experience', label: label('attr.experience'),
         value: attributes.experience, range: null, norm: frac(attributes.experience, ATTR_MIN, ATTR_MAX),
-        normRange: null, level: null, attributes: [],
+        normRange: null, level: null, scale: { min: ATTR_MIN, max: ATTR_MAX }, attributes: [],
       },
       development,
     ],

@@ -46,7 +46,7 @@ export default async function RiderOverviewPage() {
           model={buildRadarModel(rider.attributes, getDevelopmentEstimates(rider.id), t, devLevels)}
           labels={{
             overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
-            note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
+            note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), experienceDesc: t('groupDesc.experience'), aria: t('radar.aria'),
           }} />
 
         <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
