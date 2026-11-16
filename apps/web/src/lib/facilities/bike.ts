@@ -23,6 +23,18 @@ export async function getMyBikeCondition(riderId: string): Promise<BikeCondition
   return toBikeCondition(data);
 }
 
+/** Like getMyBikeCondition, but returns null when no row exists, so a display can say "no data" instead of showing an assumed full-condition bike. */
+export async function findMyBikeCondition(riderId: string): Promise<BikeCondition | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('bike_condition')
+    .select('tires, brakes, drivetrain')
+    .eq('rider_id', riderId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return toBikeCondition(data);
+}
+
 export type PerformServiceResult = { ok: true } | { ok: false; reason: 'no-rider' | 'error' };
 
 /**

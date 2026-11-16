@@ -45,7 +45,7 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 
 ## Domain components (names only; code NOT reviewed)
 - Layout: `AppShell`, `SidebarNavigation`, `TopStatusBar`, `PageHeroBanner`, `PlaceholderPage`, `LogoutButton`
-- Cards: `RiderSummaryCard`, `StandingsCard`, `SeasonCalendarCard`, `RaceStatusCard`, `RaceAnalysisCard`, `TourPreviewCard`, `EquipmentCard`, `SmallCards`
+- Cards: `RiderSummaryCard`, `StandingsCard`, `SeasonCalendarCard`, `RaceStatusCard`, `RaceAnalysisCard`, `TourPreviewCard`, `BikeCard`, `SmallCards`
 - Folders: `admin/`, `facilities/`, `market/`, `public/`, `races/`, `rankings/`, `rider/`, `training/`
 - Before reuse, read the single component you need; do not bulk-read the folder.
 
@@ -104,3 +104,4 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - "Kúpiť jazdca" on the market rider detail: existing teal button style (`bg-teal`, `rounded-lg`, `text-sm font-semibold`) under the rider header, one `text-xs text-navy-soft` note below, error `text-xs font-semibold text-danger`. Rendered only when the swap switch is on and the manager has no pending swap.
 - Planned swap (market detail + Kontrakt tab): a dense `Card` titled "Plánovaná výmena" (calendar icon) with two rows in the Kontrakt row style: Nový jazdec, Prevzatie ("Sezóna 2 · Týždeň 5"). No descriptions. The current rider stays in Jazdec until the closure.
 - História: new event "Koniec kontraktu" in the same timeline style.
+- `BikeCard` (Home): compact table Komponent | [Úroveň, only when level data exists] | Opotrebovanie | Stav (dot + OK / Servis / Údržba in teal / warn / danger), alert strip only when something needs attention, link to /facilities. WEAR (0 % new) derived as 100 - stored condition. Unknown values render as "—". Replaces `EquipmentCard`.

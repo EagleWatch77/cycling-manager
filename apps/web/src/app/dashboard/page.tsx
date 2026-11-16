@@ -5,7 +5,8 @@ import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule } from '@/data/tourSchedule';
 import { getTrainingPlan, listRecentCompletedTrainings } from '@/lib/training/repository';
-import { getMyBikeCondition } from '@/lib/facilities/bike';
+import { findMyBikeCondition } from '@/lib/facilities/bike';
+import { buildComponentView, type BikeComponentView } from '@/lib/facilities/bikeDisplay';
 import { ensureMyDivision } from '@/lib/league/repository';
 import { divisionCode } from '@/lib/league/divisions';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
@@ -15,7 +16,7 @@ import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalen
 import { TourPreviewCard } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
 import { StandingsCard } from '@/components/StandingsCard';
-import { EquipmentCard, type BikeEquipmentItem } from '@/components/EquipmentCard';
+import { BikeCard } from '@/components/BikeCard';
 import { ManagerTasksCard, type ManagerTask } from '@/components/ManagerTasksCard';
 import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
 
@@ -24,7 +25,7 @@ import { TrainingOverviewCard } from '@/components/TrainingOverviewCard';
  *
  * The rider is real: on first load ensureStarterRider() generates one starter
  * Rookie and persists it, and every later load reads that same rider back.
- * Training overview and bike equipment read real persisted data; manager
+ * Training overview and the bike card (wear = 100 - stored condition) read real persisted data; manager
  * tasks are derived from that same real state. Standings stay a genuine empty
  * state until a race has been processed — no mock races, standings or
  * analysis for a real account.
@@ -80,15 +81,17 @@ export default async function DashboardPage() {
   const [plan, recent, bike] = await Promise.all([
     getTrainingPlan(season.seasonId, plannableWeek),
     listRecentCompletedTrainings(1),
-    rider ? getMyBikeCondition(rider.id) : Promise.resolve(null),
+    rider ? findMyBikeCondition(rider.id) : Promise.resolve(null),
   ]);
 
-  const bikeItems: BikeEquipmentItem[] | null = bike
+  // Only the stored components. Wheel condition and component levels are not
+  // stored yet (null = shown as "-" / hidden), never assumed.
+  const bikeItems: BikeComponentView[] | null = bike
     ? [
-        { id: 'overall', labelKey: 'facilities.bikeOverall', icon: 'frame', condition: bike.overall },
-        { id: 'tires', labelKey: 'facilities.bikeTires', icon: 'wheel', condition: bike.tires },
-        { id: 'brakes', labelKey: 'facilities.bikeBrakes', icon: 'cog', condition: bike.brakes },
-        { id: 'drivetrain', labelKey: 'facilities.bikeDrivetrain', icon: 'chain', condition: bike.drivetrain },
+        buildComponentView({ id: 'wheels', condition: null, level: null }),
+        buildComponentView({ id: 'tires', condition: bike.tires, level: null }),
+        buildComponentView({ id: 'brakes', condition: bike.brakes, level: null }),
+        buildComponentView({ id: 'drivetrain', condition: bike.drivetrain, level: null }),
       ]
     : null;
 
@@ -122,16 +125,18 @@ export default async function DashboardPage() {
           <TourPreviewCard t={t} locale={locale} league={league as never} tour={danubeTour} className="lg:col-span-8" />
         </div>
 
-        {/* Bottom: rider | tasks + training | standings + bike. items-start keeps cards content-height. */}
+        {/* Bottom: rider + bike | tasks + training | standings. items-start keeps cards content-height. */}
         <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <RiderSummaryCard t={t} rider={rider} />
+          <div className="flex flex-col gap-3">
+            <RiderSummaryCard t={t} rider={rider} />
+            <BikeCard t={t} items={bikeItems} />
+          </div>
           <div className="flex flex-col gap-3">
             <ManagerTasksCard t={t} tasks={tasks} />
             <TrainingOverviewCard t={t} week={plannableWeek} plan={plan} last={recent[0] ?? null} />
           </div>
           <div className="flex flex-col gap-3 md:col-span-2 md:grid md:grid-cols-2 md:items-start lg:col-span-1 lg:flex lg:flex-col">
             <StandingsCard t={t} rows={[]} subtitle={divisionLabel} />
-            <EquipmentCard t={t} items={bikeItems} />
           </div>
         </div>
       </div>

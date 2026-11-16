@@ -124,3 +124,16 @@ Podrobné ID rozhodnutí: `DECISIONS.md` C-015 až C-021.
 - Starý jazdec končí kontrakt a vracia sa na trh s rovnakou identitou, vekom, schopnosťami, skrytými atribútmi a históriou. Nový jazdec sa stáva aktívnym a dostane nový 10-týždňový kontrakt od týždňa skutočného prevzatia (nákup S2 T4 -> prevzatie S2 T5 -> kontrakt do konca S3 T4).
 - Úspechy manažéra zostávajú manažérovi. Limity OVR podľa ligy majú prednosť pred platným kontraktom; čísla limitov nie sú určené. Funkcia je v databáze vypnutá, kým ju majiteľ nezapne.
 
+## 14. Celoživotný rozvoj jazdcov — schválené základné pravidlá `[SCHVÁLENÉ 2026-11-16 — iba pravidlá, nie čísla]` (podrobnosti C-053, O-022)
+- Absolútne maximum OVR je 215. Ciele (nie kvóty): približne 10 % mladých jazdcov dosiahne pri správnom dlhodobom manažovaní kariérne maximum 160+, približne 1 % prekročí 200, 215 je mimoriadne vzácne. Priemerný jazdec môže pri výbornom vedení dosiahnuť približne 160; to neznamená, že 160 je medián populácie.
+- OVR nemá žiadny priamy vplyv na výsledok pretekov (rozhodujú atribúty, profil trate, pripravenosť, taktika, vybavenie, podmienky). OVR obmedzenia platia iba pre Rookie; o postupe rozhodujú výsledky manažéra.
+- Päť skrytých atribútov (Potenciál, Trénovateľnosť, Profesionalita, Regenerácia, Vitalita) na škále 1–100, vrodené a nemenné počas kariéry.
+- Každý jazdec má tri fázy fyzickej kariéry: rozvoj, vrchol a stagnácia, postupný pokles. Vitalita neurčuje jeden pevný vek poklesu; biologický profil sa vytvára pri generovaní jazdca. Taktika, technika a skúsenosti môžu rásť aj po fyzickom vrchole.
+- Čísla (maximá atribútov, tempo rastu, pokles, koeficienty) sú zatiaľ **iba experimentálne** v simulácii `docs/TRAINING_LIFECYCLE_SIMULATION.md`; produkčné vzorce sa nemenia.
+
+## 15. Bicykel (Rookie) `[SCHVÁLENÉ 2026-11-16 — pravidlá; zatiaľ neimplementované okrem zobrazenia opotrebovania]`
+- Jeden jednoduchý cestný bicykel pre každého manažéra, základné vybavenie; pracovný názov Rookie Road 1, hliníkový rám, základná hmotnosť 9,2 kg (zatiaľ nie pretekové koeficienty).
+- Vylepšiteľné: kolesá, plášte, brzdy, pohon; v Rookie najviac dve úrovne; rám bez upgradu. Časovkárske nastavenie neskôr.
+- Servis obnovuje stav komponentu, nemení úroveň. Upgrade zvyšuje kvalitu. Pri výmene opotrebovaného komponentu sa zachová zakúpená úroveň. Bicykel a vybavenie zostávajú manažérovi pri postupe do vyššej ligy.
+- Implementované dnes: stav plášťov, bŕzd a pohonu + servis (C-054); ostatné viď O-023.
+

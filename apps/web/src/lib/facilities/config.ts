@@ -195,6 +195,17 @@ export const BIKE_RISK_BANDS = [
 ] as const;
 export type BikeRiskBand = (typeof BIKE_RISK_BANDS)[number]['key'];
 
+/**
+ * Per-component display status on the Home bike card. Derived from the
+ * existing risk bands above (same thresholds the Facilities page uses:
+ * condition >= 75 OK, 50-74 service, below 50 maintenance needed), so there
+ * is one set of limits. Display only - it changes no performance and does
+ * not block racing. Edit the mapping here to retune the card.
+ */
+export const BIKE_COMPONENT_STATUS: Record<BikeRiskBand, 'ok' | 'service' | 'maintenance'> = {
+  normal: 'ok', elevated: 'service', high: 'maintenance', veryHigh: 'maintenance',
+};
+
 export function bikeRiskBand(overallCondition: number): BikeRiskBand {
   const band = BIKE_RISK_BANDS.find((b) => overallCondition >= b.min && overallCondition <= b.max);
   return band?.key ?? 'veryHigh';

@@ -1,0 +1,2 @@
+DELETE: apps/web/src/components/EquipmentCard.tsx
+DELETE (z predchádzajúceho ZIPu): apps/web/src/components/BikeCard.test.ts
