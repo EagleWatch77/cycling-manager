@@ -28,7 +28,8 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
         <>
           <ul className="grid grid-cols-2 gap-px bg-line">
             {items.map((item) => (
-              <li key={item.id} data-component={item.id} className="bg-card px-3 py-2.5">
+              <li key={item.id} data-component={item.id} className="bg-card">
+                <a href={`/bike?component=${item.id}`} className="block px-3 py-2.5 transition-colors hover:bg-teal-rail focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">
                 <div className="flex items-center gap-1.5">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal-rail text-teal">
                     <Icon name={ICON[item.id]} className="h-3.5 w-3.5" />
@@ -47,6 +48,7 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
                 <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-teal-rail" aria-hidden="true">
                   {item.wear != null && item.status && <div className={`h-full rounded-full ${BAR_TONE[item.status]}`} style={{ width: `${item.wear}%` }} />}
                 </div>
+                </a>
               </li>
             ))}
           </ul>
@@ -59,7 +61,7 @@ export function BikeCard({ t, items, className = '' }: { t: T; items: readonly B
       ) : (
         <EmptyState compact icon="chain" text={t('equipment.bikeEmpty')} />
       )}
-      <CardLink label={t('bikeCard.detail')} href="/facilities" />
+      <CardLink label={t('bikeCard.detail')} href="/bike" />
     </SectionCard>
   );
 }

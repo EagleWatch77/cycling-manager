@@ -114,3 +114,8 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Hierarchy: Najbližšie preteky is the dominant window (teal border, `text-3xl` name, gradient header, elevation profile, countdown tiles). Others are compact.
 - Empty windows (`MiniPanel`, `LiveRaceCard`): title + a single dash, no text, no illustration.
 - Grid: `lg:grid-cols-12`, children placed with explicit `lg:col-*`/`lg:row-*`; mobile = single column in DOM order. No new colours.
+
+## Môj bicykel (`/bike`, C-059)
+- Two `bg-teal-dark` header bands (bike | detail), 62/38 grid from `xl`, components row full width; mobile: bike, detail, components stacked.
+- `BikeIllustration` (pure SVG, teal tokens only) + HTML callout buttons with SVG leader lines (hidden below `md`); `BikeGlyph` small component drawings; selected component = teal border + ring + halo on the drawing.
+- Disabled buttons use `bg-line text-navy-muted`; prices are "— €"; locked levels show a lock icon and an unlock-league title.

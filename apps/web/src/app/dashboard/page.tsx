@@ -5,6 +5,7 @@ import { ensureStarterRider } from '@/lib/rider/repository';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState } from '@/data/tourSchedule';
+import { BASE_BIKE_LEVEL } from '@/lib/bike/equipment';
 import { findMyBikeCondition } from '@/lib/facilities/bike';
 import { buildComponentView, type BikeComponentView } from '@/lib/facilities/bikeDisplay';
 import { ensureMyDivision } from '@/lib/league/repository';
@@ -110,10 +111,10 @@ export default async function DashboardPage() {
   // stored yet (null = shown as "-" / hidden), never assumed.
   const bikeItems: BikeComponentView[] | null = bike
     ? [
-        buildComponentView({ id: 'wheels', condition: null, level: null }),
-        buildComponentView({ id: 'tires', condition: bike.tires, level: null }),
-        buildComponentView({ id: 'brakes', condition: bike.brakes, level: null }),
-        buildComponentView({ id: 'drivetrain', condition: bike.drivetrain, level: null }),
+        buildComponentView({ id: 'wheels', condition: null, level: BASE_BIKE_LEVEL }),
+        buildComponentView({ id: 'tires', condition: bike.tires, level: BASE_BIKE_LEVEL }),
+        buildComponentView({ id: 'brakes', condition: bike.brakes, level: BASE_BIKE_LEVEL }),
+        buildComponentView({ id: 'drivetrain', condition: bike.drivetrain, level: BASE_BIKE_LEVEL }),
       ]
     : null;
   const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;

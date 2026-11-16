@@ -54,7 +54,12 @@ const views = (c: { tires: number; brakes: number; drivetrain: number }) => [
 // 5. Detail link goes to the existing bike page.
 {
   const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
-  check('link to /facilities with the new label', html.includes('href="/facilities"') && html.includes('Detail bicykla a servis'));
+  check('link to /bike with the new label', html.includes('href="/bike"') && html.includes('Detail bicykla a servis'));
+}
+// 5b. Each tile links to the detail page with the component preselected.
+{
+  const html = renderToStaticMarkup(<BikeCard t={t} items={NEW_BIKE_ROWS} />);
+  check('tiles link to /bike?component=', ['wheels', 'tires', 'brakes', 'drivetrain'].every((id) => html.includes(`href="/bike?component=${id}"`)));
 }
 // 6. Only the current manager's bike: the card renders exactly the rows it is given.
 {
