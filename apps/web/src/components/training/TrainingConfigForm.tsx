@@ -30,7 +30,7 @@ function WeeklyStrip({ trainDays, dayLabels }: { trainDays: readonly number[]; d
     <div className="grid grid-cols-7 gap-1 text-center">
       {dayLabels.map((label, i) => (
         <div key={i} className="flex flex-col items-center gap-1">
-          <span className="text-[10px] font-semibold uppercase text-navy-muted">{label}</span>
+          <span className="text-2xs font-semibold uppercase text-navy-muted">{label}</span>
           <span className={`flex h-6 w-full items-center justify-center rounded text-2xs font-bold ${
             trainDays.includes(i) ? 'bg-teal text-white' : 'bg-surface text-navy-muted'
           }`}>

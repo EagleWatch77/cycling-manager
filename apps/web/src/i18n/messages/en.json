@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Substitute, place not obtained yet",
   "lt.msNote": "WC: qualification closes at the end of week 4, invitations go out in week 5, the World Championships are in week 6.",
   "lt.viewAll": "View full standings",
-  "lt.homePending": "The order is set after the first results."
+  "lt.homePending": "The order is set after the first results.",
+  "lt.infoOccupancy": "{n}/{max} managers",
+  "lt.infoTours": "{n} Tours",
+  "lt.infoMs": "World Championships: week {n}"
 }

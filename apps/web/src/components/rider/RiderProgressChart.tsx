@@ -44,8 +44,8 @@ export function RiderProgressChart({
       </label>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={labels.chartAria} className="h-40 w-full">
         <line x1={PX} y1={H - PY} x2={W - 8} y2={H - PY} className="stroke-line" strokeWidth="1" />
-        <text x={PX - 6} y={y(hi) + 4} textAnchor="end" className="fill-navy-muted text-[10px] tabular-nums">{hi}</text>
-        <text x={PX - 6} y={y(lo) + 4} textAnchor="end" className="fill-navy-muted text-[10px] tabular-nums">{lo}</text>
+        <text x={PX - 6} y={y(hi) + 4} textAnchor="end" className="fill-navy-muted text-2xs tabular-nums">{hi}</text>
+        <text x={PX - 6} y={y(lo) + 4} textAnchor="end" className="fill-navy-muted text-2xs tabular-nums">{lo}</text>
         {pts.length > 1 && <path d={path} fill="none" className="stroke-teal" strokeWidth="2" strokeLinejoin="round" />}
         {pts.map((p, i) => (
           <circle key={i} cx={x(i)} cy={y(p.value)} r="3.5" className="fill-teal">

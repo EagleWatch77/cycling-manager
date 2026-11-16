@@ -34,3 +34,13 @@ export function previewTable(league: LeagueId, count = 50, riddenStages = 5, rul
 export const PREVIEW_RULES = Object.fromEntries(
   (['rookie', 'amateur', 'continental', 'pro', 'elite'] as LeagueId[]).map((l) => [l, { promote: 8, relegate: 6 }]),
 ) as Record<LeagueId, ZoneRule>;
+
+/** Full Standings object around the preview table (dev preview / screenshots only). */
+export function previewStandings(league: LeagueId, count = 50, ridden = 5) {
+  const table = previewTable(league, count, ridden, PREVIEW_RULES);
+  return {
+    seasonId: 'season-2', seasonNumber: 2, seasons: [{ id: 'season-2', number: 2 }], league, number: 1, isMine: true,
+    subLeagues: [{ number: 1, memberCount: count, capacity: 50, divisionId: 'preview' }],
+    memberCount: count, capacity: 50, table, dataReady: true,
+  };
+}

@@ -33,7 +33,7 @@ export function RankingsTabs({ labels }: { labels: RankingsTabLabels }) {
   const tabs = TAB_HREFS.map((href) => ({ href, label: LABEL[href] }));
 
   return (
-    <div className="flex gap-1 border-b border-line px-1">
+    <div className="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line px-1">
       {tabs.map((tab) => {
         const active = tab.href === '/rankings' ? pathname === '/rankings' : pathname.startsWith(tab.href);
         return (

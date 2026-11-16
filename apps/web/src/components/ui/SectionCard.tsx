@@ -27,7 +27,7 @@ export function SectionCard({
       action={action}
       headerClassName={tone === 'tint' ? 'border-teal-light bg-teal-rail' : ''}
       title={
-        <span className={`flex items-center gap-1.5 text-teal-dark ${tone === 'tint' ? 'text-xs font-extrabold' : 'text-sm'}`}>
+        <span className="flex items-center gap-1.5 text-window text-teal-dark">
           {icon && <Icon name={icon} className={`h-3.5 w-3.5 ${tone === 'tint' ? 'text-teal' : ''}`} />}
           {title}
         </span>

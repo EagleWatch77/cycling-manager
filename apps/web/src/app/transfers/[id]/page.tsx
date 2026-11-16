@@ -47,7 +47,7 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
           <div className="flex flex-wrap items-center gap-4 p-4">
             <RiderAvatar seed={rider.id} size="lg" className="rounded-2xl" />
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold leading-tight text-navy">
+              <h1 className="text-page text-navy">
                 {FLAGS[rider.countryIso2] ?? '🏳️'} {rider.firstName} {rider.surname}
               </h1>
               <p className="mt-0.5 flex items-center gap-1.5 text-sm text-navy-soft">

@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Náhradník, miesto zatiaľ nezískané",
   "lt.msNote": "MS: kvalifikácia sa uzatvára na konci 4. týždňa, pozvánky sa posielajú v 5. týždni, MS je v 6. týždni.",
   "lt.viewAll": "Zobraziť celé poradie",
-  "lt.homePending": "Poradie sa určí po prvých výsledkoch."
+  "lt.homePending": "Poradie sa určí po prvých výsledkoch.",
+  "lt.infoOccupancy": "{n}/{max} manažérov",
+  "lt.infoTours": "{n} Tour",
+  "lt.infoMs": "Majstrovstvá sveta: týždeň {n}"
 }

@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Rezerwowy, miejsce jeszcze nieuzyskane",
   "lt.msNote": "MŚ: kwalifikacja kończy się z końcem 4. tygodnia, zaproszenia wychodzą w 5. tygodniu, MŚ odbywają się w 6. tygodniu.",
   "lt.viewAll": "Pokaż pełny ranking",
-  "lt.homePending": "Kolejność zostanie ustalona po pierwszych wynikach."
+  "lt.homePending": "Kolejność zostanie ustalona po pierwszych wynikach.",
+  "lt.infoOccupancy": "{n}/{max} menedżerów",
+  "lt.infoTours": "{n} Tour",
+  "lt.infoMs": "Mistrzostwa świata: tydzień {n}"
 }

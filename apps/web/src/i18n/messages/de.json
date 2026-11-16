@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Ersatz, Platz noch nicht erhalten",
   "lt.msNote": "WM: Die Qualifikation endet am Ende von Woche 4, Einladungen folgen in Woche 5, die WM findet in Woche 6 statt.",
   "lt.viewAll": "Gesamte Rangliste anzeigen",
-  "lt.homePending": "Die Reihenfolge wird nach den ersten Ergebnissen festgelegt."
+  "lt.homePending": "Die Reihenfolge wird nach den ersten Ergebnissen festgelegt.",
+  "lt.infoOccupancy": "{n}/{max} Manager",
+  "lt.infoTours": "{n} Tours",
+  "lt.infoMs": "Weltmeisterschaften: Woche {n}"
 }

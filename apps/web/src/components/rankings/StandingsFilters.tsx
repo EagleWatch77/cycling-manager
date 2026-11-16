@@ -23,8 +23,8 @@ export function StandingsFilters({ labels, state, base = '/rankings' }: { labels
     q.set('season', p.season ?? state.season);
     router.push(`${base}?${q.toString()}`);
   };
-  const sel = 'rounded-lg border border-line bg-card px-2.5 py-1.5 text-sm font-semibold text-navy focus:border-teal focus:outline-none';
-  const lab = 'flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-navy-muted';
+  const sel = 'rounded-lg border border-line bg-card px-3 py-1.5 text-sm font-semibold text-navy focus:border-teal focus:outline-none';
+  const lab = 'flex items-center gap-2 text-2xs font-bold uppercase tracking-wide text-navy-soft';
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <label className={lab}>{labels.league}

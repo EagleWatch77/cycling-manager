@@ -40,7 +40,7 @@ export default async function RacesPage() {
         {/* Header + season strip */}
         <div className="flex flex-wrap items-end gap-4">
           <div className="mr-auto">
-            <h1 className="text-3xl font-bold tracking-tight text-navy">{t('races.title')}</h1>
+            <h1 className="text-page text-navy">{t('races.title')}</h1>
             <p className="mt-1 text-sm text-navy-soft">{t('races.subtitle')}</p>
           </div>
 

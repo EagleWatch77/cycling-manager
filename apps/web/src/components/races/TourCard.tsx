@@ -138,7 +138,7 @@ export function TourCard({
             {tour.jerseys.map((j) => (
               <li key={j} className="flex flex-col items-center gap-0.5">
                 <JerseyIcon kind={j as JerseyKind} className="h-7 w-6" />
-                <span className="text-[9px] text-navy-muted">{t(`jersey.${j}`)}</span>
+                <span className="text-2xs text-navy-muted">{t(`jersey.${j}`)}</span>
               </li>
             ))}
           </ul>

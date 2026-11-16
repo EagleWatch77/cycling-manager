@@ -58,7 +58,7 @@ export function RiderSummaryCard({
           <p className="mt-0.5 truncate text-xs text-navy-soft">
             {FLAGS[rider.countryIso2] ?? '🏳️'} {rider.countryName} · {t('rider.age')} {rider.age}
           </p>
-          <span className="mt-1.5 inline-block rounded bg-teal-light px-1.5 py-0.5 text-[10px] font-bold uppercase text-teal-dark">
+          <span className="mt-1.5 inline-block rounded bg-teal-light px-1.5 py-0.5 text-2xs font-bold uppercase text-teal-dark">
             {t(`style.${rider.inferredArchetype}`)}
           </span>
           <div data-row="rider.ovr" className="mt-3 flex items-baseline gap-1.5">

@@ -55,7 +55,7 @@ export default async function CalendarPage() {
                   </span>
                 </span>
                 {view.isCurrentWeek ? (
-                  <span className="rounded bg-teal px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                  <span className="rounded bg-teal px-1.5 py-0.5 text-2xs font-bold uppercase text-white">
                     {t('calendar.inProgress')}
                   </span>
                 ) : (

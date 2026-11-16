@@ -112,7 +112,7 @@ check('new heading icons exist and differ from each other (radar / trend / sprou
 check('heading icons are outline SVG (not the coloured PNG attribute icons)', !/<img/.test(radarHtml.match(/<header[\s\S]*?<\/header>/)?.[0] ?? '') && ![strengthsHtml, dev].some((h) => /<header[\s\S]*?<img[\s\S]*?<\/header>/.test(h)));
 // typography
 const cls = (html: string, re: RegExp) => (html.match(re) ?? []).length;
-check('attribute names share one style (text-[15px] text-navy) in Strengths, groups and Rozvoj', /text-\[15px\] text-navy/.test(strengthsHtml) && /text-\[15px\] text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && /text-\[15px\] text-navy/.test(dev) && !/text-\[15px\] font-semibold/.test(strengthsHtml));
+check('attribute names share one style (text-sm text-navy) in Strengths, groups and Rozvoj', /text-sm text-navy/.test(strengthsHtml) && /text-sm text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && /text-sm text-navy/.test(dev) && !/text-sm font-semibold/.test(strengthsHtml));
 check('values share one style (text-base font-bold tabular-nums text-navy) in Strengths and groups', /text-base font-bold tabular-nums text-navy/.test(strengthsHtml) && /text-base font-bold tabular-nums text-navy/.test(groupHtml('group.tactics', 'bolt', TACTICS_ATTRIBUTES)) && !/text-lg/.test(strengthsHtml));
 check('secondary texts share text-xs leading-snug text-navy-soft (group descriptions, Rozvoj, strengths)', cls(strengthsHtml, /text-xs leading-snug text-navy-soft/g) >= 4 && /text-xs leading-snug text-navy-soft/.test(grp));
 check('rows share one rhythm (gap-2.5, py-2, border-b border-line)', [strengthsHtml, grp].every((h) => /gap-2\.5 border-b border-line py-2 last:border-0/.test(h)));

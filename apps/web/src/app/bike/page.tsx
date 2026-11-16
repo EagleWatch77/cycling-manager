@@ -56,7 +56,7 @@ export default async function BikePage({ searchParams }: { searchParams: Promise
           <nav aria-label="breadcrumb" className="text-xs font-medium text-navy-muted">
             <Link href="/dashboard" className="hover:text-teal">{t('nav.home')}</Link> <span aria-hidden="true">›</span> <span className="text-navy">{t('bikePage.title')}</span>
           </nav>
-          <h1 className="text-2xl font-extrabold tracking-tight text-navy">{t('bikePage.title')}</h1>
+          <h1 className="text-page text-navy">{t('bikePage.title')}</h1>
           <p className="text-sm font-medium text-navy-soft">{t('bikePage.subtitle')}</p>
         </div>
       </div>

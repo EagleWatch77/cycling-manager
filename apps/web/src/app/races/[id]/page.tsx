@@ -137,7 +137,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                       <p className="truncate text-sm font-bold text-navy">{s.from} → {s.to}</p>
                       <p className="text-xs text-navy-soft">
                         {km(s.km, locale)}
-                        <span className="ml-1.5 rounded bg-teal-rail px-1.5 py-0.5 text-[10px] font-bold text-teal-dark">
+                        <span className="ml-1.5 rounded bg-teal-rail px-1.5 py-0.5 text-2xs font-bold text-teal-dark">
                           {t(SDIFF[s.difficulty])}
                         </span>
                       </p>
@@ -166,7 +166,7 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
                     <p className="truncate text-sm font-bold text-navy">{s.name}</p>
                     <p className="text-xs text-navy-soft">
                       {km(s.distanceKm, locale)}
-                      <span className="ml-1.5 rounded bg-teal-rail px-1.5 py-0.5 text-[10px] font-bold text-teal-dark">
+                      <span className="ml-1.5 rounded bg-teal-rail px-1.5 py-0.5 text-2xs font-bold text-teal-dark">
                         {t(`diff.${s.difficulty}`)}
                       </span>
                     </p>

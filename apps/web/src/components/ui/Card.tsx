@@ -21,7 +21,7 @@ export function Card({
     >
       {title && (
         <header className={`flex items-center justify-between gap-2 border-b border-line px-3.5 py-2.5 ${headerClassName}`}>
-          <h2 className="text-2xs font-semibold uppercase tracking-wide text-navy-muted">
+          <h2 className="text-window uppercase tracking-wide text-teal-dark">
             {title}
           </h2>
           {action}

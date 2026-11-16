@@ -28,7 +28,7 @@ export function StrengthsCard({
           <li key={s.key} className="flex items-start gap-2.5 border-b border-line py-2 last:border-0">
             <RiderStatIcon src={getSkillStatIcon(s.key)} alt="" size={30} className="mt-0.5" />
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] text-navy">{t(`attr.${s.key}`)}</span>
+              <span className="block text-sm text-navy">{t(`attr.${s.key}`)}</span>
               <span className="mt-0.5 block text-xs leading-snug text-navy-soft">{t(`attrDesc.${s.key}`)}</span>
             </span>
             <span className="shrink-0 text-base font-bold tabular-nums text-navy">{s.value}</span>

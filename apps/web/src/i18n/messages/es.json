@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Suplente, plaza aún no obtenida",
   "lt.msNote": "MM: la clasificación cierra al final de la semana 4, las invitaciones salen en la semana 5 y el Mundial es en la semana 6.",
   "lt.viewAll": "Ver clasificación completa",
-  "lt.homePending": "El orden se fijará tras los primeros resultados."
+  "lt.homePending": "El orden se fijará tras los primeros resultados.",
+  "lt.infoOccupancy": "{n}/{max} mánagers",
+  "lt.infoTours": "{n} Tours",
+  "lt.infoMs": "Campeonato del Mundo: semana {n}"
 }

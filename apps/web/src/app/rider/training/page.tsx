@@ -166,7 +166,7 @@ export default async function RiderTrainingPage({
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-navy">{t('trainingPage.title')}</h1>
+          <h1 className="text-page text-navy">{t('trainingPage.title')}</h1>
           <p className="mt-0.5 text-sm font-medium text-navy-soft">{t('trainingPage.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-line bg-card px-3 py-2 text-2xs text-navy-muted">
@@ -174,7 +174,7 @@ export default async function RiderTrainingPage({
           <span>
             {t('races.season')} {season.seasonNumber} · {t('races.week')} {season.currentWeek} / {season.totalWeeks}
           </span>
-          <span className={`ml-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+          <span className={`ml-1 rounded px-1.5 py-0.5 text-2xs font-bold uppercase ${
             currentWeekHasRace ? 'bg-warn/10 text-warn' : 'bg-teal-rail text-teal-dark'
           }`}>
             {currentWeekHasRace ? t('trainingPage.raceWeek') : t('trainingPage.freeWeek')}

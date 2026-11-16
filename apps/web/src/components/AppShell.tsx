@@ -34,11 +34,13 @@ import { PageHeroBanner } from './PageHeroBanner';
  * and no gap for one: the conditional simply doesn't mount it.
  */
 export async function AppShell({
-  activeId, children, locale,
+  activeId, children, locale, banner = true,
 }: {
   activeId: string;
   children: ReactNode;
   locale?: Locale;
+  /** Decorative panoramic banner above the page. Pages with their own compact header (Rebríčky) pass false. */
+  banner?: boolean;
 }) {
   const active = locale ?? (await getLocale());
   const t = getDictionary(active);
@@ -90,7 +92,7 @@ export async function AppShell({
           leagueLabel={leagueLabel}
         />
         <main className="flex-1 overflow-x-hidden p-4">
-          {activeId !== 'home' && <PageHeroBanner />}
+          {activeId !== 'home' && banner && <PageHeroBanner />}
           {children}
         </main>
       </div>

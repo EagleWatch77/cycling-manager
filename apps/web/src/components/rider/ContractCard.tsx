@@ -11,8 +11,8 @@ import { CardTitle } from '../ui/CardTitle';
 function Row({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <li className="flex items-center justify-between gap-3 border-b border-line py-2 last:border-0">
-      <span className="min-w-0 text-[15px] text-navy-soft">{label}</span>
-      <span className={`shrink-0 text-[15px] font-semibold tabular-nums ${strong ? 'text-teal' : 'text-navy'}`}>{value}</span>
+      <span className="min-w-0 text-sm text-navy-soft">{label}</span>
+      <span className={`shrink-0 text-sm font-semibold tabular-nums ${strong ? 'text-teal' : 'text-navy'}`}>{value}</span>
     </li>
   );
 }

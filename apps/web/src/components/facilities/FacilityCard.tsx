@@ -102,7 +102,7 @@ export function FacilityCard({
             <Icon name={icon} className="h-3.5 w-3.5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-bold leading-tight text-navy">{name}</p>
+            <p className="truncate text-table font-bold leading-tight text-navy">{name}</p>
             <p className="text-2xs text-navy-muted">{labels.levelLabel} {effectiveLevel}/5</p>
           </div>
         </div>
@@ -113,10 +113,10 @@ export function FacilityCard({
           ))}
         </div>
 
-        <p className="text-[11px] leading-snug text-navy-soft">{description}</p>
+        <p className="text-2xs leading-snug text-navy-soft">{description}</p>
 
         {storedLevel !== effectiveLevel && (
-          <p className="text-[10px] italic leading-snug text-navy-muted">
+          <p className="text-2xs italic leading-snug text-navy-muted">
             {labels.storedLevelNote.replace('{stored}', String(storedLevel)).replace('{effective}', String(effectiveLevel))}
           </p>
         )}
@@ -125,22 +125,22 @@ export function FacilityCard({
             (see the chat report, item 12): upgrading keeps a little
             discovery, the full picture only shows in the confirm modal. */}
         <div className="rounded-lg bg-surface px-2.5 py-2">
-          <p className="text-[9px] font-bold uppercase tracking-wide text-navy-muted">{labels.currentEffect}</p>
+          <p className="text-2xs font-bold uppercase tracking-wide text-navy-muted">{labels.currentEffect}</p>
           <p className="mt-0.5 text-xs font-semibold leading-snug text-navy">{currentEffectTitle}</p>
           {currentEffectSubtitle && <p className="text-2xs text-navy-soft">{currentEffectSubtitle}</p>}
         </div>
 
         <div className="mt-auto pt-1">
           {rookieLocked ? (
-            <span className="block rounded-lg bg-line py-1.5 text-center text-[11px] font-semibold text-navy-muted">🔒 {lockedReason}</span>
+            <span className="block rounded-lg bg-line py-1.5 text-center text-2xs font-semibold text-navy-muted">🔒 {lockedReason}</span>
           ) : atMax ? (
-            <span className="block rounded-lg bg-teal-light py-1.5 text-center text-[11px] font-bold uppercase text-teal-dark">{labels.maxLevel}</span>
+            <span className="block rounded-lg bg-teal-light py-1.5 text-center text-2xs font-bold uppercase text-teal-dark">{labels.maxLevel}</span>
           ) : locked ? (
             <>
-              <span className="block cursor-not-allowed rounded-lg bg-line py-1.5 text-center text-[11px] font-semibold text-navy-muted" aria-disabled="true">
+              <span className="block cursor-not-allowed rounded-lg bg-line py-1.5 text-center text-2xs font-semibold text-navy-muted" aria-disabled="true">
                 {labels.upgradeCta}
               </span>
-              {lockedReason && <p className="mt-1 text-[10px] leading-snug text-navy-soft">{lockedReason}</p>}
+              {lockedReason && <p className="mt-1 text-2xs leading-snug text-navy-soft">{lockedReason}</p>}
             </>
           ) : (
             <>
@@ -148,7 +148,7 @@ export function FacilityCard({
                 <p className="mb-1 text-2xs text-navy-soft">{labels.priceLabel}: <span className="font-bold text-navy">{price.toLocaleString()} €</span></p>
               )}
               <button type="button" onClick={() => setModalOpen(true)}
-                className="w-full rounded-lg bg-teal py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-teal-dark">
+                className="w-full rounded-lg bg-teal py-1.5 text-2xs font-semibold text-white transition-colors hover:bg-teal-dark">
                 {labels.upgradeCta}
               </button>
             </>

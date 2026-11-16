@@ -122,3 +122,21 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 
 ## Rebríčky / league table (C-063)
 Light teal like the rest of the app. Two-row header (Tour n over E1..En, Σ), thin vertical separators between Tours, #/flag/name sticky on horizontal scroll (also mobile, a compact table, no cards). Own row: teal tint + teal left edge + bold name. Zone rows: emerald-50 promotion, rose-50 relegation. MS: small coloured mark with a title explanation (Q, ✉, ✓, ✕, N). Missing country: neutral grey box. Home window: rank, flag, name, points only; own row below the top five with a dashed top edge; whole window is a link.
+
+## Typography + colour tokens (C-064, single system for the whole game)
+Font: **Manrope only** (`next/font`, latin + latin-ext → all 7 languages; `font-sans`). `font-mono` only in the admin tool for ids/code. Logo and text inside images are untouched.
+
+| Role | Token | Size / weight |
+|------|-------|---------------|
+| Page title | `text-page text-navy` | 28px bold (every page `<h1>`; `PageHeaderBand` / `PageHeader`) |
+| Larger section title | `text-section text-navy` | 19px semibold |
+| Small window title (Card / SectionCard header) | `text-window text-teal-dark` + uppercase | 13px semibold, teal |
+| Body | `text-sm` | 14px (replaces `text-[15px]`) |
+| Table text | `text-table` (DataTable, league table) | 13px |
+| Supporting info | `text-2xs` | 12px (was 11px) |
+| Key values (OVR, points, bike level) | `text-value` or `text-base font-extrabold` | 24px / 16px by component |
+
+Colours: main text and big headings `navy` #102A43; secondary `navy-soft`; supporting `navy-muted` #5B7389 (darker than before, readable on white); teal #0D9488 for links/active, `teal-dark` for teal text on light; positive `good` (green), warning `warn` (orange), critical `danger` (red). Surfaces: page `surface` #F3F6F7, window `card` white. League/status surfaces (shared, not Rebríčky-only): `mint-head` #DDF3EF, `mint-sub` #EAF7F4, `mint-me` #C9EEE6, `mint-promo` #E8F8E3, `mint-relegation` #FDEBEC, `mint-stripe` #F8FAFB.
+Rule: use the tokens above; no new `text-[Npx]` (exceptions: SVG/graphic labels in StageProfile, ElevationProfile, AbilityRadar, bike picture chips).
+Common compact header `ui/PageHeaderBand` (icon tile, title, meta line, panorama right with fade) replaces the tall `PageHeroBanner` where adopted (`AppShell banner={false}`); only Rebríčky uses it now, other pages keep the banner (redesign proposal below).
+Rebríčky: filters in a white labelled box; white league window with "Rookie 1.1" (`text-section`) + green-icon info (occupancy, Tours, MS week); two-row mint header (Tour names bold teal), thin Tour separators, rows 36px, alternating white/stripe, own row `mint-me` + teal edge, zones only when counts are configured.

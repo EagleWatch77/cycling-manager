@@ -103,7 +103,7 @@ export default async function TransfersPage({
             <Icon name="cart" className="h-4.5 w-4.5" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-navy">{t('market.title')}</h1>
+            <h1 className="text-page text-navy">{t('market.title')}</h1>
             <p className="text-sm font-medium text-navy-soft">{t('market.subtitle')}</p>
           </div>
         </div>

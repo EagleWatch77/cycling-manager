@@ -73,7 +73,7 @@ export function AttributeGroup({
               {showStatIcons && (
                 <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
               )}
-              <span className="min-w-0 flex-1 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+              <span className="min-w-0 flex-1 truncate text-sm text-navy" title={t(`attr.${k}`)}>
                 {t(`attr.${k}`)}
               </span>
               <ProgressBar value={pct(attributes[k], k)} className="w-12 shrink-0 sm:w-16 lg:w-20" />
@@ -90,7 +90,7 @@ export function AttributeGroup({
                 {showStatIcons && (
                   <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
                 )}
-                <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                <span className="min-w-0 truncate text-sm text-navy" title={t(`attr.${k}`)}>
                   {t(`attr.${k}`)}
                 </span>
               </span>
@@ -106,7 +106,7 @@ export function AttributeGroup({
                 {showStatIcons && (
                   <RiderStatIcon src={getSkillStatIcon(k)} alt={t(`attr.${k}`)} size={statIconSize} />
                 )}
-                <span className="min-w-0 truncate text-[15px] text-navy" title={t(`attr.${k}`)}>
+                <span className="min-w-0 truncate text-sm text-navy" title={t(`attr.${k}`)}>
                   {t(`attr.${k}`)}
                 </span>
               </span>

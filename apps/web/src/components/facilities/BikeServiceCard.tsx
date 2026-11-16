@@ -78,7 +78,7 @@ export function BikeServiceCard({
         )}
       </div>
 
-      <p className="mt-2.5 text-[11px] italic leading-snug text-navy-muted">{labels.financeNote}</p>
+      <p className="mt-2.5 text-2xs italic leading-snug text-navy-muted">{labels.financeNote}</p>
     </div>
   );
 }

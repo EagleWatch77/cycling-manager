@@ -31,7 +31,7 @@ export function LeaguePathCard({ t }: { t: T }) {
                 {t(`league.${id}`)}
               </span>
               {i === 0 && (
-                <span className="text-[9px] leading-tight text-teal">{t('path.startHere')}</span>
+                <span className="text-2xs leading-tight text-teal">{t('path.startHere')}</span>
               )}
             </div>
             {i < PATH.length - 1 && (

@@ -27,7 +27,7 @@ export function ConditionRow({
     <li className="grid grid-cols-[minmax(0,1fr)_44px_28px] items-center gap-2 border-b border-line py-2 last:border-0">
       <span className="flex min-w-0 items-center gap-2.5">
         <RiderStatIcon src={icon} alt={label} size={24} />
-        <span className="min-w-0 truncate text-[15px] text-navy" title={label}>{label}</span>
+        <span className="min-w-0 truncate text-sm text-navy" title={label}>{label}</span>
       </span>
       <span className="text-right text-base font-bold tabular-nums text-navy">{value}</span>
       <span className={`text-right text-base font-bold leading-none ${colorClass}`} aria-label={trend}>

@@ -41,7 +41,7 @@ export function RaceAnalysisCard({
           </svg>
           <span className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-sm font-bold leading-none text-navy">{gap(analysis.netSeconds)}</span>
-            <span className="text-[9px] leading-tight text-navy-muted">{t('analysis.gainLoss')}</span>
+            <span className="text-2xs leading-tight text-navy-muted">{t('analysis.gainLoss')}</span>
           </span>
         </div>
         <ul className="min-w-0 flex-1 space-y-1">

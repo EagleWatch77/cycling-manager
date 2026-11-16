@@ -273,7 +273,7 @@ function UpgradeTab({
                   className={`flex w-full flex-col items-center rounded-lg border px-1 py-1.5 text-xs font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal ${on ? 'border-teal bg-teal text-white' : owned ? 'border-line bg-teal-rail text-teal-dark' : open ? 'border-teal/40 bg-card text-navy hover:bg-teal-rail' : 'border-line bg-surface text-navy-muted'}`}
                 >
                   <span className="flex items-center gap-1">{!open && <Icon name="lock" className="h-3 w-3" />}{n}</span>
-                  <span className="text-[10px] font-semibold leading-tight">{owned ? t('bikePage.owned') : open ? t('bikePage.pick') : t('bikePage.locked')}</span>
+                  <span className="text-2xs font-semibold leading-tight">{owned ? t('bikePage.owned') : open ? t('bikePage.pick') : t('bikePage.locked')}</span>
                 </button>
               </li>
             );

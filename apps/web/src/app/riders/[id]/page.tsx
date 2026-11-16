@@ -45,7 +45,7 @@ export default async function PublicRiderProfilePage({ params }: { params: Promi
           <div className="flex flex-wrap items-center gap-4 p-4">
             <RiderAvatar seed={rider.riderId} size="lg" className="rounded-2xl" />
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold leading-tight text-navy">
+              <h1 className="text-page text-navy">
                 {FLAGS[rider.countryIso2] ?? '🏳️'} {rider.firstName} {rider.surname}
               </h1>
               <p className="mt-0.5 text-sm text-navy-soft">

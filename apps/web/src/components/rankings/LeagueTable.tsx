@@ -4,7 +4,7 @@ import { flagFromIso2 } from '@/lib/flag';
 import type { MsStatus, Zone } from '@/lib/rankings/config';
 import type { BuiltTable, Cell, TableRow } from '@/lib/rankings/table';
 
-const ZONE_BG: Record<Zone, string> = { promotion: 'bg-emerald-50', stay: 'bg-card', relegation: 'bg-rose-50' };
+const ZONE_BG: Record<Zone, string> = { promotion: 'bg-mint-promo', stay: '', relegation: 'bg-mint-relegation' };
 const MS_MARK: Record<MsStatus, { glyph: string; cls: string }> = {
   qualifying: { glyph: 'Q', cls: 'border-teal-light bg-teal-rail text-teal-dark' },
   invited: { glyph: '✉', cls: 'border-sky-200 bg-sky-50 text-sky-700' },
@@ -42,18 +42,19 @@ const SEP = 'border-l border-line/80';
 export function LeagueTable({ table, t }: { table: BuiltTable; t: T }) {
   const { tours, stagesPerTour, rows } = table;
   const stageCols = Array.from({ length: stagesPerTour }, (_, i) => i + 1);
-  const head = 'bg-surface text-2xs font-semibold uppercase tracking-wide text-navy-muted';
+  const head = 'bg-mint-head text-2xs font-bold uppercase tracking-wide text-navy-soft';
+  const sub = 'bg-mint-sub text-2xs font-bold text-navy-soft';
 
   return (
-    <div className="overflow-x-auto rounded-card border border-line bg-card shadow-card" data-league-table>
-      <table className="w-full border-separate border-spacing-0 text-sm tabular-nums">
+    <div className="overflow-x-auto rounded-lg border border-line bg-card" data-league-table>
+      <table className="w-full border-separate border-spacing-0 text-table tabular-nums">
         <thead>
           <tr>
             <th rowSpan={2} style={{ left: 0 }} className={`sticky z-20 w-9 min-w-9 border-b border-line px-1.5 text-center ${head}`}>#</th>
             <th rowSpan={2} className={`sticky z-20 w-8 min-w-8 border-b border-line px-0 ${head}`} style={{ left: 36 }} aria-label="flag" />
-            <th rowSpan={2} className={`sticky z-20 min-w-[110px] sm:min-w-[150px] border-b border-r border-line px-2 text-left ${head}`} style={{ left: 68 }}>{t('lt.colManager')}</th>
+            <th rowSpan={2} className={`sticky z-20 w-[124px] min-w-[124px] sm:w-[176px] sm:min-w-[176px] border-b border-r border-line px-2 text-left ${head}`} style={{ left: 68 }}>{t('lt.colManager')}</th>
             {Array.from({ length: tours }, (_, ti) => (
-              <th key={ti} colSpan={stagesPerTour + 1} className={`border-b border-line px-2 py-1 text-center ${head} ${SEP}`}>{t('lt.tourN', { n: ti + 1 })}</th>
+              <th key={ti} colSpan={stagesPerTour + 1} className={`border-b border-line/70 bg-mint-head px-2 py-1.5 text-center text-xs font-extrabold uppercase tracking-wide text-teal-dark ${SEP}`}>{t('lt.tourN', { n: ti + 1 })}</th>
             ))}
             <th rowSpan={2} className={`border-b border-line px-3 text-center ${head} ${SEP}`}>{t('lt.colTotal')}</th>
             <th rowSpan={2} className={`w-10 border-b border-line px-1 text-center ${head} ${SEP}`}>{t('lt.colMs')}</th>
@@ -62,30 +63,31 @@ export function LeagueTable({ table, t }: { table: BuiltTable; t: T }) {
             {Array.from({ length: tours }, (_, ti) => (
               <Fragment key={ti}>
                 {stageCols.map((s, si) => (
-                  <th key={`${ti}-${s}`} className={`border-b border-line px-1.5 py-1 text-center ${head} ${si === 0 ? SEP : ''}`}>{t('lt.stageShort', { n: s })}</th>
+                  <th key={`${ti}-${s}`} className={`border-b border-line px-1.5 py-1 text-center ${sub} ${si === 0 ? SEP : ''}`}>{t('lt.stageShort', { n: s })}</th>
                 ))}
-                <th className={`border-b border-line px-1.5 py-1 text-center ${head}`}>Σ</th>
+                <th className={`border-b border-line px-1.5 py-1 text-center ${sub}`}>Σ</th>
               </Fragment>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => <Row key={r.manager.managerId} r={r} tours={tours} stages={stagesPerTour} t={t} />)}
+          {rows.map((r, i) => <Row key={r.manager.managerId} r={r} odd={i % 2 === 1} tours={tours} stages={stagesPerTour} t={t} />)}
         </tbody>
       </table>
     </div>
   );
 }
 
-function Row({ r, tours, stages, t }: { r: TableRow; tours: number; stages: number; t: T }) {
+function Row({ r, odd, tours, stages, t }: { r: TableRow; odd: boolean; tours: number; stages: number; t: T }) {
   const me = r.manager.isMe;
-  const bg = me ? 'bg-teal-rail' : r.zone ? ZONE_BG[r.zone] : 'bg-card';
-  const cell = 'border-b border-line/60 px-1.5 py-1.5 text-center';
+  const bg = me ? 'bg-mint-me' : (r.zone && ZONE_BG[r.zone]) || (odd ? 'bg-mint-stripe' : 'bg-card');
+  const edge = me ? ' shadow-[inset_0_1px_0_0_#0d9488,inset_0_-1px_0_0_#0d9488]' : '';
+  const cell = `border-b border-line/60 px-1.5 text-center${edge}`;
   return (
-    <tr data-me={me || undefined} data-zone={r.zone ?? undefined} className={bg}>
-      <td className={`sticky z-10 w-9 min-w-9 ${bg} ${cell} font-semibold text-navy-soft ${me ? 'border-l-2 border-l-teal' : ''}`} style={{ left: 0 }}>{r.position ?? '—'}</td>
-      <td className={`sticky z-10 w-8 min-w-8 ${bg} border-b border-line/60 px-0 text-center`} style={{ left: 36 }}><Flag code={r.manager.countryCode} t={t} /></td>
-      <td className={`sticky z-10 min-w-[110px] max-w-[130px] sm:min-w-[150px] sm:max-w-[200px] truncate ${bg} border-b border-r border-line/60 px-2 py-1.5 text-left ${me ? 'font-extrabold text-navy' : 'font-semibold text-navy'}`} style={{ left: 68 }}>
+    <tr data-me={me || undefined} data-zone={r.zone ?? undefined} className={`h-9 ${bg}`}>
+      <td className={`sticky z-10 w-9 min-w-9 ${bg} ${cell} font-semibold text-navy-soft ${me ? 'border-l-[3px] border-l-teal' : ''}`} style={{ left: 0 }}>{r.position ?? '—'}</td>
+      <td className={`sticky z-10 w-8 min-w-8 ${bg} border-b border-line/60 px-0 text-center${edge}`} style={{ left: 36 }}><Flag code={r.manager.countryCode} t={t} /></td>
+      <td className={`sticky z-10 w-[124px] min-w-[124px] max-w-[124px] sm:w-[176px] sm:min-w-[176px] sm:max-w-[176px] truncate ${bg} border-b border-r border-line/60 px-2 text-left${edge} ${me ? 'font-extrabold text-navy' : 'font-semibold text-navy'}`} style={{ left: 68 }}>
         {r.manager.displayName ?? '—'}
       </td>
       {Array.from({ length: tours }, (_, ti) => (
@@ -108,11 +110,11 @@ export function LeagueLegend({ table, t }: { table: BuiltTable; t: T }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs font-medium text-navy-soft">
       {zones && <>
-        <span className="inline-flex items-center gap-1">{sw('bg-emerald-100')}{t('lt.legendPromotion')}</span>
+        <span className="inline-flex items-center gap-1">{sw('bg-mint-promo')}{t('lt.legendPromotion')}</span>
         <span className="inline-flex items-center gap-1">{sw('bg-card')}{t('lt.legendStay')}</span>
-        <span className="inline-flex items-center gap-1">{sw('bg-rose-100')}{t('lt.legendRelegation')}</span>
+        <span className="inline-flex items-center gap-1">{sw('bg-mint-relegation')}{t('lt.legendRelegation')}</span>
       </>}
-      <span className="inline-flex items-center gap-1">{sw('bg-teal-rail border-l-2 border-l-teal')}{t('lt.you')}</span>
+      <span className="inline-flex items-center gap-1">{sw('bg-mint-me border-l-[3px] border-l-teal')}{t('lt.you')}</span>
       <span>{t('lt.legendNotRaced')}</span>
       <span>{t('lt.legendZero')}</span>
       <span className="basis-full text-navy-muted">{t('lt.msNote')}</span>

@@ -781,5 +781,8 @@
   "lt.ms.reserve": "Remplaçant, place pas encore obtenue",
   "lt.msNote": "MM : la qualification se clôt à la fin de la semaine 4, les invitations partent en semaine 5, les Mondiaux ont lieu en semaine 6.",
   "lt.viewAll": "Voir le classement complet",
-  "lt.homePending": "Le classement sera établi après les premiers résultats."
+  "lt.homePending": "Le classement sera établi après les premiers résultats.",
+  "lt.infoOccupancy": "{n}/{max} managers",
+  "lt.infoTours": "{n} Tours",
+  "lt.infoMs": "Championnats du monde : semaine {n}"
 }

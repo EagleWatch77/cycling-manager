@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { getServerDictionary } from '@/i18n/server';
 import { AppShell } from '@/components/AppShell';
+import { PageHeaderBand } from '@/components/ui/PageHeaderBand';
+import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { RankingsTabs } from '@/components/rankings/RankingsTabs';
 
 /**
@@ -10,14 +12,16 @@ import { RankingsTabs } from '@/components/rankings/RankingsTabs';
  */
 export default async function RankingsLayout({ children }: { children: ReactNode }) {
   const { t, locale } = await getServerDictionary();
+  const season = getCurrentSeasonInfo();
 
   return (
-    <AppShell activeId="rankings" locale={locale}>
+    <AppShell activeId="rankings" locale={locale} banner={false}>
       <div className="space-y-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-navy">{t('page.rankings')}</h1>
-          <p className="mt-0.5 text-sm font-medium text-navy-soft">{t('lt.subtitle')}</p>
-        </div>
+        <PageHeaderBand
+          icon="trophy"
+          title={t('page.rankings')}
+          meta={`${t('races.season')} ${season.seasonNumber} · ${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`}
+        />
 
         <RankingsTabs labels={{
           league: t('lt.tab'),
