@@ -119,3 +119,6 @@ Direction: light, modern, information-dense, consistent (GPRO-like manager game)
 - Two `bg-teal-dark` header bands (bike | detail), 62/38 grid from `xl`, components row full width; mobile: bike, detail, components stacked.
 - `BikeIllustration` (pure SVG, teal tokens only) + HTML callout buttons with SVG leader lines (hidden below `md`); `BikeGlyph` small component drawings; selected component = teal border + ring + halo on the drawing.
 - Disabled buttons use `bg-line text-navy-muted`; prices are "— €"; locked levels show a lock icon and an unlock-league title.
+
+## Rebríčky / league table (C-063)
+Light teal like the rest of the app. Two-row header (Tour n over E1..En, Σ), thin vertical separators between Tours, #/flag/name sticky on horizontal scroll (also mobile, a compact table, no cards). Own row: teal tint + teal left edge + bold name. Zone rows: emerald-50 promotion, rose-50 relegation. MS: small coloured mark with a title explanation (Q, ✉, ✓, ✕, N). Missing country: neutral grey box. Home window: rank, flag, name, points only; own row below the top five with a dashed top edge; whole window is a link.

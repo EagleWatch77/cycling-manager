@@ -16,10 +16,11 @@ export default async function RankingsLayout({ children }: { children: ReactNode
       <div className="space-y-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-navy">{t('page.rankings')}</h1>
-          <p className="mt-0.5 text-sm font-medium text-navy-soft">{t('ranking.subtitle')}</p>
+          <p className="mt-0.5 text-sm font-medium text-navy-soft">{t('lt.subtitle')}</p>
         </div>
 
         <RankingsTabs labels={{
+          league: t('lt.tab'),
           riders: t('ranking.tabRiders'),
           division: t('ranking.tabDivision'),
           nations: t('ranking.tabNations'),

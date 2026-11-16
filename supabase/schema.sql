@@ -4163,3 +4163,7 @@ revoke all on function public.manager_league_now(uuid) from public, anon, authen
 grant execute on function public.reserve_market_rider(uuid) to authenticated;
 grant execute on function public.process_due_rider_swaps() to authenticated;
 grant execute on function public.my_pending_swap() to authenticated;
+
+
+-- ---- League standings (migration 20261116_04): see supabase/migrations/20261116_04_league_standings.sql
+-- profiles.country_code, league_points, league_ms_status, league_standing_managers/points/seasons.

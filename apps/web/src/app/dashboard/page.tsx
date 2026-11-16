@@ -9,6 +9,9 @@ import { BASE_BIKE_LEVEL, BIKE_EQUIPMENT_IDS } from '@/lib/bike/equipment';
 import { findMyBikeComponentStates } from '@/lib/facilities/bike';
 import { ensureMyDivision } from '@/lib/league/repository';
 import { MiniPanel } from '@/components/dashboard/MiniPanel';
+import { StandingsPanel } from '@/components/dashboard/StandingsPanel';
+import { getStandings } from '@/lib/rankings/repository';
+import { homeRows } from '@/lib/rankings/table';
 import { LiveRaceCard } from '@/components/LiveRaceCard';
 import { divisionCode } from '@/lib/league/divisions';
 import { maxSeasonTours, visibleStages } from '@/lib/leagues';
@@ -111,6 +114,10 @@ export default async function DashboardPage() {
   const bikeItems: BikeOverviewItem[] | null = rider
     ? BIKE_EQUIPMENT_IDS.map((id) => ({ id, level: BASE_BIKE_LEVEL, state: bike ? bike[id] : null }))
     : null;
+  // ONE shared source with /rankings: the manager's own season, league and sub-league.
+  const standings = await getStandings();
+  const standingsRows = standings ? homeRows(standings.table) : [];
+  const standingsHref = standings ? `/rankings?league=${standings.league}&sub=${standings.number}&season=${standings.seasonId}` : '/rankings';
   const contractWeeksLeft = contract && contract.state === 'active' ? contract.remainingWeeks : null;
 
   return (
@@ -129,9 +136,12 @@ export default async function DashboardPage() {
           weeks={weeks}
           className="lg:col-span-3 lg:col-start-1 lg:row-start-2"
         />
-        <MiniPanel
-          icon="trophy"
-          title={<>{t('dashboard.liveStandingsTitle')}{divisionLabel && <span className="font-medium normal-case text-navy-soft"> · {divisionLabel}</span>}</>}
+        <StandingsPanel
+          t={t}
+          title={`${t('dashboard.liveStandingsTitle')}${divisionLabel ? ` · ${divisionLabel}` : ''}`}
+          rows={standingsRows}
+          hasStandings={standings?.table.hasStandings ?? false}
+          href={standingsHref}
           className="self-start lg:col-span-4 lg:col-start-1 lg:row-start-3"
         />
         <BikeCard t={t} items={bikeItems} className="lg:col-span-4 lg:col-start-5 lg:row-start-3" />

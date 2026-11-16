@@ -39,7 +39,7 @@ export default async function PublicRiderProfilePage({ params }: { params: Promi
   return (
     <AppShell activeId="rankings" locale={locale}>
       <div className="space-y-3">
-        <Link href="/rankings" className="text-2xs font-semibold text-teal hover:underline">← {t('ranking.tabRiders')}</Link>
+        <Link href="/rankings/riders" className="text-2xs font-semibold text-teal hover:underline">← {t('ranking.tabRiders')}</Link>
 
         <Card dense>
           <div className="flex flex-wrap items-center gap-4 p-4">

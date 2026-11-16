@@ -69,3 +69,9 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_swap
 | File | What it does |
 |------|--------------|
 | `20261116_03_bike_frame_wheels.sql` | Adds `bike_condition.frame` / `.wheels` (0-100, default 100 = new). Additive, idempotent, no UPDATE of existing values. The app works with or without it (dash until run). |
+
+## 2026-11-16 — League standings (NOT yet run)
+
+| File | What it does |
+|------|--------------|
+| `20261116_04_league_standings.sql` | `profiles.country_code`, `league_points` (manager + season + sub-league, unique per stage), `league_ms_status`, SECURITY DEFINER read functions `league_standing_managers/points/seasons` (public game data only). Idempotent. The app works without it (only the own manager, zero, dashes). |

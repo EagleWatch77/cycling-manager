@@ -1,59 +1,60 @@
 import { getServerDictionary } from '@/i18n/server';
-import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { getRiderRankingsPage, hasAnyRankingData } from '@/lib/ranking/repository';
+import { getStandings } from '@/lib/rankings/repository';
+import { divisionCode } from '@/lib/league/divisions';
+import { LEAGUES } from '@/lib/leagues';
+import { LeagueTable, LeagueLegend } from '@/components/rankings/LeagueTable';
+import { StandingsFilters } from '@/components/rankings/StandingsFilters';
 import { Card } from '@/components/ui/Card';
-import { Icon } from '@/components/ui/Icon';
-import { RankingsToolbar } from '@/components/rankings/RankingsToolbar';
-import { RankingsTable } from '@/components/rankings/RankingsTable';
-import { MarketPagination } from '@/components/market/MarketPagination';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 /**
- * Jazdci — the one fully functional Rankings tab (see the chat report).
- * Ranked strictly by real, persisted race_results points via the
- * rider_rankings view — never by attributes/potential/development. Right
- * now race_results is empty (no race-processing pipeline exists yet — see
- * the report), so this legitimately renders the "not available yet" empty
- * state below rather than any invented row.
+ * Rebríčky - league standing of the MANAGERS (never of riders). Opens on the
+ * signed-in manager's own season, league and sub-league; other leagues and
+ * sub-leagues can be browsed. Same data source as the Home window.
  */
-export default async function RiderRankingsPage({
+export default async function LeagueStandingsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { t } = await getServerDictionary();
   const sp = await searchParams;
-  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? '';
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const sub = parseInt(one(sp.sub) ?? '', 10);
+  const s = await getStandings({ league: one(sp.league), number: Number.isFinite(sub) ? sub : undefined, season: one(sp.season) });
+  if (!s) return <Card className="col-span-12"><EmptyState icon="trophy" text={t('lt.empty')} compact /></Card>;
 
-  const season = getCurrentSeasonInfo();
-  const page = Math.max(1, parseInt(one(sp.page), 10) || 1);
-  const search = one(sp.q);
-
-  const [result, anyData] = await Promise.all([
-    getRiderRankingsPage({ seasonId: season.seasonId, page, search }),
-    hasAnyRankingData(season.seasonId),
-  ]);
-
-  if (!anyData) {
-    return (
-      <Card className="col-span-12">
-        <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-teal-rail text-teal">
-            <Icon name="trophy" className="h-8 w-8" />
-          </span>
-          <p className="text-sm font-bold text-navy">{t('ranking.emptyTitle')}</p>
-          <p className="max-w-xs text-xs text-navy-soft">{t('ranking.emptyText')}</p>
-        </div>
-      </Card>
-    );
-  }
-
-  const buildHref = (targetPage: number) => `/rankings?page=${targetPage}${search ? `&q=${encodeURIComponent(search)}` : ''}`;
-
+  const name = `${t(`league.${s.league}`)} ${divisionCode(s.number)}`;
   return (
-    <>
-      <RankingsToolbar t={t} seasonNumber={season.seasonNumber} search={search} />
-      <RankingsTable t={t} riders={result.riders} rankOffset={(result.page - 1) * result.pageSize} />
-      <MarketPagination t={t} page={result.page} pageSize={result.pageSize} total={result.total} buildHref={buildHref} />
-    </>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <StandingsFilters
+          labels={{ league: t('lt.filterLeague'), division: t('lt.filterDivision'), season: t('lt.filterSeason') }}
+          state={{
+            league: s.league, number: s.number, season: s.seasonId,
+            leagues: LEAGUES.map((id) => ({ id, label: t(`league.${id}`) })),
+            subLeagues: s.subLeagues.map((d) => ({ number: d.number, label: `${t(`league.${s.league}`)} ${divisionCode(d.number)}` })),
+            seasons: s.seasons.map((x) => ({ id: x.id, label: t('lt.seasonN', { n: x.number }) })),
+          }}
+        />
+        {s.subLeagues.length > 0 && (
+          <p className="text-xs font-semibold text-navy-soft">
+            <span className="text-navy">{name}</span> · {t('lt.occupancy', { n: s.memberCount, max: s.capacity })}
+          </p>
+        )}
+      </div>
+
+      {s.subLeagues.length === 0 ? (
+        <Card className="col-span-12"><EmptyState icon="trophy" text={t('lt.noSubLeague')} compact /></Card>
+      ) : s.table.rows.length === 0 ? (
+        <Card className="col-span-12"><EmptyState icon="trophy" text={t('lt.empty')} compact /></Card>
+      ) : (
+        <>
+          <LeagueTable table={s.table} t={t} />
+          {!s.table.hasStandings && <p className="text-2xs font-medium text-navy-muted">{t('lt.pendingOrder')}</p>}
+          <LeagueLegend table={s.table} t={t} />
+        </>
+      )}
+    </div>
   );
 }

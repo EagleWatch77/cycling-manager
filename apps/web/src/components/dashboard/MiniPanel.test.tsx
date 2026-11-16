@@ -26,9 +26,9 @@ check('no href: no link rendered', !noLink.includes('<a '));
 // Page wiring (final layout): exactly these windows, nothing else.
 const page = fs.readFileSync(path.join(process.cwd(), 'src/app/dashboard/page.tsx'), 'utf8');
 const jsx = page.slice(page.indexOf('return (\n    <AppShell'));
-const used = [...jsx.matchAll(/<(LiveRaceCard|RiderSummaryCard|TourPreviewCard|SeasonCalendarCard|BikeCard|MiniPanel|[A-Z]\w+Card)\b/g)].map((m) => m[1]);
+const used = [...jsx.matchAll(/<(LiveRaceCard|RiderSummaryCard|TourPreviewCard|SeasonCalendarCard|BikeCard|MiniPanel|StandingsPanel|[A-Z]\w+Card)\b/g)].map((m) => m[1]);
 check('layout has exactly 9 windows', used.length === 9, used.join(','));
-check('window set: live, rider, tour, calendar, bike, 4 mini', ['LiveRaceCard', 'RiderSummaryCard', 'TourPreviewCard', 'SeasonCalendarCard', 'BikeCard'].every((c) => used.includes(c)) && used.filter((c) => c === 'MiniPanel').length === 4);
+check('window set: live, rider, tour, calendar, bike, standings, 3 mini', ['LiveRaceCard', 'RiderSummaryCard', 'TourPreviewCard', 'SeasonCalendarCard', 'BikeCard'].every((c) => used.includes(c)) && used.includes('StandingsPanel') && used.filter((c) => c === 'MiniPanel').length === 3);
 check('removed windows are not on Home', !/TrainingOverviewCard|ManagerTasksCard|StandingsCard|RaceAnalysisCard|Hľadaj|morale|Morálka/i.test(jsx));
 const order = ['sponsorsTitle', 'tasksTitle', 'technicalDirectorTitle'].map((k) => jsx.indexOf(k));
 check('bottom row order: Sponzori, Manažérske úlohy, Technický riaditeľ', order[0] < order[1] && order[1] < order[2]);

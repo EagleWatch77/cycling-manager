@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const TAB_HREFS = ['/rankings', '/rankings/division', '/rankings/nations', '/rankings/achievements'] as const;
+const TAB_HREFS = ['/rankings', '/rankings/riders', '/rankings/division', '/rankings/nations', '/rankings/achievements'] as const;
 
 export interface RankingsTabLabels {
+  league: string;
   riders: string;
   division: string;
   nations: string;
@@ -23,7 +24,8 @@ export interface RankingsTabLabels {
 export function RankingsTabs({ labels }: { labels: RankingsTabLabels }) {
   const pathname = usePathname();
   const LABEL: Record<(typeof TAB_HREFS)[number], string> = {
-    '/rankings': labels.riders,
+    '/rankings': labels.league,
+    '/rankings/riders': labels.riders,
     '/rankings/division': labels.division,
     '/rankings/nations': labels.nations,
     '/rankings/achievements': labels.achievements,
