@@ -4,10 +4,11 @@ import type { StateRider } from './config';
  * Integration contract for the future Race Engine (nothing here simulates a race).
  *
  * 1. INPUT - the engine reports what a stage cost as BASE load (a reference rider's cost; the rider's own energyEff / fatigueRes scale it):
- *      record_rider_stage_load(rider, day, energy_base, fatigue_base, race_units, source_key)   (SQL, trusted callers only; idempotent per source_key)
- *    The state catch-up applies it on that day BEFORE the day's regeneration, in chronological order together with training and regeneration.
- * 2. FRESHNESS - before it reads a rider's state the engine calls rider_state_catch_up_internal(rider, now) for every entrant, so even a rider whose
- *    owner never logged in starts with the correct Energy and Fatigue.
+ *      record_rider_stage_load(rider, at, energy_base, fatigue_base, race_units, source_key)   (SQL, trusted callers only; idempotent per source_key)
+ *    `at` is the EXACT time of the load (e.g. the end of the stage). The state catch-up applies it at that instant, in chronological order together with
+ *    the regeneration (credited for the real elapsed time) and the week ends; it is applied exactly once.
+ * 2. FRESHNESS - before it reads a rider's state the engine calls rider_state_catch_up_internal(rider, stage_start_time) for every entrant, so even a rider whose
+ *    owner never logged in starts the stage with the exact Energy and Fatigue of that moment (the stage's own load is recorded with the time it ends).
  * 3. NO DOUBLE COUNTING - Form is a displayed SUMMARY of Fitness, Energy, Fatigue and 3-week preparedness; it is NOT an input of the race maths.
  *    The engine uses these separate, non-overlapping modifiers (performanceInputs): Energy and Fatigue (direct, per stage), Fitness (long-term physical
  *    level) and a SMALL preparedness effect. Morale touches only the five tactical attributes (+-2 %) and never OVR or the physical attributes.

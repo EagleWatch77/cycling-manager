@@ -82,5 +82,5 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_swap
 |---|---|
 | `20261117_01_development_model_v2.sql` | development model V2 (switch `development_model_settings`, default OFF) |
 | `20261117_02_ovr_f4.sql` | `rider_overall_rating()` = model F4 (only the function body) |
-| `20261117_03_rider_state_model.sql` | rider state: coefficients, daily regeneration catch-up, Fitness/Form, history, Race Engine load interface, transfer carries the state (switch `rider_state_settings`, default OFF) |
+| `20261117_03_rider_state_model.sql` | rider state: coefficients, continuous (time-proportional) Energy/Fatigue regeneration catch-up, Fitness/Form, history, Race Engine load interface, transfer carries the state (switch `rider_state_settings`, default OFF) |
 Tests: `supabase/tests/development_v2.test.sh`, `ovr_f4.test.sh`, `rider_state.test.sh`, `rider_swaps_state.test.sh` (run as a non-root OS user).

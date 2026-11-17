@@ -4,9 +4,9 @@
  */
 import {
   localAttributeFactor, overallPerformance, overallPotentialFactor, developmentRoomFactor,
-  normalizeScore, performanceScore, riderOverall, overallRating, OVERALL_RATING_WEIGHTS, DEVELOPMENT_ROOM_FLOOR,
+  normalizeScore, performanceScore, riderOverall, overallRating, physicalRating, OVERALL_RATING_WEIGHTS, DEVELOPMENT_ROOM_FLOOR,
 } from './score';
-import { PERFORMANCE_MIN, PERFORMANCE_MAX, ATTR_MIN, ATTR_MAX, type SkillAttribute } from './config';
+import { PERFORMANCE_MIN, PERFORMANCE_MAX, ATTR_MIN, ATTR_MAX, SKILL_ATTRIBUTES, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from './config';
 
 let pass = 0, fail = 0;
 function check(name: string, cond: boolean, detail = '') {
@@ -150,33 +150,35 @@ check('normalizeScore midpoint is 50', normalizeScore(150, 100, 200) === 50);
 
 
 // =====================================================================
-// Celkové hodnotenie (OVR) — approved 50/25/20/5 on the attribute scale
+// Celkové hodnotenie (OVR) - model F4 (C-083): V = 60 % top-3 + 40 % mean of 7; OVR = 60 V + 15 best tactic + 10 best technique + 15 Experience
 // =====================================================================
-check('OVR weights are 50/25/20/5 and sum to 1', OVERALL_RATING_WEIGHTS.performance === 0.5 && OVERALL_RATING_WEIGHTS.tactics === 0.25
-  && OVERALL_RATING_WEIGHTS.technique === 0.2 && OVERALL_RATING_WEIGHTS.experience === 0.05
+check('OVR weights are 60/15/10/15 and sum to 1', OVERALL_RATING_WEIGHTS.physical === 0.6 && OVERALL_RATING_WEIGHTS.tactics === 0.15
+  && OVERALL_RATING_WEIGHTS.technique === 0.1 && OVERALL_RATING_WEIGHTS.experience === 0.15
   && Math.abs(Object.values(OVERALL_RATING_WEIGHTS).reduce((a, b) => a + b, 0) - 1) < 1e-12);
 (() => {
-  const perf = { climbing: 128, hills: 128, flat: 128, sprint: 128, timeTrial: 128, endurance: 128, acceleration: 128 } as const;
-  const tact = { positioning: 132, attackTiming: 132, reaction: 132, energyManagement: 132, breakawaySkill: 132 } as const;
-  const tech = { descending: 127, bikeHandling: 127, cornering: 127, packRiding: 127, wetHandling: 127, roughSurface: 127 } as const;
-  const a = makeAttrs(100, { ...perf, ...tact, ...tech, experience: 129 });
-  check('screenshot case (128/132/127/129) -> Celkové hodnotenie 129', overallRating(a) === 129, String(overallRating(a)));
-  check('same rider on the LEGACY 0-100 scale is 35 (the old number that was shown)', riderOverall(a) === 35, String(riderOverall(a)));
-})();
-(() => {
-  // Group means that are NOT whole numbers: rounding must happen only at the end.
-  const a = makeAttrs(120, { climbing: 131, hills: 126, flat: 133, sprint: 127, timeTrial: 129, endurance: 130, acceleration: 125,
-    positioning: 133, attackTiming: 131, reaction: 132, energyManagement: 134, breakawaySkill: 132,
-    descending: 128, bikeHandling: 127, cornering: 128, packRiding: 126, wetHandling: 127, roughSurface: 128, experience: 129 });
-  const perfMean = (131 + 126 + 133 + 127 + 129 + 130 + 125) / 7;
-  const tactMean = (133 + 131 + 132 + 134 + 132) / 5;
-  const techMean = (128 + 127 + 128 + 126 + 127 + 128) / 6;
-  const exact = Math.round(perfMean * 0.5 + tactMean * 0.25 + techMean * 0.2 + 129 * 0.05);
-  check('OVR uses unrounded means, rounds only the result', overallRating(a) === exact, `${overallRating(a)} vs ${exact}`);
-  check('OVR takes only attributes (no hidden/condition input)', overallRating.length === 1);
-  check('OVR is deterministic', overallRating(a) === overallRating({ ...a }));
+  const a = makeAttrs(100, { climbing: 160, hills: 150, flat: 140, sprint: 130, timeTrial: 120, endurance: 110, acceleration: 100,
+    positioning: 120, attackTiming: 130, reaction: 110, energyManagement: 100, breakawaySkill: 125,
+    descending: 105, bikeHandling: 140, cornering: 120, packRiding: 110, wetHandling: 100, roughSurface: 115, experience: 90 });
+  const V = 0.6 * ((160 + 150 + 140) / 3) + 0.4 * ((160 + 150 + 140 + 130 + 120 + 110 + 100) / 7);
+  const exact = Math.round(0.6 * V + 0.15 * 130 + 0.10 * 140 + 0.15 * 90);
+  check('worked example: V = 0.6 top3 + 0.4 mean7; OVR from V, best tactic, best technique, Experience', physicalRating(a) === V && overallRating(a) === exact, `${overallRating(a)} vs ${exact}`);
+  check('OVR does NOT use group means: lowering the non-best tactics and techniques changes nothing', overallRating({ ...a, positioning: 1, reaction: 1, descending: 1, packRiding: 1 }) === exact);
+  check('OVR takes only attributes (no hidden/condition input), deterministic', overallRating.length === 1 && overallRating(a) === overallRating({ ...a }));
 })();
 check('OVR of a uniform rider equals that value', overallRating(makeAttrs(140)) === 140);
+(() => {
+  // exact integer arithmetic == the readable float formula (rounded only at the end) on many random riders
+  let s = 12345; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+  let bad = 0;
+  for (let i = 0; i < 20000; i++) {
+    const a = {} as Record<SkillAttribute, number>; for (const k of SKILL_ATTRIBUTES) a[k] = 20 + Math.floor(rnd() * 170);
+    const p = ['climbing', 'hills', 'flat', 'sprint', 'timeTrial', 'endurance', 'acceleration'].map((k) => a[k as SkillAttribute]).sort((x, y) => y - x);
+    const V = 0.6 * ((p[0] + p[1] + p[2]) / 3) + 0.4 * (p.reduce((x, y) => x + y, 0) / 7);
+    const f = 0.6 * V + 0.15 * Math.max(...TACTICS_ATTRIBUTES.map((k) => a[k])) + 0.10 * Math.max(...TECHNIQUE_ATTRIBUTES.map((k) => a[k])) + 0.15 * a.experience;
+    if (Math.abs(overallRating(a) - f) > 0.5 + 1e-9) bad++;
+  }
+  check('integer form is within rounding of the readable formula on 20 000 random riders', bad === 0, String(bad));
+})();
 
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

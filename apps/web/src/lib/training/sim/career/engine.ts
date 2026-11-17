@@ -65,8 +65,13 @@ const PERF_SET = new Set(PERF_IDX);
 
 function perfMean(a: Float64Array): number { let s = 0; for (const i of PERF_IDX) s += a[i]; return s / PERF_IDX.length; }
 function groupMean(a: ArrayLike<number>, idx: readonly number[]): number { let s = 0; for (const i of idx) s += a[i]; return s / idx.length; }
+/** Fast twin of the official OVR (overallRating(), C-083 / model F4); the career test asserts equality. */
 export function ovrOf(a: ArrayLike<number>): number {
-  return Math.round(groupMean(a, PERF_IDX) * 0.5 + groupMean(a, TACT_IDX) * 0.25 + groupMean(a, TECH_IDX) * 0.20 + a[EXP_IDX] * 0.05);
+  const p = PERF_IDX.map((i) => a[i]).sort((x, y) => y - x);
+  let t = -Infinity, te = -Infinity;
+  for (const i of TACT_IDX) if (a[i] > t) t = a[i];
+  for (const i of TECH_IDX) if (a[i] > te) te = a[i];
+  return Math.max(1, Math.min(200, Math.round((84 * (p[0] + p[1] + p[2]) + 24 * p.reduce((x, y) => x + y, 0) + 105 * t + 70 * te + 105 * a[EXP_IDX]) / 700)));
 }
 export const attrRecord = (a: ArrayLike<number>): Record<SkillAttribute, number> => {
   const r = {} as Record<SkillAttribute, number>;

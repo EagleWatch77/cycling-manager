@@ -36,7 +36,7 @@ export const STATE_CONFIG = {
     gamma: 1.2,
     smoothing: 0.5,
   },
-  maxCatchUpDays: 800,
+  maxCatchUpItems: 4000,
 } as const;
 
 export interface StateRider {

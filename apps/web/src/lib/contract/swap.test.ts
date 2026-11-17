@@ -45,17 +45,18 @@ console.log('== error mapping');
   check('unknown text -> unknown (never shown raw)', reserveFailureFromError('boom') === 'unknown' && reserveFailureFromError(null) === 'unknown');
 }
 
-console.log('== drift: SQL rider_overall_rating == lib/rider/score.ts');
+console.log('== drift: SQL rider_overall_rating (migration 20261117_02) == lib/rider/score.ts (F4)');
 {
-  const sql = readFileSync('../../supabase/migrations/20261116_02_market_purchase_and_swap.sql', 'utf8');
-  const fn = sql.slice(sql.indexOf('function public.rider_overall_rating'), sql.indexOf('function public.manager_league_now'));
+  const sql = readFileSync('../../supabase/migrations/20261117_02_ovr_f4.sql', 'utf8');
+  const fn = sql.slice(sql.indexOf('function public.rider_overall_rating'));
   const keys = [...fn.matchAll(/->> '(\w+)'/g)].map((m) => m[1]);
+  const perf = [...fn.matchAll(/'(climbing|hills|flat|sprint|timeTrial|endurance|acceleration)'/g)].map((m) => m[1]);
   const want = [...TACTICS_ATTRIBUTES, ...TECHNIQUE_ATTRIBUTES, 'experience'] as string[];
-  check('SQL reads exactly the tactics + technique + experience keys', JSON.stringify([...keys].sort()) === JSON.stringify([...want].sort()), keys.join(','));
-  check('weights 0.50 / 0.25 / 0.20 / 0.05', ['* 0.50', '* 0.25', '* 0.20', '* 0.05'].every((w) => fn.includes(w)));
-  check('SQL divides by the group sizes', fn.includes(`/ ${TACTICS_ATTRIBUTES.length} * 0.25`) && fn.includes(`/ ${TECHNIQUE_ATTRIBUTES.length} * 0.20`));
+  check('SQL reads exactly the tactics + technique + experience keys and the 7 performance keys', JSON.stringify([...keys].sort()) === JSON.stringify([...want].sort()) && perf.length === 7, keys.join(','));
+  check('integer weights 84 / 24 / 105 / 70 / 105 over 700 (= 0.6 V, 0.15, 0.10, 0.15), best-of via greatest()', ['84 *', '24 *', '105 *', '70 *', '105 *', '/ 700'].every((w) => fn.includes(w)) && fn.includes('greatest(') && fn.includes('limit 3'));
   const flat = Object.fromEntries(SKILL_ATTRIBUTES.map((a) => [a, 130])) as never;
   check('flat-130 rider has OVR 130 (same value the SQL test asserts)', overallRating(flat) === 130);
+  check('the old migration is untouched and the new one only replaces this one function', !sql.match(/create (table|policy)|insert into|delete from|alter table/i));
 }
 
 console.log('== no invented numbers, switch off by default');

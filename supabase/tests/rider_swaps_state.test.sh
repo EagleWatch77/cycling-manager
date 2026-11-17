@@ -252,13 +252,13 @@ echo "== 14. state model ON: the transfer brings the state up to date, then copi
 q "update public.rider_state_settings set enabled = true" >/dev/null
 Y=$(mkp); league_up $Y; RYY=$(mkr $Y Yankee)
 q "update public.riders set condition='{\"energy\":33,\"fatigue\":61,\"form\":80,\"fitness\":77,\"morale\":66}', condition_previous='{\"energy\":33,\"fatigue\":61,\"form\":80,\"fitness\":77,\"morale\":66}',
-  energy_efficiency=0.8, fatigue_resistance=1.25, recovery_coef=1.07, fitness_peak=90, state_day=date '2026-11-12', vitality=64 where id='$RYY'" >/dev/null
+  energy_efficiency=0.8, fatigue_resistance=1.25, recovery_coef=1.07, fitness_peak=90, state_at=timestamptz '2026-11-12 08:30:00+00', vitality=64 where id='$RYY'" >/dev/null
 MKY=$(MK Y1)
 q "update public.market_riders set energy_efficiency=1.1, fatigue_resistance=0.9, recovery_coef=0.93, fitness_peak=80, vitality=77, aptitude_profile='{\"climbing\":0.5}',
   condition='{\"energy\":100,\"fatigue\":0,\"form\":77,\"fitness\":80,\"morale\":62}' where id='$MKY'" >/dev/null
 SWY=$(q "select id from public.reserve_market_rider_internal('$Y','$MKY','2026-11-18 08:30:00+00')" | head -1)
 eq "closure completes with the state model on" "$(q "select public.complete_rider_swap_internal('$SWY','2026-11-23 00:00:00+00')")" "completed"
-eq "the old rider was caught up to the day before the takeover (state_day 2026-11-22), regeneration credited for the days in between" "$(q "select state_day::text||' '||((condition->>'energy')::float8 > 33)::text||' '||((condition->>'fatigue')::float8 < 61)::text from public.riders where id='$RYY'")" "2026-11-22 true true"
+eq "the old rider was caught up to the exact takeover instant (state_at = 2026-11-23 00:00:00 UTC), regeneration credited for the elapsed time" "$(q "select to_char(state_at at time zone 'utc','YYYY-MM-DD HH24:MI:SS')||' '||((condition->>'energy')::float8 > 33)::text||' '||((condition->>'fatigue')::float8 < 61)::text from public.riders where id='$RYY'")" "2026-11-23 00:00:00 true true"
 eq "his individual coefficients, Vitality and Fitness peak are unchanged by the transfer" "$(q "select energy_efficiency||' '||fatigue_resistance||' '||recovery_coef||' '||fitness_peak||' '||vitality from public.riders where id='$RYY'")" "0.8 1.25 1.07 90 64"
 eq "the market row carries his CURRENT state (not a reset) and his hidden individual values" "$(q "select (m.condition = r.condition)::text||' '||m.energy_efficiency||' '||m.fatigue_resistance||' '||m.recovery_coef||' '||m.fitness_peak||' '||m.vitality from public.market_riders m join public.riders r on r.id = m.acquired_rider_id where r.id='$RYY'")" "true 0.8 1.25 1.07 90 64"
 NY=$(q "select new_rider_id from public.rider_swaps where id='$SWY'")

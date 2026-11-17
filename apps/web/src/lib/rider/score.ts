@@ -140,22 +140,32 @@ export function meanOf(attributes: Record<SkillAttribute, number>, keys: readonl
 }
 
 /**
- * "Celkové hodnotenie" (OVR) — the ONE player-facing rider rating, on the
- * attribute scale (~100-200), approved weights 50/25/20/5. Uses the
- * UNROUNDED group means and rounds only the final value. Shown on the rider
- * profile header and the market. Includes Performance/Tactics/Technique/
- * Experience only — never Potential, Trainability, Professionalism,
- * Recovery or Condition.
+ * "Celkové hodnotenie" (OVR) - the ONE official rider rating (decision C-083, model F4; supersedes C-032), on the attribute scale.
+ *   V   = 0.60 x mean(3 best of the 7 Performance attributes) + 0.40 x mean(all 7)
+ *   OVR = 0.60 x V + 0.15 x best Tactics attribute + 0.10 x best Technique attribute + 0.15 x Experience
+ * Everything is computed from unrounded values and ONLY the final result is rounded (and clamped to 1..200).
+ * Used by the rider profile, the market, the initial-market generator and the development model; the SQL twin is
+ * rider_overall_rating() (migration 20261117_02). Never includes Potential, Trainability, Professionalism, Recovery or Condition.
+ *
+ * Exact arithmetic: with integer attributes 700 x OVR = 84 x top3Sum + 24 x sum7 + 105 x bestTactic + 70 x bestTechnique + 105 x Experience,
+ * so the rounding is identical in TypeScript and SQL (no floating-point half-way surprises).
  */
-export const OVERALL_RATING_WEIGHTS = { performance: 0.50, tactics: 0.25, technique: 0.20, experience: 0.05 } as const;
+export const OVERALL_RATING_WEIGHTS = { physical: 0.60, tactics: 0.15, technique: 0.10, experience: 0.15 } as const;
+export const PHYSICAL_RATING_WEIGHTS = { top3: 0.60, all: 0.40 } as const;
+
+const maxOf = (attributes: Record<SkillAttribute, number>, keys: readonly SkillAttribute[]): number => Math.max(...keys.map((k) => attributes[k]));
+
+/** V - the physical rating: 60 % mean of the three best Performance attributes + 40 % mean of all seven. */
+export function physicalRating(attributes: Record<SkillAttribute, number>): number {
+  const p = PERFORMANCE_FOCUS.map((k) => attributes[k]).sort((x, y) => y - x);
+  return PHYSICAL_RATING_WEIGHTS.top3 * ((p[0] + p[1] + p[2]) / 3) + PHYSICAL_RATING_WEIGHTS.all * (p.reduce((s, v) => s + v, 0) / p.length);
+}
 
 export function overallRating(attributes: Record<SkillAttribute, number>): number {
-  return Math.round(
-    overallPerformance(attributes) * OVERALL_RATING_WEIGHTS.performance
-    + meanOf(attributes, TACTICS_ATTRIBUTES) * OVERALL_RATING_WEIGHTS.tactics
-    + meanOf(attributes, TECHNIQUE_ATTRIBUTES) * OVERALL_RATING_WEIGHTS.technique
-    + attributes.experience * OVERALL_RATING_WEIGHTS.experience,
-  );
+  const p = PERFORMANCE_FOCUS.map((k) => attributes[k]).sort((x, y) => y - x);
+  const x700 = 84 * (p[0] + p[1] + p[2]) + 24 * p.reduce((s, v) => s + v, 0)
+    + 105 * maxOf(attributes, TACTICS_ATTRIBUTES) + 70 * maxOf(attributes, TECHNIQUE_ATTRIBUTES) + 105 * attributes.experience;
+  return Math.max(1, Math.min(200, Math.round(x700 / 700)));
 }
 
 /**

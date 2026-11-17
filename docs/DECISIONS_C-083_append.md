@@ -1,0 +1,7 @@
+## C-083 – Jediný oficiálny vzorec OVR (model F4) – UZAVRETÝ
+- Rozhodnutie majiteľa 2026-11-17, nahrádza C-032 (50/25/20/5 z priemerov skupín).
+- V = 0,60 × priemer 3 najlepších výkonnostných atribútov + 0,40 × priemer všetkých 7.
+- OVR = 0,60 V + 0,15 najlepšia taktika + 0,10 najlepšia technika + 0,15 Skúsenosti; zaokrúhľuje sa až konečný výsledok (a ohraničí 1–200).
+- Jediná implementácia: `lib/rider/score.ts overallRating()` (+ `physicalRating()` = V). Používa ju profil jazdca, prestupový trh, progres, generátor aj model rozvoja (`development/ovr.ts`). SQL dvojča: `rider_overall_rating()` v migrácii `20261117_02_ovr_f4.sql` (NESPUSTENÁ; mení telo jednej funkcie, žiadne dáta; nutná, aby ligové limity `rider_league_eligible` nerátali iné OVR než UI; limity zatiaľ nemajú hodnoty). Presná celočíselná forma 700×OVR = 84·top3 + 24·súčet7 + 105·taktika + 70·technika + 105·skúsenosti → rovnaké zaokrúhlenie v TS aj SQL (test na 3000 jazdcoch, 0 rozdielov).
+- Generátor počiatočného trhu: rozsah 69–75 pre všetkých 10 000 jazdcov zachovaný (0 mimo). Rozdiel do cieľového OVR sa rozdeľuje medzi fyziku (25 %), Skúsenosti (25 %) a taktiku (50 %); technika ostáva nezávislá od fyziky (korelácia −0,09), rozptyl techniky a fyziky v jazdcovi zachovaný (medián rozpätia 26 / 34). Skryté vlastnosti, individuálne vlohy a tréningové koeficienty sa nezmenili.
+- Dôsledok: zobrazené OVR existujúcich jazdcov sa po nasadení zmení (iný vzorec); staršie simulácie (F-modely s C-032 aj ich 0,6 V variant) sa nepoužívajú ako podklad pre čísla OVR. Vzorec je uzavretý.

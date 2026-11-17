@@ -7,12 +7,16 @@
 --  * three hidden individual coefficients (energy economy, fatigue resistance, recovery) - stored, derived once from the rider id, copied on transfer;
 --  * condition corrected ONCE for riders still holding the old defaults (Form 50 / Fitness 60 / Morale 70): Form 75, Fitness 65-85, Morale 60-90;
 --    real Energy / Fatigue and every value that is not the untouched default stay as they are;
---  * state_day = last completed (UTC) day whose regeneration is included, so catching up is idempotent (never twice for the same day);
+--  * state_at = the exact instant up to which the state has been processed: regeneration is credited continuously for the real elapsed time
+--    (daily rate x seconds / 86400), only when a rider is touched, so catching up is idempotent (never twice for the same time) and no job has to
+--    update all riders every minute;
 --  * rider_weekly_state = the history behind the 3-week preparedness and Fitness; rider_load_events = the interface through which the future Race
 --    Engine reports stage load (nothing writes there yet);
 --  * rider_state_catch_up_internal() = the single chronological loop (load -> regeneration -> weekly evaluation, day by day). It is called before
 --    training, before a transfer, and (by the future engine) before a race; refresh_my_rider_state() lets the owner's profile read current values.
--- Chronology for the training plan: its load is applied on the LAST day (Sunday) of its week, before that day's regeneration. The old plan functions
+-- Chronology: the loop takes the NEXT item in time - the end of a game week (Monday 00:00 UTC) or a load event with its exact time - regenerates for exactly
+-- the elapsed time up to it, applies it, and continues; the week end goes first when times are equal. A training plan's load is applied at the instant its
+-- week ends, followed by the weekly Fitness / Form evaluation. The old plan functions
 -- still compute their weekly Energy/Fatigue delta (with recovery days); the loop restores Energy/Fatigue right after calling them and applies the new
 -- load instead - so the old weekly recovery days are never counted. Attribute training (and its readiness input) is untouched.
 -- ============================================================================
@@ -40,7 +44,7 @@ alter table public.riders        add column if not exists energy_efficiency  flo
 alter table public.riders        add column if not exists fatigue_resistance float8 check (fatigue_resistance between 0.70 and 1.30);
 alter table public.riders        add column if not exists recovery_coef      float8 check (recovery_coef      between 0.90 and 1.10);
 alter table public.riders        add column if not exists fitness_peak       float8 check (fitness_peak between 0 and 100);
-alter table public.riders        add column if not exists state_day          date;
+alter table public.riders        add column if not exists state_at           timestamptz;
 alter table public.riders        add column if not exists state_model_version int not null default 0;
 alter table public.market_riders add column if not exists energy_efficiency  float8 check (energy_efficiency  between 0.70 and 1.30);
 alter table public.market_riders add column if not exists fatigue_resistance float8 check (fatigue_resistance between 0.70 and 1.30);
@@ -86,7 +90,7 @@ begin
     new.state_model_version := 1;
   end if;
   new.fitness_peak := coalesce(new.fitness_peak, (new.condition ->> 'fitness')::float8);
-  new.state_day    := coalesce(new.state_day, (now() at time zone 'utc')::date);
+  new.state_at     := coalesce(new.state_at, now());
   return new;
 end;
 $$;
@@ -120,8 +124,8 @@ update public.riders set
   state_model_version = 1
 where state_model_version = 0;
 update public.riders set fitness_peak = (condition ->> 'fitness')::float8 where fitness_peak is null;
--- existing riders: the days up to and including yesterday are NOT back-filled with regeneration (nothing is credited retroactively)
-update public.riders set state_day = (now() at time zone 'utc')::date - 1 where state_day is null;
+-- existing riders: processed up to the moment of the migration (nothing is credited retroactively)
+update public.riders set state_at = now() where state_at is null;
 
 update public.market_riders set
   energy_efficiency  = coalesce(energy_efficiency,  public.rst_energy_eff(id)),
@@ -132,7 +136,7 @@ where energy_efficiency is null or fatigue_resistance is null or recovery_coef i
 update public.market_riders set fitness_peak = (condition ->> 'fitness')::float8 where fitness_peak is null;
 
 alter table public.riders        alter column energy_efficiency set not null, alter column fatigue_resistance set not null,
-                                 alter column recovery_coef set not null, alter column fitness_peak set not null, alter column state_day set not null;
+                                 alter column recovery_coef set not null, alter column fitness_peak set not null, alter column state_at set not null;
 alter table public.market_riders alter column energy_efficiency set not null, alter column fatigue_resistance set not null,
                                  alter column recovery_coef set not null, alter column fitness_peak set not null;
 
@@ -155,7 +159,7 @@ revoke all on public.rider_weekly_state from public, anon, authenticated;
 create table if not exists public.rider_load_events (
   id           bigserial primary key,
   rider_id     uuid not null references public.riders (id) on delete cascade,
-  day          date not null,
+  at           timestamptz not null,           -- the exact time of the load (e.g. the end of the stage)
   energy_base  float8 not null check (energy_base >= 0),
   fatigue_base float8 not null check (fatigue_base >= 0),
   race_units   float8 not null default 0 check (race_units >= 0),
@@ -163,20 +167,20 @@ create table if not exists public.rider_load_events (
   applied_at   timestamptz,
   unique (rider_id, source_key)
 );
-create index if not exists rider_load_events_open_idx on public.rider_load_events (rider_id, day) where applied_at is null;
+create index if not exists rider_load_events_open_idx on public.rider_load_events (rider_id, at) where applied_at is null;
 alter table public.rider_load_events enable row level security;
 revoke all on public.rider_load_events from public, anon, authenticated;
 
 -- Trusted callers only (the future Race Engine / admin tooling): the BASE load of a stage; the rider's own coefficients scale it when it is applied.
 -- Idempotent per source_key (the same stage reported twice is stored once).
-create or replace function public.record_rider_stage_load(p_rider uuid, p_day date, p_energy float8, p_fatigue float8, p_race_units float8, p_source_key text)
+create or replace function public.record_rider_stage_load(p_rider uuid, p_at timestamptz, p_energy float8, p_fatigue float8, p_race_units float8, p_source_key text)
 returns void language sql security definer set search_path = public
 as $$
-  insert into public.rider_load_events (rider_id, day, energy_base, fatigue_base, race_units, source_key)
-  values (p_rider, p_day, p_energy, p_fatigue, p_race_units, p_source_key)
+  insert into public.rider_load_events (rider_id, at, energy_base, fatigue_base, race_units, source_key)
+  values (p_rider, p_at, p_energy, p_fatigue, p_race_units, p_source_key)
   on conflict (rider_id, source_key) do nothing;
 $$;
-revoke all on function public.record_rider_stage_load(uuid, date, float8, float8, float8, text) from public, anon, authenticated;
+revoke all on function public.record_rider_stage_load(uuid, timestamptz, float8, float8, float8, text) from public, anon, authenticated;
 
 -- ---- 7. the chronological catch-up (SQL twin of lib/training/state/core.ts catchUp(); parity test: supabase/tests/rider_state.test.sh) ----
 create or replace function public.rider_state_catch_up_internal(p_rider uuid, p_now timestamptz)
@@ -185,7 +189,7 @@ language plpgsql
 security definer set search_path = public
 as $$
 declare
-  c_anchor constant date := date '2026-08-17';            -- SEASON_ONE_START, a Monday = day 0
+  c_anchor constant timestamptz := timestamptz '2026-08-17 00:00:00+00';  -- SEASON_ONE_START, a Monday 00:00 UTC
   -- ---- configuration (mirrors lib/training/state/config.ts STATE_CONFIG; tunable working values) ----
   c_regen_e_base constant float8 := 9;     c_regen_e_slope constant float8 := 0.04;
   c_regen_f_base constant float8 := 6;     c_regen_f_slope constant float8 := 0.04;
@@ -201,34 +205,34 @@ declare
   c_onset_base constant int := 29;         c_onset_step constant float8 := 25;
   c_w_fit constant float8 := 0.35;         c_w_en constant float8 := 0.20;     c_w_fat constant float8 := 0.20;      c_w_prep constant float8 := 0.25;
   c_prep_neutral constant float8 := 0.45;  c_gamma constant float8 := 1.2;     c_smooth constant float8 := 0.5;
-  c_max_days constant int := 800;
+  c_max_items constant int := 4000;
   r public.riders;
   pl public.training_plans;
-  ev record;
   v_cond jsonb;
-  v_day date; v_through date; v_n int := 0; v_weekend boolean; v_rel int;
+  v_cursor timestamptz; v_t timestamptz; v_boundary timestamptz; v_ev_at timestamptz; v_ev_time timestamptz; v_ev_id bigint; v_ev_e float8; v_ev_f float8;
+  v_week bigint; v_take_boundary boolean; v_secs float8; v_i int;
   e float8; f float8; k float8; peak float8; form float8;
   v_units float8; v_race float8; v_s float8; v_raw float8; v_o float8; v_l float8; v_prep float8; v_target float8;
   v_onset int; v_growth float8; v_ret float8; v_regain float8; v_inact float8; v_ageloss float8; v_over float8; v_ws date;
-  s0 float8; s1 float8; s2 float8; v_season text; v_week int; v_plan_applied boolean;
+  s1 float8; s2 float8; v_season text; v_wk int;
 begin
   if not public.rider_state_enabled() then return; end if;
   select * into r from public.riders where id = p_rider for update;
   if r.id is null then return; end if;
-  v_through := (p_now at time zone 'utc')::date - 1;          -- only COMPLETED days are processed
-  v_day := r.state_day;
+  if p_now <= r.state_at then return; end if;                 -- nothing new has elapsed: reading the profile again credits nothing
+  v_cursor := r.state_at;
 
   v_cond := r.condition;
   e := (v_cond ->> 'energy')::float8; f := (v_cond ->> 'fatigue')::float8; k := (v_cond ->> 'fitness')::float8; form := (v_cond ->> 'form')::float8;
   peak := r.fitness_peak;
 
-  -- plans of weeks that ended on or before state_day and were never applied: attributes only (the days are already behind us);
+  -- plans of weeks that ended on or before state_at and were never applied: attributes only (that time is already behind us);
   -- Energy / Fatigue are restored after the call, no load is added (nothing is credited or charged retroactively).
   for pl in
     select tp.* from public.training_plans tp
      where tp.rider_id = p_rider and tp.applied_at is null
        and public.training_plan_is_due(tp.season_id, tp.week_number, p_now)
-       and (c_anchor + (public.season_number_of(tp.season_id) - 1) * 70 + tp.week_number * 7 - 1) <= v_day
+       and c_anchor + (((public.season_number_of(tp.season_id) - 1) * 10 + tp.week_number) * 7) * interval '1 day' <= r.state_at
      order by public.season_number_of(tp.season_id), tp.week_number
   loop
     update public.riders set condition = jsonb_set(jsonb_set(v_cond, '{energy}', to_jsonb(e)), '{fatigue}', to_jsonb(f)) where id = p_rider;
@@ -236,23 +240,28 @@ begin
     select condition into v_cond from public.riders where id = p_rider;
   end loop;
 
-  while v_day < v_through and v_n < c_max_days loop
-    v_day := v_day + 1; v_n := v_n + 1;
-    v_rel := v_day - c_anchor;
-    v_weekend := mod(v_rel, 7) = 6;
+  for v_i in 1..c_max_items loop
+    v_week := floor(extract(epoch from (v_cursor - c_anchor)) / 604800)::bigint;       -- the game week the cursor is in
+    v_boundary := c_anchor + (v_week + 1) * interval '7 days';                          -- its end
+    select ev.id, ev.at, ev.energy_base, ev.fatigue_base into v_ev_id, v_ev_at, v_ev_e, v_ev_f
+      from public.rider_load_events ev where ev.rider_id = p_rider and ev.applied_at is null and ev.at <= p_now order by ev.at, ev.id limit 1;
+    v_ev_time := case when v_ev_id is null then null else greatest(v_ev_at, v_cursor) end;   -- a load reported late is applied at the cursor
+    v_take_boundary := v_boundary <= p_now and (v_ev_time is null or v_boundary <= v_ev_time);
+    exit when not v_take_boundary and v_ev_id is null;
+    v_t := case when v_take_boundary then v_boundary else v_ev_time end;
 
-    -- (1) loads of this day: stage events first (anything reported late is applied at the first processed day)
-    for ev in select * from public.rider_load_events where rider_id = p_rider and day <= v_day and applied_at is null order by day, id for update loop
-      e := greatest(0, e - ev.energy_base * r.energy_efficiency);
-      f := least(100, f + ev.fatigue_base * r.fatigue_resistance);
-      update public.rider_load_events set applied_at = p_now where id = ev.id;
-    end loop;
+    -- regeneration for exactly the elapsed time up to the next item
+    v_secs := extract(epoch from (v_t - v_cursor))::float8;
+    e := least(100, e + (c_regen_e_base + c_regen_e_slope * r.recovery) * r.recovery_coef * (v_secs / 86400.0));
+    f := greatest(0, f - (c_regen_f_base + c_regen_f_slope * r.recovery) * r.recovery_coef * (v_secs / 86400.0));
+    v_cursor := v_t;
 
-    v_units := 0;
-    if v_weekend then
-      v_season := 'season-' || (v_rel / 70 + 1);
-      v_week := (mod(v_rel, 70) / 7) + 1;
-      select * into pl from public.training_plans tp where tp.rider_id = p_rider and tp.season_id = v_season and tp.week_number = v_week;
+    if v_take_boundary then
+      -- the game week ends: the plan's load, then Fitness and Form
+      v_units := 0;
+      v_season := 'season-' || (v_week / 10 + 1);
+      v_wk := (mod(v_week, 10) + 1)::int;
+      select * into pl from public.training_plans tp where tp.rider_id = p_rider and tp.season_id = v_season and tp.week_number = v_wk;
       if pl.id is not null then
         v_units := case when pl.plan_id is not null then (case pl.mode when 'full' then 1.0 else 0.6 end)
                         when pl.week_type = 'technical' then 0.4
@@ -266,16 +275,10 @@ begin
         e := greatest(0, e - v_units * c_train_e * r.energy_efficiency);
         f := least(100, f + v_units * c_train_f * r.fatigue_resistance);
       end if;
-    end if;
 
-    -- (2) the day's regeneration (every calendar day, race day or not)
-    e := least(100, e + (c_regen_e_base + c_regen_e_slope * r.recovery) * r.recovery_coef);
-    f := greatest(0, f - (c_regen_f_base + c_regen_f_slope * r.recovery) * r.recovery_coef);
-
-    -- (3) weekly evaluation on the week's last day: Fitness, then Form
-    if v_weekend then
-      v_ws := v_day - 6;
-      select coalesce(sum(race_units), 0) into v_race from public.rider_load_events where rider_id = p_rider and day between v_ws and v_day;
+      v_ws := ((v_boundary - interval '7 days') at time zone 'utc')::date;
+      select coalesce(sum(ev.race_units), 0) into v_race from public.rider_load_events ev
+       where ev.rider_id = p_rider and ev.at >= v_boundary - interval '7 days' and ev.at < v_boundary;
       v_l := v_units + v_race;
       v_raw := 1 - exp(-v_l / c_sat);
       v_o := greatest(least(greatest((f - c_ov_f_from) / c_ov_f_span, 0), 1), least(greatest((c_ov_e_below - e) / c_ov_e_below, 0), 1));
@@ -305,12 +308,22 @@ begin
       values (p_rider, v_ws, v_units, v_race, v_s, e, f, k, form)
       on conflict (rider_id, week_start) do update set training_units = excluded.training_units, race_units = excluded.race_units, stimulus = excluded.stimulus,
         energy_end = excluded.energy_end, fatigue_end = excluded.fatigue_end, fitness_end = excluded.fitness_end, form_end = excluded.form_end;
+    else
+      -- a stage / other load at its exact time, applied exactly once
+      e := greatest(0, e - v_ev_e * r.energy_efficiency);
+      f := least(100, f + v_ev_f * r.fatigue_resistance);
+      update public.rider_load_events set applied_at = p_now where id = v_ev_id;
     end if;
   end loop;
 
+  -- the rest of the time up to now
+  v_secs := extract(epoch from (p_now - v_cursor))::float8;
+  e := least(100, e + (c_regen_e_base + c_regen_e_slope * r.recovery) * r.recovery_coef * (v_secs / 86400.0));
+  f := greatest(0, f - (c_regen_f_base + c_regen_f_slope * r.recovery) * r.recovery_coef * (v_secs / 86400.0));
+
   update public.riders
      set condition = jsonb_set(jsonb_set(jsonb_set(jsonb_set(v_cond, '{energy}', to_jsonb(e)), '{fatigue}', to_jsonb(f)), '{fitness}', to_jsonb(k)), '{form}', to_jsonb(form)),
-         fitness_peak = peak, state_day = v_day
+         fitness_peak = peak, state_at = p_now
    where id = p_rider;
 end;
 $$;
@@ -322,7 +335,7 @@ returns int language plpgsql security definer set search_path = public
 as $$
 declare v_id uuid; v_n int := 0;
 begin
-  for v_id in select id from public.riders where id = any (p_riders) and state_day < (p_now at time zone 'utc')::date - 1 loop
+  for v_id in select id from public.riders where id = any (p_riders) and state_at < p_now loop
     perform public.rider_state_catch_up_internal(v_id, p_now); v_n := v_n + 1;
   end loop;
   return v_n;

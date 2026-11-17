@@ -43,14 +43,14 @@ RC=$(mk $PC custom '{"energy":55,"fatigue":45,"form":83,"fitness":71,"morale":64
 
 echo "== migration (existing riders were created BEFORE it)"
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >"$DIR/m3.out" 2>&1 && ok "migration applies" || { bad "migration applies" "$(tail -3 "$DIR/m3.out")"; exit 1; }
-SNAP=$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_day, '|' order by id) from public.riders")
+SNAP=$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_at, '|' order by id) from public.riders")
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >/dev/null 2>&1 && ok "migration is idempotent (second run)" || bad "second run" ""
-eq "second run changes no stored value (condition fix and coefficients happen only once)" "$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_day, '|' order by id) from public.riders")" "$SNAP"
+eq "second run changes no stored value (condition fix and coefficients happen only once)" "$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_at, '|' order by id) from public.riders")" "$SNAP"
 eq "the switch is OFF by default" "$(q "select public.rider_state_enabled()")" "f"
 eq "legacy rider: real Energy / Fatigue kept" "$(q "select (condition->>'energy')||':'||(condition->>'fatigue') from public.riders where id='$RL'")" "70:30"
 eq "legacy rider: Form 75, Fitness 65-85, Morale 60-90" "$(q "select (condition->>'form')::numeric = 75 and (condition->>'fitness')::numeric between 65 and 85 and (condition->>'morale')::numeric between 60 and 90 from public.riders where id='$RL'")" "t"
 eq "rider whose values were NOT the old defaults is untouched" "$(q "select condition = '{\"energy\":55,\"fatigue\":45,\"form\":83,\"fitness\":71,\"morale\":64}'::jsonb from public.riders where id='$RC'")" "t"
-eq "state_day = yesterday (no retroactive regeneration), version 1" "$(q "select count(*) from public.riders where state_day = (now() at time zone 'utc')::date - 1 and state_model_version = 1")" "5"
+eq "state_at = the moment of the migration (nothing credited retroactively), version 1" "$(q "select count(*) from public.riders where state_at > now() - interval '10 minutes' and state_at <= now() and state_model_version = 1")" "5"
 eq "coefficients are inside 0.70-1.30 / 0.70-1.30 / 0.90-1.10" "$(q "select bool_and(energy_efficiency between 0.7 and 1.3 and fatigue_resistance between 0.7 and 1.3 and recovery_coef between 0.9 and 1.1) from public.riders")" "t"
 eq "the three coefficients differ between riders (independent, not one number)" "$(q "select count(distinct energy_efficiency) = 5 and count(distinct fatigue_resistance) = 5 and count(distinct recovery_coef) = 5 from public.riders")" "t"
 IDS="$RY $RV $RR $RL $RC"
@@ -77,50 +77,68 @@ for name in young veteran rester; do
 import json,sys
 d=json.load(open(sys.argv[1])); s=next(x for x in d['scenarios'] if x['name']==sys.argv[2]); r=sys.argv[3]
 cond=json.dumps({'energy':s['energy'],'fatigue':s['fatigue'],'form':s['form'],'fitness':s['fitness'],'morale':70})
-print(f"update public.riders set age={s['age']}, vitality={s['vitality']}, trainability={s['trainability']}, professionalism={s['professionalism']}, recovery={s['recovery']}, energy_efficiency={s['coef'][0]}, fatigue_resistance={s['coef'][1]}, recovery_coef={s['coef'][2]}, fitness_peak={s['peak']}, condition='{cond}', condition_previous='{cond}', state_day=date '2026-08-16' where id='{r}';")
+print(f"update public.riders set age={s['age']}, vitality={s['vitality']}, trainability={s['trainability']}, professionalism={s['professionalism']}, recovery={s['recovery']}, energy_efficiency={s['coef'][0]}, fatigue_resistance={s['coef'][1]}, recovery_coef={s['coef'][2]}, fitness_peak={s['peak']}, condition='{cond}', condition_previous='{cond}', state_at=timestamptz '2026-08-17 00:00:00+00' where id='{r}';")
 for w,t,f,i in s['plans']:
     inten='light' if t=='technical' else i
     print(f"insert into public.training_plans (rider_id, season_id, week_number, week_type, focus, intensity) values ('{r}','season-1',{w},'{t}','{f}','{inten}');")
-for day in s['stageDays']:
-    print(f"select public.record_rider_stage_load('{r}', date '2026-08-17' + {day}, 16, 11, 0.25, 'stage-{day}');")
+for i,at in enumerate(s['stageAt']):
+    print(f"select public.record_rider_stage_load('{r}', timestamptz '2026-08-17 00:00:00+00' + make_interval(secs => {at}), 16, 11, 0.25, 'stage-{i}');")
 PY
 )" >/dev/null
 done
 ok "scenario riders prepared (3 riders, plans of weeks 2-9, stage events)"
 
 echo "== switch OFF: nothing is processed"
-BEFORE=$(q "select string_agg(condition::text||state_day, '|' order by id) from public.riders")
-q "select public.rider_state_catch_up_internal(id, timestamptz '2026-10-20 12:00:00+00') from public.riders" >/dev/null
-eq "catch-up with the switch off changes no rider" "$(q "select string_agg(condition::text||state_day, '|' order by id) from public.riders")" "$BEFORE"
+BEFORE=$(q "select string_agg(condition::text||state_at, '|' order by id) from public.riders")
+q "select public.rider_state_catch_up_internal(id, timestamptz '2026-10-19 06:00:00+00') from public.riders" >/dev/null
+eq "catch-up with the switch off changes no rider" "$(q "select string_agg(condition::text||state_at, '|' order by id) from public.riders")" "$BEFORE"
 
-cmp() { # name label ref-key
+cmp() { # name call-index
   python3 - "$REF" "$1" "$2" "$(q "select (condition->>'energy')||' '||(condition->>'fatigue')||' '||(condition->>'fitness')||' '||(condition->>'form')||' '||(condition->>'morale')||' '||fitness_peak from public.riders where id='${RID[$1]}'")" <<'PY'
 import json,sys
-d=json.load(open(sys.argv[1])); o=d['out'][sys.argv[2]][sys.argv[3]]; got=[float(x) for x in sys.argv[4].split()]
+d=json.load(open(sys.argv[1])); o=d['out'][sys.argv[2]]['after'][int(sys.argv[3])]; got=[float(x) for x in sys.argv[4].split()]
 want=[o['energy'],o['fatigue'],o['fitness'],o['form'],o['morale'],o['fitnessPeak']]
 print(all(abs(a-b)<1e-7 for a,b in zip(got,want)), max(abs(a-b) for a,b in zip(got,want)))
 PY
 }
 q "update public.rider_state_settings set enabled = true" >/dev/null
-echo "== switch ON: first catch-up (through day 63) == TypeScript"
-q "select public.rider_state_catch_up_internal(id, timestamptz '2026-10-20 12:00:00+00') from public.riders where id in ('$RY','$RV','$RR')" >/dev/null
-for name in young veteran rester; do eq "$name: Energy, Fatigue, Fitness, Form, Morale, Fitness peak equal the TypeScript result (1e-7)" "$(cmp $name after1 | cut -d' ' -f1)" "True"; done
+NOWS=(2026-10-19\ 06:00:00+00 2026-10-20\ 12:34:56.789+00 2026-10-21\ 03:00:00+00 2026-11-17\ 14:03:09.250+00)
+runto() { q "select public.rider_state_catch_up_internal(id, timestamptz '${NOWS[$1]}') from public.riders where id in ('$RY','$RV','$RR')" >/dev/null; }
+echo "== switch ON: catch-up to 06:00 after the end of week 9 (unsaturated state) == TypeScript"
+runto 0
+for name in young veteran rester; do eq "$name: Energy, Fatigue, Fitness, Form, Morale, Fitness peak equal the TypeScript result (1e-7)" "$(cmp $name 0 | cut -d' ' -f1)" "True"; done
 eq "weekly history rows: 9 completed weeks per rider" "$(q "select count(*) from public.rider_weekly_state where rider_id='$RY'")" "9"
-eq "state_day moved to day 63" "$(q "select state_day from public.riders where id='$RY'")" "2026-10-19"
+eq "state_at is the exact instant of the processing" "$(q "select to_char(state_at at time zone 'utc','YYYY-MM-DD HH24:MI:SS') from public.riders where id='$RY'")" "2026-10-19 06:00:00"
 eq "stage events were applied exactly once" "$(q "select count(*) filter (where applied_at is not null) || '/' || count(*) from public.rider_load_events where rider_id='$RY'")" "7/7"
-SNAP1=$(q "select condition::text||fitness_peak||state_day from public.riders where id='$RY'")
-q "select public.rider_state_catch_up_internal('$RY', timestamptz '2026-10-20 12:00:00+00')" >/dev/null; q "select public.rider_state_catch_up_internal('$RY', timestamptz '2026-10-20 18:00:00+00')" >/dev/null
-eq "idempotent: running it again the same day changes nothing" "$(q "select condition::text||fitness_peak||state_day from public.riders where id='$RY'")" "$SNAP1"
+SNAP1=$(q "select condition::text||fitness_peak||state_at from public.riders where id='$RY'")
+runto 0; runto 0
+eq "idempotent: reading the profile again at the same instant changes nothing (no regeneration twice)" "$(q "select condition::text||fitness_peak||state_at from public.riders where id='$RY'")" "$SNAP1"
+eq "an EARLIER instant never rewinds or credits anything" "$(q "select public.rider_state_catch_up_internal('$RY', timestamptz '2026-10-19 05:00:00+00'); select condition::text||fitness_peak||state_at from public.riders where id='$RY'" | tail -1)" "$SNAP1"
 eq "the plans were applied once each (attribute training ran through the same loop)" "$(q "select count(*) filter (where applied_at is not null) from public.training_plans where rider_id='$RY'")" "7"
-echo "== second catch-up much later (offline gap) == TypeScript, history read from the database"
-q "select public.rider_state_catch_up_internal(id, timestamptz '2026-11-17 12:00:00+00') from public.riders where id in ('$RY','$RV','$RR')" >/dev/null
-for name in young veteran rester; do eq "$name: after the offline gap equals ONE uninterrupted TypeScript run (1e-7)" "$(cmp $name after2 | cut -d' ' -f1)" "True"; done
-eq "13 weekly history rows after the gap" "$(q "select count(*) from public.rider_weekly_state where rider_id='$RV'")" "13"
+echo "== a few hours / minutes later: proportional regeneration"
+EB=$(q "select condition->>'energy' from public.riders where id='$RV'")
+q "select public.rider_state_catch_up_internal('$RV', timestamptz '2026-10-19 12:00:00+00')" >/dev/null
+eq "veteran: 6 hours later he regenerated exactly a quarter of his daily Energy gain (or reached 100)" "$(q "select abs((condition->>'energy')::float8 - least(100, $EB + (9 + 0.04 * recovery) * recovery_coef * 0.25)) < 1e-9 from public.riders where id='$RV'")" "t"
+echo "== offline gap and several reads in between == ONE uninterrupted TypeScript run"
+runto 1; runto 1; runto 2
+for name in young veteran rester; do eq "$name: state at 2026-10-21 03:00 equals the TypeScript result (1e-7)" "$(cmp $name 2 | cut -d' ' -f1)" "True"; done
+runto 3
+for name in young veteran rester; do eq "$name: after the offline gap equals ONE uninterrupted TypeScript run (1e-7)" "$(cmp $name 3 | cut -d' ' -f1)" "True"; done
+eq "13 weekly history rows after the gap (weekly Fitness/Form evaluation kept)" "$(q "select count(*) from public.rider_weekly_state where rider_id='$RV'")" "13"
+eq "a stage exactly at a week boundary was counted in the NEW week" "$(q "select race_units from public.rider_weekly_state where rider_id='$RR' and week_start = date '2026-08-17' + 42")" "0.5"
 eq "no value outside the model range (Energy/Fatigue/Fitness/Form 0..100)" "$(q "select bool_and((condition->>'energy')::float8 between 0 and 100 and (condition->>'fatigue')::float8 between 0 and 100 and (condition->>'fitness')::float8 between 0 and 100 and (condition->>'form')::float8 between 0 and 100) from public.riders")" "t"
-eq "Morale and the attributes' OVR inputs are not touched by the state loop (Morale unchanged)" "$(q "select (condition->>'morale')::int from public.riders where id='$RY'")" "70"
+eq "Morale is not touched by the state loop" "$(q "select (condition->>'morale')::int from public.riders where id='$RY'")" "70"
+echo "== a load reported late is applied exactly once, then regeneration goes on"
+q "update public.riders set condition = jsonb_set(jsonb_set(condition,'{energy}','80'),'{fatigue}','10'), state_at = timestamptz '2026-11-18 00:00:00+00' where id='$RR'" >/dev/null
+q "select public.record_rider_stage_load('$RR', timestamptz '2026-11-17 18:00:00+00', 16, 11, 0.25, 'late-1'); select public.record_rider_stage_load('$RR', timestamptz '2026-11-17 18:00:00+00', 16, 11, 0.25, 'late-1')" >/dev/null
+eq "the same stage reported twice is stored once" "$(q "select count(*) from public.rider_load_events where rider_id='$RR' and source_key='late-1'")" "1"
+q "select public.rider_state_catch_up_internal('$RR', timestamptz '2026-11-18 00:01:00+00')" >/dev/null
+q "select public.rider_state_catch_up_internal('$RR', timestamptz '2026-11-18 00:01:00+00')" >/dev/null
+eq "applied once at the cursor, then one minute of regeneration (not twice)" "$(q "select abs((condition->>'energy')::float8 - least(100, greatest(0, 80 - 16 * energy_efficiency) + (9 + 0.04 * recovery) * recovery_coef * 60 / 86400.0)) < 1e-9 and abs((condition->>'fatigue')::float8 - greatest(0, least(100, 10 + 11 * fatigue_resistance) - (6 + 0.04 * recovery) * recovery_coef * 60 / 86400.0)) < 1e-9 from public.riders where id='$RR'")" "t"
+eq "...and the event is marked applied" "$(q "select (applied_at is not null)::text from public.rider_load_events where rider_id='$RR' and source_key='late-1'")" "true"
 
 echo "== the owner path: process_my_due_training() with the switch ON"
-q "update public.riders set state_day = date '2026-11-10' where id='$RR'; update public.riders set condition = jsonb_set(jsonb_set(condition,'{energy}','50'),'{fatigue}','50') where id='$RR'" >/dev/null
+q "update public.riders set state_at = timestamptz '2026-11-10 00:00:00+00' where id='$RR'; update public.riders set condition = jsonb_set(jsonb_set(condition,'{energy}','50'),'{fatigue}','50') where id='$RR'" >/dev/null
 OUT=$(printf "set role authenticated;\nselect set_config('request.jwt.claim.sub','%s',false);\nselect public.process_my_due_training();\nselect (condition->>'energy')::numeric > 50 from public.riders where player_id='%s';\n" "$PR" "$PR" | psqlc t | tail -2 | tr '\n' ' ')
 eq "opening training catches the rider up (days of regeneration credited, state not stale)" "$OUT" "0 t "
 echo; echo "$pass passed, $fail failed"; [ $fail -eq 0 ]
