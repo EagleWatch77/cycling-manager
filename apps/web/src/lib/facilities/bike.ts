@@ -5,6 +5,7 @@ import { getScheduleForTour } from '@/data/tourSchedule';
 import { TOURS } from '@/data/tours';
 import { statesFromBikeRow, type BikeComponentStates } from '@/lib/bike/states';
 import { toBikeCondition, computeTourWear, clamp0to100, type BikeCondition } from './bikeCalc';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 export type { BikeCondition, ServiceQuote, ServiceQuoteItem, TourWear } from './bikeCalc';
 export { computeServiceQuote, computeTourWear } from './bikeCalc';
@@ -99,8 +100,9 @@ export async function processCompletedBikeWear(riderId: string, season: SeasonIn
     .maybeSingle();
   let condition = bikeRow ?? { tires: 100, brakes: 100, drivetrain: 100 };
 
+  const cal = await getCalendarState();
   for (const reg of pending) {
-    const schedule = getScheduleForTour(reg.tour_id as string);
+    const schedule = getScheduleForTour(reg.tour_id as string, cal.version);
     // No schedule entry, or this Tour's week hasn't happened yet — leave
     // wear_processed_at null, nothing to apply.
     if (!schedule || schedule.weekNumber >= season.currentWeek) continue;

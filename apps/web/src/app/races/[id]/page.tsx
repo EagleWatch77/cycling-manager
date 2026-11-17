@@ -18,6 +18,7 @@ import { StageScoring } from '@/components/races/StageScoring';
 import { JerseyIcon, type JerseyKind } from '@/components/races/JerseyIcon';
 import { TourRegistrationButton } from '@/components/races/TourRegistrationButton';
 import { registerForTourAction, unregisterFromTourAction } from './actions';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 const LEAGUE = 'rookie' as const;
 
@@ -74,7 +75,8 @@ export default async function TourDetailPage({ params }: { params: Promise<{ id:
 
   const rider = await getMyRider();
   const season = getCurrentSeasonInfo();
-  const seasonViews = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const seasonViews = getSeasonSchedule(season, cal.version);
   const myRegistrations = rider ? await getMySeasonRegistrations(seasonViews.map((v) => v.tour.id)) : [];
   const selectedTourIds = new Set(myRegistrations.map((r) => r.tourId));
   const selectionState = getSelectionState(tour.id, seasonViews, selectedTourIds);

@@ -4,6 +4,7 @@ import { getSeasonSchedule } from '@/data/tourSchedule';
 import { fullDate, dateRange } from '@/lib/format';
 import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 /**
  * Season calendar: real season/week/date (lib/calendar/season) plus every
@@ -14,7 +15,8 @@ import { Card } from '@/components/ui/Card';
 export default async function CalendarPage() {
   const { t, locale } = await getServerDictionary();
   const season = getCurrentSeasonInfo();
-  const scheduled = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const scheduled = getSeasonSchedule(season, cal.version);
 
   return (
     <AppShell activeId="calendar" locale={locale}>

@@ -21,6 +21,7 @@ import { SeasonCalendarCard, type CalendarEvent } from '@/components/SeasonCalen
 import { TourPreviewCard, type CurrentTourView } from '@/components/TourPreviewCard';
 import { RiderSummaryCard } from '@/components/RiderSummaryCard';
 import { BikeCard, type BikeOverviewItem } from '@/components/BikeCard';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 /**
  * Home dashboard (layout per the Cycling Dynasty reference, our own content).
@@ -51,7 +52,8 @@ export default async function DashboardPage() {
   const divisionLabel = division ? `${t(`league.${division.league}`)} ${divisionCode(division.number)}` : null;
 
   const season = getCurrentSeasonInfo();
-  const scheduled = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const scheduled = getSeasonSchedule(season, cal.version);
 
   // Season Calendar card shows only the Rider's own selected Tours (their
   // season program), never the full 5-Tour choice list — sorted by real

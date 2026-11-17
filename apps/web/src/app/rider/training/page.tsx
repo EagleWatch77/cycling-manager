@@ -9,7 +9,7 @@ import {
   type SkillAttribute,
 } from '@/lib/rider/config';
 import { scoreToLevel } from '@/lib/rider/development';
-import { getCurrentSeasonInfo } from '@/lib/calendar/season';
+import { getCurrentSeasonInfo, getWeekDateRange } from '@/lib/calendar/season';
 import { getSeasonSchedule, getScheduleForTour } from '@/data/tourSchedule';
 import { getMySeasonRegistrations } from '@/lib/races/registration';
 import { plannableWeek as getPlannableWeek } from '@/lib/training/planning';
@@ -29,8 +29,11 @@ import { getMyRiderProgress } from '@/lib/rider/progressRepository';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
 import { saveTrainingAction, saveDevelopmentPlanAction } from './actions';
 import { DevelopmentPlanForm, type PlanOption } from '@/components/training/DevelopmentPlanForm';
+import { ActiveTrainingCard } from '@/components/training/ActiveTrainingCard';
+import { buildActiveWeek } from '@/lib/training/activeWeek';
 import { PLANS } from '@/lib/training/development/config';
 import { currentPlanTarget, getDevelopmentPlan, isDevelopmentModelEnabled, preselectFromOldPlan } from '@/lib/training/developmentPlan';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 // Tactics/Technique attribute sets shown for reference on this page now come
 // from the centralized TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES (see
@@ -78,7 +81,8 @@ export default async function RiderTrainingPage({
   await processCompletedTrainings(season);
   const rider = (await getMyRider()) ?? riderBeforeProcessing;
 
-  const scheduled = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const scheduled = getSeasonSchedule(season, cal.version);
   // Purely informational (header badge) — never gates training planning.
   const currentWeekHasRace = scheduled.some((v) => v.isCurrentWeek);
 
@@ -112,21 +116,28 @@ export default async function RiderTrainingPage({
       blocked = 'season-end';
     } else {
       const registrations = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
-      if (registrations.some((r) => getScheduleForTour(r.tourId)?.weekNumber === plannable)) blocked = 'tour-conflict';
+      if (registrations.some((r) => getScheduleForTour(r.tourId, cal.version)?.weekNumber === plannable)) blocked = 'tour-conflict';
     }
   }
   // Seven plans (V2): shown only while the database switch is ON; otherwise the old single-focus form below is used unchanged.
-  const v2 = await isDevelopmentModelEnabled();
+  const v2 = (await isDevelopmentModelEnabled()) && cal.version === 2;   // the seven plans need the new calendar to be ACTIVE in the database
   const v2Target = v2 ? currentPlanTarget() : null;
   const v2Data = v2 && v2Target ? await getDevelopmentPlan(v2Target.seasonId, v2Target.week) : null;
-  let v2Blocked: 'race-week' | 'tour-conflict' | null = null;
+  let v2Blocked: 'race-week' | 'tour-conflict' | 'calendar' | null = null;
   if (v2) {
-    if (!v2Target) v2Blocked = 'race-week';
+    if (!cal.healthy) v2Blocked = 'calendar';
+    else if (!v2Target) v2Blocked = 'race-week';
     else {
       const regs = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
-      if (regs.some((r) => getScheduleForTour(r.tourId)?.weekNumber === v2Target.week)) v2Blocked = 'tour-conflict';
+      if (regs.some((r) => getScheduleForTour(r.tourId, cal.version)?.weekNumber === v2Target.week)) v2Blocked = 'tour-conflict';
     }
   }
+  // The confirmed plan of the CURRENT week stays visible after the Monday 18:00 UTC deadline (the form above only plans the NEXT training week).
+  const activeData = v2 ? await getDevelopmentPlan(season.seasonId, season.currentWeek) : null;
+  const activeWeek = v2 ? buildActiveWeek({
+    now: season.now, weekNumber: season.currentWeek, weekStart: getWeekDateRange(season, season.currentWeek).start,
+    plan: activeData?.plan ? { planId: activeData.plan.planId, mode: activeData.plan.mode } : null, hasLegacyPlan: activeData?.oldFocus != null,
+  }) : null;
   const planOptions: PlanOption[] = PLANS.map((p) => ({ id: p.id, name: t(`trainingPlans.plan.${p.id}`), main: p.phys.map((a) => t(`attr.${a}`)), supplementary: p.tech.map((a) => t(`attr.${a}`)) }));
   const seasonLabel = `${t('races.season')} ${season.seasonNumber}`;
   const planCardTitle = v2 ? (v2Target ? `${t('trainingPage.forWeek')} ${v2Target.week} · ${t('races.season')} ${v2Target.seasonId.replace('season-', '')}` : t('trainingPlans.title'))
@@ -202,6 +213,23 @@ export default async function RiderTrainingPage({
       <div className="grid grid-cols-12 gap-3">
         {/* LEFT (wider) — planning is the main element. Training history is NOT shown here (kept in the database for later use, see DECISIONS C-041). */}
         <div className="col-span-12 space-y-3 lg:col-span-8">
+          {v2 && activeWeek && (
+            <Card title={<CardTitle icon="calendar">{`${t('trainingPlans.activeTitle')} · ${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`}</CardTitle>} dense>
+              <div className="p-3.5">
+                <ActiveTrainingCard
+                  week={activeWeek}
+                  planName={activeWeek.kind === 'plan' ? t(`trainingPlans.plan.${activeWeek.planId}`) : null}
+                  dayLabels={dayLabels}
+                  labels={{
+                    title: t('trainingPlans.activeTitle'), raceWeek: t('trainingPlans.activeRaceWeek'), noPlan: t('trainingPlans.activeNoPlan'), legacy: t('trainingPlans.activeLegacy'),
+                    mode: t('trainingPlans.mode'), modeFull: t('trainingPlans.modeFull'), modeBasic: t('trainingPlans.modeBasic'),
+                    done: t('trainingPlans.activeDone'), next: t('trainingPlans.activeNext'), planned: t('trainingPlans.activePlanned'),
+                    progress: t('trainingPlans.activeProgress'), evaluation: t('trainingPlans.activeEvaluation'), locked: t('trainingPlans.activeLocked'), sessionTime: '12:00 UTC',
+                  }}
+                />
+              </div>
+            </Card>
+          )}
           <Card title={<CardTitle icon="calendar">{planCardTitle}</CardTitle>} dense>
             <div className="p-3.5">
               {v2 ? (
@@ -218,10 +246,10 @@ export default async function RiderTrainingPage({
                     modeFullHint: t('trainingPlans.modeFullHint'), modeBasicHint: t('trainingPlans.modeBasicHint'), sessionsAt: t('trainingPlans.sessionsAt'),
                     deadline: t('trainingPlans.deadline'), save: t('trainingPlans.save'), saving: t('trainingPage.saving'), saved: t('trainingPlans.saved'),
                     savedPlan: t('trainingPlans.savedPlan'), preselected: t('trainingPlans.preselected'), noPlan: t('trainingPlans.noPlan'), locked: t('trainingPlans.locked'),
-                    blockedRaceWeek: t('trainingPlans.blockedRaceWeek'), blockedTour: t('trainingPlans.blockedTour'),
+                    blockedRaceWeek: t('trainingPlans.blockedRaceWeek'), blockedTour: t('trainingPlans.blockedTour'), blockedCalendar: t('trainingPlans.blockedCalendar'),
                     errors: {
                       'tour-conflict': t('trainingPlans.errTour'), 'no-plannable-week': t('trainingPlans.blockedRaceWeek'), 'already-processed': t('trainingPlans.locked'),
-                      disabled: t('trainingPlans.errDisabled'), error: t('trainingPage.saveError'), invalid: t('trainingPage.saveError'), 'no-rider': t('trainingPage.saveError'),
+                      disabled: t('trainingPlans.errDisabled'), 'calendar-not-active': t('trainingPlans.errDisabled'), error: t('trainingPage.saveError'), invalid: t('trainingPage.saveError'), 'no-rider': t('trainingPage.saveError'),
                     },
                   }}
                   saveAction={saveDevelopmentPlanAction}

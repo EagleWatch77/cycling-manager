@@ -7,8 +7,11 @@ import type { StateRider } from './config';
  *      record_rider_stage_load(rider, at, energy_base, fatigue_base, race_units, source_key)   (SQL, trusted callers only; idempotent per source_key)
  *    `at` is the EXACT time of the load (e.g. the end of the stage). The state catch-up applies it at that instant, in chronological order together with
  *    the regeneration (credited for the real elapsed time) and the week ends; it is applied exactly once.
- * 2. FRESHNESS - before it reads a rider's state the engine calls rider_state_catch_up_internal(rider, stage_start_time) for every entrant, so even a rider whose
- *    owner never logged in starts the stage with the exact Energy and Fatigue of that moment (the stage's own load is recorded with the time it ends).
+ * 2. FRESHNESS - before a stage the engine calls rider_state_catch_up_many(entrants, stage_start_time). It returns the number of entrants that are STILL NOT
+ *    caught up (a very long offline period needs several 4000-item passes; the function repeats them, up to 50). The stage may start ONLY when it returns 0 -
+ *    otherwise call it again. Nobody starts with a stale state. The stage's own load is recorded with the time it ends.
+ * 2b. LATE STAGES - a stage reported after its week was already evaluated is charged to Energy/Fatigue at the cursor and its race units are credited ONCE
+ *    to the open week (Fitness/Form of closed weeks are never rewritten, nothing is counted twice).
  * 3. NO DOUBLE COUNTING - Form is a displayed SUMMARY of Fitness, Energy, Fatigue and 3-week preparedness; it is NOT an input of the race maths.
  *    The engine uses these separate, non-overlapping modifiers (performanceInputs): Energy and Fatigue (direct, per stage), Fitness (long-term physical
  *    level) and a SMALL preparedness effect. Morale touches only the five tactical attributes (+-2 %) and never OVR or the physical attributes.

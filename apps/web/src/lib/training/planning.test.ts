@@ -37,7 +37,7 @@ check('confirmed plan view has no edit / cancel / delete control', !/(edit|cance
 check('confirmed plan shows the "locked" note', /labels\.lockedNote/.test(form));
 check('form never sends season or week to the server action', /saveAction\(\{ weekType, focus, intensity \}\)/.test(form) && !/seasonId/.test(form));
 check('last week and Tour week show an explanation instead of the form', /blocked === 'season-end' \? labels\.blockedSeasonEnd : labels\.blockedTour/.test(form));
-check('page computes the plannable week with the shared helper and the Tour conflict', /getPlannableWeek\(season\)/.test(page) && /getScheduleForTour\(r\.tourId\)\?\.weekNumber === plannable/.test(page));
+check('page computes the plannable week with the shared helper and the Tour conflict', /getPlannableWeek\(season\)/.test(page) && /getScheduleForTour\(r\.tourId, cal\.version\)\?\.weekNumber === plannable/.test(page));
 check('page shows season + week of the planned training', /seasonNumber/.test(page) && /planCardTitle/.test(page));
 check('Tour registration refuses a Tour week with a plan (friendly pre-check + DB trigger reason)', /training-conflict/.test(reg) && /training_conflict/.test(reg));
 check('repository maps the new database reasons', /already_planned/.test(repo) && /tour_conflict/.test(repo) && /no_plannable_week/.test(repo));

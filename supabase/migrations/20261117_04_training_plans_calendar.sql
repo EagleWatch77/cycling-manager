@@ -3,8 +3,10 @@
 --
 -- Run only after the owner approves, AFTER 20261117_01, _02 and _03 (it replaces functions of _01 and _03 by CREATE OR REPLACE; those files are not edited).
 -- Idempotent. Deletes nothing: no plan, registration, rider or result is removed or rewritten.
--- New training behaviour stays behind the EXISTING switches (development_model_settings, rider_state_settings: both default OFF); the calendar
--- part (section 2) is global and takes effect when this migration runs.
+-- New training behaviour stays behind the EXISTING switches (development_model_settings, rider_state_settings: both default OFF). The calendar change
+-- (Tour weeks 2/4/6/8/10) is NOT done by running this migration: it is ONE deliberate step, public.activate_game_calendar_v2(), after the web version
+-- that knows both calendars is deployed. The web reads the active version from the database (public.game_calendar_info()), so the web and the
+-- database can never show different Tour dates.
 --
 --  1. The season start becomes ONE setting (public.game_calendar_settings), read by every calendar function (no date inside the calculations any more).
 --  2. ONE calendar for every season: odd weeks = training weeks, even weeks = race weeks; Tours in weeks 2/4/6/8/10; stages per league 3/4/4/4/5.
@@ -134,11 +136,54 @@ create or replace function public.game_week_kind(p_week int)
 returns text language sql immutable as $$ select case when p_week % 2 = 1 then 'training' else 'race' end; $$;
 grant execute on function public.game_week_kind(int) to authenticated;
 
--- Tour weeks: 2 Highlands, 4 Danube, 6 Coastal, 8 Northern Crown, 10 Silver Horizon (mirror of data/tourSchedule.ts; same for every season).
--- Only the WEEK of each Tour changes; no registration or plan row is touched.
-insert into public.tour_schedule (tour_id, week_number) values
-  ('highlands-tour', 2), ('danube-tour', 4), ('coastal-tour', 6), ('northern-crown-tour', 8), ('silver-horizon-tour', 10)
-on conflict (tour_id) do update set week_number = excluded.week_number;
+-- Tour weeks: 2 Highlands, 4 Danube, 6 Coastal, 8 Northern Crown, 10 Silver Horizon (mirror of TOUR_SCHEDULE_V2 in data/tourSchedule.ts; same for every
+-- season). Running this migration does NOT move any Tour: public.tour_schedule keeps its present rows until public.activate_game_calendar_v2() is run.
+alter table public.game_calendar_settings add column if not exists calendar_v2_active boolean not null default false;
+
+create or replace function public.game_calendar_v2_active()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select calendar_v2_active from public.game_calendar_settings where id), false);
+$$;
+revoke all on function public.game_calendar_v2_active() from public;
+grant execute on function public.game_calendar_v2_active() to anon, authenticated;
+
+-- What the web needs to show exactly what the database does: the active calendar version, the season start and the Tour weeks (read-only, no secrets).
+create or replace function public.game_calendar_info()
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'v2_active', public.game_calendar_v2_active(),
+    'season_one_start', public.game_season_one_start(),
+    'tours', coalesce((select jsonb_object_agg(tour_id, week_number) from public.tour_schedule), '{}'::jsonb));
+$$;
+revoke all on function public.game_calendar_info() from public;
+grant execute on function public.game_calendar_info() to anon, authenticated;
+
+-- THE ONE ACTIVATION STEP (database owner only, not granted to clients). Moves the Tours to weeks 2/4/6/8/10 and sets the flag in one transaction.
+-- Refuses while calendar_v2_conflicts() lists anything, unless the owner explicitly acknowledges it (p_acknowledge_conflicts = true).
+-- No registration, plan or result is changed or deleted; only the Tour weeks (and therefore the week a registration refers to) move. Idempotent.
+create or replace function public.activate_game_calendar_v2(p_acknowledge_conflicts boolean default false)
+returns text language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  if public.game_calendar_v2_active() then return 'already_active'; end if;
+  select count(*) into n from public.calendar_v2_conflicts();
+  if n > 0 and not p_acknowledge_conflicts then
+    raise exception 'calendar_v2_conflicts: % rows - review: select * from public.calendar_v2_conflicts(); then call activate_game_calendar_v2(true)', n;
+  end if;
+  insert into public.tour_schedule (tour_id, week_number) values
+    ('highlands-tour', 2), ('danube-tour', 4), ('coastal-tour', 6), ('northern-crown-tour', 8), ('silver-horizon-tour', 10)
+  on conflict (tour_id) do update set week_number = excluded.week_number;
+  update public.game_calendar_settings set calendar_v2_active = true, changed_at = now() where id;
+  return 'activated';
+end;
+$$;
+revoke all on function public.activate_game_calendar_v2(boolean) from public, anon, authenticated;
+
+-- A contract's expiry used the season start as a literal date (IMMUTABLE); now it reads the ONE setting like every other calendar function.
+create or replace function public.contract_expiry_at(p_start timestamptz, p_weeks int default 10)
+returns timestamptz language sql stable security definer set search_path = public as $$
+  select ((public.game_season_one_start() + (public.game_week_index(p_start) + p_weeks) * 7)::timestamp at time zone 'utc');
+$$;
 
 -- stage days of a race week per league (0 = Monday .. 6 = Sunday); their number is the number of stages (mirror of LEAGUE_RACE_DAYS in lib/leagues.ts)
 create or replace function public.league_race_days(p_league text)
@@ -207,6 +252,7 @@ declare
 begin
   if v_uid is null then raise exception 'not_authenticated'; end if;
   if not public.development_model_enabled() then raise exception 'model_disabled'; end if;
+  if not public.game_calendar_v2_active() then raise exception 'calendar_not_active'; end if;
   select id into v_rider from public.riders where player_id = v_uid;
   if v_rider is null then raise exception 'no_rider'; end if;
   if p_plan_id is null or p_plan_id not between 0 and 6 or p_mode is null or p_mode not in ('basic', 'full') then
@@ -371,6 +417,9 @@ $$;
 revoke all on function public.apply_development_plan_v2(uuid) from public, anon, authenticated;
 
 -- ---- 5. sessions + configurable calendar + no skipped items in the Rider State loop --------------------------------
+-- the instant a stage was CREDITED to a week: its own time, or the cursor when it was reported after its week had been evaluated (see the loop below)
+alter table public.rider_load_events add column if not exists credited_at timestamptz;
+
 create or replace function public.rider_state_catch_up_internal(p_rider uuid, p_now timestamptz)
 returns void
 language plpgsql
@@ -484,8 +533,11 @@ begin
       end if;
 
       v_ws := ((v_boundary - interval '168 hours') at time zone 'utc')::date;
+      -- race units of the stages CREDITED to this week (each stage exactly once; a stage reported after its week was evaluated counts in the open week,
+      -- closed weeks are never re-evaluated)
       select coalesce(sum(ev.race_units), 0) into v_race from public.rider_load_events ev
-       where ev.rider_id = p_rider and ev.at >= v_boundary - interval '168 hours' and ev.at < v_boundary;
+       where ev.rider_id = p_rider and ev.applied_at is not null
+         and coalesce(ev.credited_at, ev.at) >= v_boundary - interval '168 hours' and coalesce(ev.credited_at, ev.at) < v_boundary;
       v_l := v_units + v_race;
       v_raw := 1 - exp(-v_l / c_sat);
       v_o := greatest(least(greatest((f - c_ov_f_from) / c_ov_f_span, 0), 1), least(greatest((c_ov_e_below - e) / c_ov_e_below, 0), 1));
@@ -519,7 +571,7 @@ begin
       -- a stage / other load at its exact time, applied exactly once
       e := greatest(0, e - v_ev_e * r.energy_efficiency);
       f := least(100, f + v_ev_f * r.fatigue_resistance);
-      update public.rider_load_events set applied_at = p_now where id = v_ev_id;
+      update public.rider_load_events set applied_at = p_now, credited_at = v_t where id = v_ev_id;   -- v_t = max(stage time, cursor): a late stage counts in the OPEN week
     else
       -- a training session of a V2 plan: readiness BEFORE it is recorded (efficiency of the week's progress), then its equal part of the weekly load,
       -- scaled by this rider's individual coefficients
@@ -548,3 +600,92 @@ end;
 $$;
 
 revoke all on function public.rider_state_catch_up_internal(uuid, timestamptz) from public, anon, authenticated;
+
+-- ---- 7. the catch-up that is really FINISHED (one pass handles 4000 items; this repeats it until the rider is at p_now) -----------------------------
+-- Returns true when the rider is fully caught up to p_now, false when p_max_passes passes were not enough (the state is still saved at the cursor,
+-- nothing is skipped, a later call continues).
+create or replace function public.rider_state_catch_up_complete(p_rider uuid, p_now timestamptz, p_max_passes int default 50)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare v_at timestamptz; v_i int;
+begin
+  for v_i in 1..greatest(1, p_max_passes) loop
+    perform public.rider_state_catch_up_internal(p_rider, p_now);
+    select state_at into v_at from public.riders where id = p_rider;
+    if v_at is null or v_at >= p_now then return true; end if;
+  end loop;
+  return false;
+end;
+$$;
+revoke all on function public.rider_state_catch_up_complete(uuid, timestamptz, int) from public, anon, authenticated;
+
+-- Race Engine interface: before a stage starts EVERY entrant must be fully caught up to the stage start. Returns the number of riders that are STILL NOT
+-- caught up (0 = all ready: only then may the stage start). It never raises over an unfinished rider, so the progress already made is kept; call it
+-- again until it returns 0.
+drop function if exists public.rider_state_catch_up_many(uuid[], timestamptz);
+create or replace function public.rider_state_catch_up_many(p_riders uuid[], p_now timestamptz, p_max_passes int default 50)
+returns int language plpgsql security definer set search_path = public as $$
+declare v_id uuid; v_left int := 0;
+begin
+  for v_id in select id from public.riders where id = any (p_riders) and state_at < p_now loop
+    if not public.rider_state_catch_up_complete(v_id, p_now, p_max_passes) then v_left := v_left + 1; end if;
+  end loop;
+  return v_left;
+end;
+$$;
+revoke all on function public.rider_state_catch_up_many(uuid[], timestamptz, int) from public, anon, authenticated;
+
+create or replace function public.refresh_my_rider_state()
+returns void language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  if auth.uid() is null then raise exception 'not_authenticated'; end if;
+  select id into v_id from public.riders where player_id = auth.uid();
+  if v_id is not null then perform public.rider_state_catch_up_complete(v_id, now()); end if;
+end;
+$$;
+revoke all on function public.refresh_my_rider_state() from public, anon, authenticated;
+grant execute on function public.refresh_my_rider_state() to authenticated;
+
+-- the weekly processing at page open (the 20261117_03 version, with the catch-up repeated until it is finished)
+create or replace function public.process_my_due_training()
+returns int
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_id uuid;
+  v_v2 boolean;
+  v_already boolean;
+  v_done int := 0;
+  v_rider uuid;
+  v_before int;
+  v_after int;
+begin
+  if v_uid is null then raise exception 'not_authenticated'; end if;
+  if public.rider_state_enabled() then
+    select id into v_rider from public.riders where player_id = v_uid;
+    if v_rider is null then return 0; end if;
+    select count(*) into v_before from public.training_plans tp where tp.rider_id = v_rider and tp.applied_at is null and public.training_plan_is_due(tp.season_id, tp.week_number, now());
+    perform public.rider_state_catch_up_complete(v_rider, now());   -- finished, not just one pass
+    select count(*) into v_after from public.training_plans tp where tp.rider_id = v_rider and tp.applied_at is null and public.training_plan_is_due(tp.season_id, tp.week_number, now());
+    return v_before - v_after;
+  end if;
+  for v_id, v_v2 in
+    select tp.id, tp.plan_id is not null
+    from public.training_plans tp join public.riders r on r.id = tp.rider_id
+    where r.player_id = v_uid and tp.applied_at is null and public.training_plan_is_due(tp.season_id, tp.week_number, now())
+    order by public.season_number_of(tp.season_id), tp.week_number
+  loop
+    if v_v2 then
+      select a.already_processed into v_already from public.apply_development_plan_v2(v_id) a;
+    else
+      select a.already_processed into v_already from public.apply_training_plan_internal(v_id) a;
+    end if;
+    if not v_already then v_done := v_done + 1; end if;
+  end loop;
+  return v_done;
+end;
+$$;
+revoke all on function public.process_my_due_training() from public, anon, authenticated;
+grant execute on function public.process_my_due_training() to authenticated;

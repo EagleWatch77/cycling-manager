@@ -28,20 +28,38 @@ export interface ScheduledTour {
  */
 export const MAX_SEASON_TOUR_SELECTIONS = maxSeasonTours('rookie');
 
+/** 1 = the calendar the database had before migration 20261117_04 is activated; 2 = the ONE calendar (odd weeks training, even weeks race). */
+export type CalendarVersion = 1 | 2;
+
 /**
- * ONE calendar for every season (owner decision 2026-11-17): odd weeks are TRAINING weeks, even weeks are RACE weeks
+ * CALENDAR 1 (until public.activate_game_calendar_v2() is run): Danube and Coastal intentionally share week 5 (a Rider may enter either, never both),
+ * Northern Crown is in week 7, Silver Horizon in week 9. Kept ONLY so the web shows exactly what the database still has before the activation.
+ */
+export const TOUR_SCHEDULE_V1: ScheduledTour[] = [
+  { tourId: 'highlands-tour', weekNumber: 2, registrationOpen: true },
+  { tourId: 'danube-tour', weekNumber: 5, registrationOpen: true },
+  { tourId: 'coastal-tour', weekNumber: 5, registrationOpen: true },
+  { tourId: 'northern-crown-tour', weekNumber: 7, registrationOpen: true },
+  { tourId: 'silver-horizon-tour', weekNumber: 9, registrationOpen: true },
+];
+
+/**
+ * CALENDAR 2 - ONE calendar for every season (owner decision 2026-11-17): odd weeks are TRAINING weeks, even weeks are RACE weeks
  * (see lib/calendar/weekKind.ts). One Tour per race week, so no two Tours overlap any more:
  *   1 training · 2 Highlands · 3 training · 4 Danube · 5 training · 6 Coastal · 7 training · 8 Northern Crown ·
  *   9 training · 10 Silver Horizon.
- * Mirrored in public.tour_schedule (supabase/migrations/20261117_04_training_plans_calendar.sql); a drift test compares them.
+ * Mirrored in public.activate_game_calendar_v2() (supabase/migrations/20261117_04_training_plans_calendar.sql); a drift test compares them.
  */
-export const TOUR_SCHEDULE: ScheduledTour[] = [
+export const TOUR_SCHEDULE_V2: ScheduledTour[] = [
   { tourId: 'highlands-tour', weekNumber: 2, registrationOpen: true },
   { tourId: 'danube-tour', weekNumber: 4, registrationOpen: true },
   { tourId: 'coastal-tour', weekNumber: 6, registrationOpen: true },
   { tourId: 'northern-crown-tour', weekNumber: 8, registrationOpen: true },
   { tourId: 'silver-horizon-tour', weekNumber: 10, registrationOpen: true },
 ];
+
+/** The schedule of a calendar version. The version always comes from the database (lib/calendar/calendarState.ts) - never guessed by the web. */
+export const tourScheduleOf = (version: CalendarVersion): ScheduledTour[] => (version === 2 ? TOUR_SCHEDULE_V2 : TOUR_SCHEDULE_V1);
 
 /** A schedule entry joined with its Tour content and real calendar dates. */
 export interface ScheduledTourView {
@@ -55,9 +73,9 @@ export interface ScheduledTourView {
 }
 
 /** Every scheduled Tour of the given season (the same weekly template each season), joined and sorted by week. */
-export function getSeasonSchedule(info: SeasonInfo): ScheduledTourView[] {
+export function getSeasonSchedule(info: SeasonInfo, version: CalendarVersion): ScheduledTourView[] {
   const msPerDay = 86_400_000;
-  return TOUR_SCHEDULE
+  return tourScheduleOf(version)
     .map((schedule): ScheduledTourView | null => {
       const tour = TOURS.find((t) => t.id === schedule.tourId);
       if (!tour) return null;
@@ -76,8 +94,8 @@ export function getSeasonSchedule(info: SeasonInfo): ScheduledTourView[] {
 }
 
 /** The schedule entry for one Tour, if any. The template is the same in every season. */
-export function getScheduleForTour(tourId: string): ScheduledTour | undefined {
-  return TOUR_SCHEDULE.find((s) => s.tourId === tourId);
+export function getScheduleForTour(tourId: string, version: CalendarVersion): ScheduledTour | undefined {
+  return tourScheduleOf(version).find((s) => s.tourId === tourId);
 }
 
 function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {

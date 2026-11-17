@@ -114,7 +114,7 @@ export const sessionDaysOf = (mode: 'full' | 'basic'): readonly number[] => C.tr
  * (both mutated); a session at or before `lastAt` counts as done (a plan can only be saved before its first session, so nothing is skipped by mistake).
  */
 export function catchUp(start: StateRider, lastAt: number, now: number, inp: DayInputs, history: Map<number, number> = new Map(), applied: Set<number> = new Set(),
-  sessions: Map<number, { n: number; sum: number }> = new Map()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
+  sessions: Map<number, { n: number; sum: number }> = new Map(), credited: Map<number, number> = new Map()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
   let r = start, cursor = lastAt, sessFloor = lastAt; const weeks: WeekRecord[] = [];
   if (now <= lastAt) return { rider: r, lastAt, weeks };
   let complete = false;
@@ -137,7 +137,9 @@ export function catchUp(start: StateRider, lastAt: number, now: number, inp: Day
       const done = sessions.get(week);
       const units = plan === undefined ? 0 : typeof plan === 'number' ? plan : plan.units * (done?.n ?? 0) / sessN;
       if (typeof plan === 'number' && units > 0) { const l = trainingLoad(units); r = applyLoad(r, l.energy, l.fatigue); }
-      const raceUnits = inp.events.filter((e) => e.at >= week * WEEK_SECONDS && e.at < boundary).reduce((s, e) => s + e.raceUnits, 0);
+      // A stage's race units are counted in the week they were CREDITED: normally its own week; a stage reported after its week was already evaluated is
+      // credited to the open week in which it is applied (the closed week is never re-evaluated). Each event is counted exactly once.
+      const raceUnits = inp.events.filter((e) => { const c = credited.get(e.id) ?? e.at; return applied.has(e.id) && c >= week * WEEK_SECONDS && c < boundary; }).reduce((s, e) => s + e.raceUnits, 0);
       const stim = weeklyStimulus(units + raceUnits, r.energy, r.fatigue);
       const fit = fitnessWeek(r, stim);
       const rr = { ...r, fitness: fit, fitnessPeak: Math.max(r.fitnessPeak, fit) };
@@ -147,7 +149,7 @@ export function catchUp(start: StateRider, lastAt: number, now: number, inp: Day
       r = { ...rr, form };
       weeks.push({ week, trainingUnits: units, raceUnits, stimulus: stim, energyEnd: r.energy, fatigueEnd: r.fatigue, fitnessEnd: fit, formEnd: form,
         sessionsDone: done?.n ?? 0, readinessAvg: done && done.n > 0 ? done.sum / done.n : null });
-    } else if (takeEvent && next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id);
+    } else if (takeEvent && next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id); credited.set(next.id, t);
     } else if (takeSession && typeof plan === 'object') {
       const d = sessions.get(week) ?? { n: 0, sum: 0 };
       sessions.set(week, { n: d.n + 1, sum: d.sum + (r.energy + (100 - r.fatigue)) / 2 });   // readiness BEFORE the session

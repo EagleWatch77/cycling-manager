@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Klasykowiec",
   "trainingPlans.plan.5": "Uciekinier",
-  "trainingPlans.plan.6": "Wszechstronny"
+  "trainingPlans.plan.6": "Wszechstronny",
+  "trainingPlans.activeTitle": "Trening tego tygodnia",
+  "trainingPlans.activeRaceWeek": "W tym tygodniu są wyścigi: nie ma regularnego treningu.",
+  "trainingPlans.activeNoPlan": "Nie wybrano planu na ten tydzień. Termin minął w poniedziałek o 18:00 UTC poprzedniego tygodnia, a trening wstecz nie jest możliwy. Regeneracja trwa dalej.",
+  "trainingPlans.activeLegacy": "Na ten tydzień potwierdzono trening według dotychczasowego ustawienia; działa według starych zasad.",
+  "trainingPlans.activeDone": "Wykonany",
+  "trainingPlans.activeNext": "Następny",
+  "trainingPlans.activePlanned": "Zaplanowany",
+  "trainingPlans.activeProgress": "Wykonane treningi",
+  "trainingPlans.activeEvaluation": "podsumowanie tygodnia w poniedziałek 00:00 UTC",
+  "trainingPlans.activeLocked": "Plan jest zablokowany od poniedziałku 18:00 UTC.",
+  "trainingPlans.blockedCalendar": "Kalendarz nie zgadza się z bazą danych, planowanie jest wstrzymane.",
+  "calendar.mismatch": "Terminów nie można teraz zweryfikować: kalendarz strony nie zgadza się z bazą danych."
 }

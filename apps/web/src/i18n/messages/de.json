@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Klassikerfahrer",
   "trainingPlans.plan.5": "Ausreißer",
-  "trainingPlans.plan.6": "Allrounder"
+  "trainingPlans.plan.6": "Allrounder",
+  "trainingPlans.activeTitle": "Training dieser Woche",
+  "trainingPlans.activeRaceWeek": "Diese Woche sind Rennen, es findet kein reguläres Training statt.",
+  "trainingPlans.activeNoPlan": "Für diese Woche hast du keinen Plan gewählt. Die Frist endete am Montag um 18:00 UTC der Vorwoche; rückwirkend kann nicht trainiert werden. Die Regeneration läuft weiter.",
+  "trainingPlans.activeLegacy": "Für diese Woche ist ein Training nach der bisherigen Einstellung bestätigt; es läuft nach den alten Regeln.",
+  "trainingPlans.activeDone": "Erledigt",
+  "trainingPlans.activeNext": "Als Nächstes",
+  "trainingPlans.activePlanned": "Geplant",
+  "trainingPlans.activeProgress": "Erledigte Einheiten",
+  "trainingPlans.activeEvaluation": "Wochenauswertung am Montag 00:00 UTC",
+  "trainingPlans.activeLocked": "Der Plan ist seit Montag 18:00 UTC gesperrt.",
+  "trainingPlans.blockedCalendar": "Der Kalender stimmt nicht mit der Datenbank überein, die Planung ist vorübergehend pausiert.",
+  "calendar.mismatch": "Die Termine lassen sich gerade nicht bestätigen: Der Kalender der Website stimmt nicht mit der Datenbank überein."
 }

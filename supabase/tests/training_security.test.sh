@@ -261,7 +261,9 @@ eq "no plan can ever target week 1 (plannable week is always 2..10)" "$(q "selec
 # the calendar (Tour weeks 2/4/6/8/10) comes from migration 20261117_04 (needs _01 and _03 first); checked in a throwaway copy so scenario A stays comparable to schema.sql
 psqlc postgres -c "drop database if exists t_cal" >/dev/null; psqlc postgres -c "create database t_cal template t" >/dev/null
 for m in 20261117_01_development_model_v2 20261117_03_rider_state_model 20261117_04_training_plans_calendar; do [ -f "$ROOT/migrations/$m.sql" ] && psqlc t_cal -f "$ROOT/migrations/$m.sql" >/dev/null 2>&1; done
-eq "tour_schedule == data/tourSchedule.ts" "$(psqlc t_cal -c "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourSchedule'])")"
+eq "migration 04 alone does not move any Tour: tour_schedule == TOUR_SCHEDULE_V1 (old calendar)" "$(psqlc t_cal -c "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourScheduleV1'])")"
+psqlc t_cal -c "select public.activate_game_calendar_v2(true)" >/dev/null
+eq "after activate_game_calendar_v2(): tour_schedule == TOUR_SCHEDULE_V2 (data/tourSchedule.ts)" "$(psqlc t_cal -c "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourSchedule'])")"
 has "clients cannot write tour_schedule" "$(as $P1 "update public.tour_schedule set week_number = 1;")" "permission denied"
 eq "clients can read tour_schedule" "$(as $P1 "select count(*) from public.tour_schedule;")" "5"
 

@@ -61,6 +61,22 @@ const near = (a: StateRider, b: StateRider, eps = 1e-9) => (['energy', 'fatigue'
   check('the load is applied exactly once (a second pass with the same event only regenerates)', near(second.rider, regen(first.rider, 1800), 1e-12) && used.has(load.id));
   const late = catchUp(mk({ energy: 80 }), 5000, 6000, { plans: noPlans, events: [{ id: ++evId, at: 100, energy: 16, fatigue: 11, raceUnits: 0.25 }] });
   check('a load reported late (its time already passed) is applied once, at the cursor', near(late.rider, regen(applyLoad(mk({ energy: 80 }), 16, 11), 1000), 1e-12));
+  // A stage that arrives AFTER its week was evaluated: Energy/Fatigue at the cursor, race units credited ONCE to the open week, closed weeks untouched.
+  {
+    const base: LoadEvent = { id: 9001, at: 2 * D, energy: 16, fatigue: 11, raceUnits: 0.25 };
+    const lateEv: LoadEvent = { id: 9002, at: 3 * D, energy: 16, fatigue: 11, raceUnits: 0.25 };           // belongs to week 0, reported during week 2
+    const h = new Map<number, number>(), app = new Set<number>(), cr = new Map<number, number>(), ss = new Map<number, { n: number; sum: number }>();
+    const a = catchUp(mk(), 0, 2 * W + D, { plans: noPlans, events: [base] }, h, app, ss, cr);
+    const week0 = a.weeks.find((w) => w.week === 0)!, week1 = a.weeks.find((w) => w.week === 1)!;
+    const b = catchUp(a.rider, a.lastAt, 3 * W + 5 * 3600, { plans: noPlans, events: [base, lateEv] }, h, app, ss, cr);
+    const week2 = b.weeks.find((w) => w.week === 2)!;
+    check('late stage: the closed weeks 0 and 1 keep their own race units (0.25 / 0) and are not re-evaluated', week0.raceUnits === 0.25 && week1.raceUnits === 0 && !b.weeks.some((w) => w.week < 2));
+    check('late stage: its race units are credited once to the week in which it was applied', week2.raceUnits === 0.25);
+    check('late stage: total race units over all evaluated weeks = 0.5 (each stage once, none lost, none doubled)', a.weeks.concat(b.weeks).reduce((s, w) => s + w.raceUnits, 0) === 0.5);
+    const c = catchUp(b.rider, b.lastAt, b.lastAt + 3600, { plans: noPlans, events: [base, lateEv] }, h, app, ss, cr);
+    check('late stage: a repeated pass adds nothing but regeneration', near(c.rider, regen(b.rider, 3600), 1e-12) && c.weeks.length === 0);
+    check('late stage: Energy/Fatigue were charged once, at the cursor (not at the stage time)', cr.get(9002) === 2 * W + D);
+  }
   // offline rider at the start of a stage
   const offline = catchUp(mk({ energy: 30, fatigue: 70 }), 0, 4 * D + 9 * 3600, { plans: noPlans, events: [] }).rider;
   check('an offline rider arrives at the stage start (4 days later) with the regenerated state: Energy 30 + 4.375 days x 11, capped at 100', offline.energy === 78.125 + 0 || Math.abs(offline.energy - Math.min(100, 30 + 11 * 4.375)) < 1e-9);

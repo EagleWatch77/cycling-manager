@@ -1,7 +1,7 @@
 /** Run: cd apps/web && npx tsx --tsconfig tsconfig.json src/lib/calendar/weekKind.test.ts */
 import { weekKind, trainingTarget, PLAN_DEADLINE_HOUR_UTC } from './weekKind';
 import { SEASON_ONE_START, getCurrentSeasonInfo } from './season';
-import { TOUR_SCHEDULE } from '@/data/tourSchedule';
+import { TOUR_SCHEDULE_V2 } from '@/data/tourSchedule';
 
 let pass = 0, fail = 0;
 const check = (n: string, c: boolean, d = '') => { if (c) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n}  ${d}`); } };
@@ -9,8 +9,8 @@ const at = (iso: string) => new Date(iso);
 
 check('odd weeks are training, even weeks are race', [1, 3, 5, 7, 9].every((w) => weekKind(w) === 'training') && [2, 4, 6, 8, 10].every((w) => weekKind(w) === 'race'));
 check('the Tour schedule is exactly the agreed calendar: 2 Highlands, 4 Danube, 6 Coastal, 8 Northern Crown, 10 Silver Horizon',
-  TOUR_SCHEDULE.map((t) => `${t.weekNumber}:${t.tourId}`).sort().join() === ['2:highlands-tour', '4:danube-tour', '6:coastal-tour', '8:northern-crown-tour', '10:silver-horizon-tour'].sort().join());
-check('every Tour runs in a race (even) week and no two Tours share a week', TOUR_SCHEDULE.every((t) => weekKind(t.weekNumber) === 'race') && new Set(TOUR_SCHEDULE.map((t) => t.weekNumber)).size === 5);
+  TOUR_SCHEDULE_V2.map((t) => `${t.weekNumber}:${t.tourId}`).sort().join() === ['2:highlands-tour', '4:danube-tour', '6:coastal-tour', '8:northern-crown-tour', '10:silver-horizon-tour'].sort().join());
+check('every Tour runs in a race (even) week and no two Tours share a week', TOUR_SCHEDULE_V2.every((t) => weekKind(t.weekNumber) === 'race') && new Set(TOUR_SCHEDULE_V2.map((t) => t.weekNumber)).size === 5);
 check('deadline hour is 18:00 UTC', PLAN_DEADLINE_HOUR_UTC === 18);
 
 // season 1 starts SEASON_ONE_START (a Monday); week w starts at +7(w-1) days

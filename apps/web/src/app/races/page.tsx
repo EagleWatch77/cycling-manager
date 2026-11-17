@@ -8,6 +8,7 @@ import { AppShell } from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { TourCard } from '@/components/races/TourCard';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 const LEAGUE = 'rookie' as const;
 
@@ -24,7 +25,8 @@ const LEAGUE = 'rookie' as const;
 export default async function RacesPage() {
   const { t, locale } = await getServerDictionary();
   const season = getCurrentSeasonInfo();
-  const scheduled = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const scheduled = getSeasonSchedule(season, cal.version);
   const raceWeeks = scheduled.map((v) => v.schedule.weekNumber);
   const usesSampleData = scheduled.some((v) => v.tour.id.startsWith('sample-'));
 

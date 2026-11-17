@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Clasicómano",
   "trainingPlans.plan.5": "Escapista",
-  "trainingPlans.plan.6": "Todoterreno"
+  "trainingPlans.plan.6": "Todoterreno",
+  "trainingPlans.activeTitle": "Entrenamiento de esta semana",
+  "trainingPlans.activeRaceWeek": "Esta semana hay carreras: no hay entrenamiento regular.",
+  "trainingPlans.activeNoPlan": "No elegiste plan para esta semana. El plazo terminó el lunes a las 18:00 UTC de la semana anterior y no se puede entrenar con carácter retroactivo. La recuperación continúa.",
+  "trainingPlans.activeLegacy": "Esta semana tienes un entrenamiento confirmado con tu ajuste anterior; sigue las reglas antiguas.",
+  "trainingPlans.activeDone": "Hecho",
+  "trainingPlans.activeNext": "Siguiente",
+  "trainingPlans.activePlanned": "Planificado",
+  "trainingPlans.activeProgress": "Sesiones hechas",
+  "trainingPlans.activeEvaluation": "evaluación de la semana el lunes 00:00 UTC",
+  "trainingPlans.activeLocked": "El plan está bloqueado desde el lunes a las 18:00 UTC.",
+  "trainingPlans.blockedCalendar": "El calendario no coincide con la base de datos; la planificación está en pausa.",
+  "calendar.mismatch": "Las fechas no se pueden verificar ahora: el calendario web no coincide con la base de datos."
 }

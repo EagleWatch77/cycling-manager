@@ -14,6 +14,7 @@ import { ensureGameStateProcessed } from '@/lib/gameState';
 import { SidebarNavigation } from './SidebarNavigation';
 import { TopStatusBar } from './TopStatusBar';
 import { PageHeroBanner } from './PageHeroBanner';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 /**
  * Shared chrome for every page: left rail plus top status bar. Pages render
@@ -53,7 +54,8 @@ export async function AppShell({
   // Top bar data — all real: the player's own registered Tours (earliest one
   // that has not finished yet), their profile name and league. No Tour → the
   // bar falls back to the page title.
-  const scheduled = getSeasonSchedule(season);
+  const cal = await getCalendarState();
+  const scheduled = getSeasonSchedule(season, cal.version);
   // League + sub-league are real (league_memberships). If the sub-league
   // tables are not deployed yet this falls back to the plain league.
   const [registrations, managerName, division] = await Promise.all([
@@ -92,6 +94,7 @@ export async function AppShell({
           leagueLabel={leagueLabel}
         />
         <main className="flex-1 overflow-x-hidden p-4">
+          {!cal.healthy && <p role="alert" className="mb-3 rounded-lg bg-warn/10 px-3 py-2 text-sm font-medium text-warn">{t('calendar.mismatch')}</p>}
           {activeId !== 'home' && banner && <PageHeroBanner />}
           {children}
         </main>

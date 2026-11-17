@@ -1,0 +1,14 @@
+import { evaluateCalendar, LEGACY_DATABASE_STATE } from './calendarState';
+import { SEASON_ONE_START } from './season';
+let ok = 0, bad = 0;
+const check = (n: string, c: boolean) => { c ? ok++ : (bad++, console.log('  FAIL', n)); };
+const t1 = { 'highlands-tour': 2, 'danube-tour': 5, 'coastal-tour': 5, 'northern-crown-tour': 7, 'silver-horizon-tour': 9 };
+const t2 = { 'highlands-tour': 2, 'danube-tour': 4, 'coastal-tour': 6, 'northern-crown-tour': 8, 'silver-horizon-tour': 10 };
+check('database with the old Tour weeks and the same season start: calendar 1, healthy', (() => { const s = evaluateCalendar({ v2_active: false, season_one_start: SEASON_ONE_START, tours: t1 }); return s.version === 1 && s.healthy; })());
+check('database with calendar 2 active and the new weeks: calendar 2, healthy', (() => { const s = evaluateCalendar({ v2_active: true, season_one_start: SEASON_ONE_START, tours: t2 }); return s.version === 2 && s.healthy; })());
+check('flag says 2 but the Tour rows are still old: NOT healthy (the web would show other dates than the database)', !evaluateCalendar({ v2_active: true, season_one_start: SEASON_ONE_START, tours: t1 }).healthy);
+check('flag says 1 but the Tour rows are already new: NOT healthy', !evaluateCalendar({ v2_active: false, season_one_start: SEASON_ONE_START, tours: t2 }).healthy);
+check('a different season start in the database (e.g. after a reset not mirrored in the web): NOT healthy', (() => { const s = evaluateCalendar({ v2_active: true, season_one_start: '2027-01-04', tours: t2 }); return !s.healthy && s.problems[0].includes('season start'); })());
+check('database not reachable: not healthy, never guessed healthy', !evaluateCalendar(null).healthy);
+check('a database without migration 04 (function missing) is calendar 1 and healthy', LEGACY_DATABASE_STATE.version === 1 && LEGACY_DATABASE_STATE.healthy);
+console.log(`${ok} passed, ${bad} failed`); process.exit(bad ? 1 : 0);

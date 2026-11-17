@@ -6,7 +6,7 @@
  *   npx tsx src/lib/training/dbParity.cli.ts
  */
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
-import { TOUR_SCHEDULE } from '@/data/tourSchedule';
+import { TOUR_SCHEDULE_V1, TOUR_SCHEDULE_V2 } from '@/data/tourSchedule';
 import { plannableWeek } from './planning';
 import { calculatePerformanceRawGrowth } from './growth';
 import { applyConditionDelta, weeklyConditionDelta } from './condition';
@@ -55,7 +55,8 @@ const starterPayload = {
 
 console.log(JSON.stringify({
   calendar, raw, cond, levels,
-  tourSchedule: [...TOUR_SCHEDULE].map((t) => `${t.tourId}:${t.weekNumber}`).sort(),
+  tourSchedule: [...TOUR_SCHEDULE_V2].map((t) => `${t.tourId}:${t.weekNumber}`).sort(),
+  tourScheduleV1: [...TOUR_SCHEDULE_V1].map((t) => `${t.tourId}:${t.weekNumber}`).sort(),
   generator: { min, max, archetypes: [...archetypes].sort(), hidMin, hidMax, ageMin, ageMax, keys: [...SKILL_ATTRIBUTES].sort() },
   starterPayload,
 }));

@@ -4,6 +4,7 @@ import { getMyRider } from '@/lib/rider/repository';
 import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getSeasonSchedule, getSelectionState, getScheduleForTour } from '@/data/tourSchedule';
 import { getTrainingPlan } from '@/lib/training/repository';
+import { getCalendarState } from '@/lib/calendar/calendarVersion';
 
 /**
  * Tour Registration V1 — links a Rider (not the player account) to a
@@ -83,7 +84,8 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   if (!rider) return { ok: false, reason: 'no-rider' };
 
   const info = getCurrentSeasonInfo();
-  const seasonViews = getSeasonSchedule(info);
+  const cal = await getCalendarState();
+  const seasonViews = getSeasonSchedule(info, cal.version);
   const seasonTourIds = seasonViews.map((v) => v.tour.id);
   const existing = await getMySeasonRegistrations(seasonTourIds);
   const selectedTourIds = new Set(existing.map((r) => r.tourId));
@@ -97,7 +99,7 @@ export async function registerForTour(tourId: string): Promise<RegisterResult> {
   // A Tour week has no training: refuse when a (final) plan already exists for
   // this Tour's week. Friendly pre-check only — the database trigger on
   // tour_registrations enforces it authoritatively (and race-free).
-  const tourWeek = getScheduleForTour(tourId)?.weekNumber;
+  const tourWeek = getScheduleForTour(tourId, cal.version)?.weekNumber;
   if (tourWeek != null && await getTrainingPlan(info.seasonId, tourWeek)) {
     return { ok: false, reason: 'training-conflict' };
   }

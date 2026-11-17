@@ -56,6 +56,19 @@ eq "report: the Danube registration and a plan in week 4 would collide (rider tw
 eq "NOTHING was changed or deleted: registrations and plans are as before" "$(q "select (select count(*) from public.tour_registrations) || ':' || (select count(*) from public.training_plans)")" "2:1"
 has "clients cannot run the report" "$(printf "set role authenticated;\nselect * from public.calendar_v2_conflicts();\n" | psqlc t)" "permission denied"
 
+echo "== activating the calendar is ONE deliberate step (running migration 04 does not move any Tour)"
+eq "migration 04 left the Tour weeks as they were (old calendar) == TypeScript TOUR_SCHEDULE_V1" "$(q "select string_agg(tour_id || ':' || week_number, ',' order by tour_id) from public.tour_schedule")" "$(cal "','.join(k+':'+str(v) for k,v in sorted(d['toursV1'].items()))")"
+eq "game_calendar_info() (readable by clients) says: not active, season start, old Tour weeks" "$(as $P1 "select (public.game_calendar_info()->>'v2_active') || ':' || (public.game_calendar_info()->>'season_one_start') || ':' || (public.game_calendar_info()->'tours'->>'danube-tour');")" "false:2026-08-17:5"
+q "update public.development_model_settings set enabled = true" >/dev/null
+has "a seven-plan save is refused while the calendar is not active" "$(as $P1 "select * from public.save_my_development_plan(0,'full');")" "calendar_not_active"
+has "clients cannot activate the calendar" "$(printf "set role authenticated;\nselect public.activate_game_calendar_v2(true);\n" | psqlc t)" "permission denied"
+has "activation REFUSES while conflicts are listed and the owner has not acknowledged them" "$(q "select public.activate_game_calendar_v2()")" "calendar_v2_conflicts"
+eq "the refusal changed nothing (Tour weeks, flag)" "$(q "select (select string_agg(tour_id || ':' || week_number, ',' order by tour_id) from public.tour_schedule) || '|' || public.game_calendar_v2_active()")" "coastal-tour:5,danube-tour:5,highlands-tour:2,northern-crown-tour:7,silver-horizon-tour:9|false"
+eq "activation after the owner acknowledges the report" "$(q "select public.activate_game_calendar_v2(true)")" "activated"
+eq "activation again is a no-op" "$(q "select public.activate_game_calendar_v2(true)")" "already_active"
+eq "after activation the Tour weeks == TypeScript TOUR_SCHEDULE_V2 and the info says active" "$(q "select (select string_agg(tour_id || ':' || week_number, ',' order by tour_id) from public.tour_schedule) || '|' || (public.game_calendar_info()->>'v2_active')")" "$(cal "','.join(k+':'+str(v) for k,v in sorted(d['tours'].items()))+'|true'")"
+eq "activation deleted nothing: registrations and plans are as before" "$(q "select (select count(*) from public.tour_registrations) || ':' || (select count(*) from public.training_plans)")" "2:1"
+
 echo "== the season start is ONE setting"
 eq "default 2026-08-17" "$(q "select public.game_season_one_start()")" "2026-08-17"
 has "must be a Monday" "$(q "update public.game_calendar_settings set season_one_start = date '2026-08-18'")" "violates check"
@@ -172,4 +185,63 @@ for i in 1 2 3 4 5 6; do q "select public.rider_state_catch_up_internal('$RL', $
 eq "after the following calls the rider is up to date" "$(q "select state_at = $END from public.riders where id='$RL'")" "t"
 eq "every game week of those 36 years was evaluated exactly once (1900 completed weeks)" "$(q "select count(*) || ':' || count(distinct week_start) from public.rider_weekly_state where rider_id='$RL'")" "1900:1900"
 eq "every plan (900 odd training weeks) got its 3 sessions and was applied once" "$(q "select count(*) filter (where readiness_n = 3 and applied_at is not null) || '/' || count(*) from public.training_plans where rider_id='$RL'")" "900/900"
+
+echo "== a stage that arrives after its week was closed (late stage): counted ONCE, closed weeks untouched, == TypeScript"
+q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
+RS=$(mk $(mkplayer) late)
+python3 - "$STATE" "$RS" > "$DIR/late.sql" <<'PY'
+import json,sys
+d=json.load(open(sys.argv[1]))['late']; s=d['start']; r=sys.argv[2]
+cond=json.dumps({'energy':s['energy'],'fatigue':s['fatigue'],'form':s['form'],'fitness':s['fitness'],'morale':70})
+print(f"update public.riders set age={s['age']}, vitality={s['vitality']}, trainability={s['trainability']}, professionalism={s['professionalism']}, recovery={s['recovery']}, energy_efficiency={s['energyEff']}, fatigue_resistance={s['fatigueRes']}, recovery_coef={s['recoveryCoef']}, fitness_peak={s['fitnessPeak']}, condition='{cond}', condition_previous='{cond}', state_at=timestamptz '2026-08-17 00:00:00+00' where id='{r}';")
+PY
+q "$(cat "$DIR/late.sql")" >/dev/null
+lj() { python3 -c "import json; print(json.load(open('$STATE'))['late']['$1'])"; }
+T1=$(lj t1); T2=$(lj t2); AB=$(lj atBase); AL=$(lj atLate)
+q "select public.record_rider_stage_load('$RS', timestamptz '2026-08-17 00:00+00' + make_interval(secs => $AB), 16, 11, 0.25, 'late-base')" >/dev/null
+q "select public.rider_state_catch_up_internal('$RS', timestamptz '$T1')" >/dev/null
+q "select public.record_rider_stage_load('$RS', timestamptz '2026-08-17 00:00+00' + make_interval(secs => $AL), 16, 11, 0.25, 'late-late')" >/dev/null   # belongs to a week that is already evaluated
+q "select public.rider_state_catch_up_internal('$RS', timestamptz '$T2')" >/dev/null
+GOT=$(q "select (condition->>'energy')||' '||(condition->>'fatigue')||' '||(condition->>'fitness')||' '||(condition->>'form') from public.riders where id='$RS'")
+RES=$(python3 - "$STATE" "$GOT" <<'PY'
+import json,sys
+o=json.load(open(sys.argv[1]))['late']['after2']; got=[float(x) for x in sys.argv[2].split()]
+print(all(abs(a-b)<1e-7 for a,b in zip(got,[o['energy'],o['fatigue'],o['fitness'],o['form']])))
+PY
+)
+eq "state after the late report == TypeScript (Energy, Fatigue, Fitness, Form)" "$RES" "True"
+eq "weekly race units: week 0 keeps its own stage, week 1 none, the LATE stage is credited to the open week 2" "$(q "select string_agg(race_units::text, ',' order by week_start) from public.rider_weekly_state where rider_id='$RS'")" "0.25,0,0.25"
+eq "no stage is lost or counted twice: the sum of all weeks = both stages" "$(q "select sum(race_units) from public.rider_weekly_state where rider_id='$RS'")" "0.5"
+eq "both stages are applied exactly once" "$(q "select count(*) filter (where applied_at is not null) || '/' || count(*) from public.rider_load_events where rider_id='$RS'")" "2/2"
+BEFORE=$(q "select condition::text || state_at::text from public.riders where id='$RS'")
+q "select public.rider_state_catch_up_internal('$RS', timestamptz '$T2')" >/dev/null
+eq "a repeated call at the same instant changes nothing (no double count)" "$(q "select condition::text || state_at::text from public.riders where id='$RS'")" "$BEFORE"
+eq "weeks that were already evaluated were not rewritten (still exactly 3 weekly rows)" "$(q "select count(*) from public.rider_weekly_state where rider_id='$RS'")" "3"
+
+echo "== catch-up before a stage is really FINISHED (not postponed): complete / many"
+q "update public.game_calendar_settings set season_one_start = date '1990-01-01'" >/dev/null
+mklong() { local r; r=$(mk $(mkplayer) "$1"); q "update public.riders set state_at = timestamptz '1990-01-01 00:00+00', energy_efficiency = 1, fatigue_resistance = 1, recovery_coef = 1, vitality = 50, fitness_peak = 75, condition = jsonb_build_object('energy',70,'fatigue',30,'form',60,'fitness',70,'morale',70) where id = '$r'; insert into public.training_plans (rider_id, season_id, week_number, week_type, focus, intensity, plan_id, mode) select '$r', 'season-' || ((w - 1) / 10 + 1), ((w - 1) % 10) + 1, 'performance', 'climbing', 'hard', 0, 'full' from generate_series(1, 1800) w where w % 2 = 1" >/dev/null; echo "$r"; }
+END2="timestamptz '1990-01-01 00:00+00' + interval '$((1900*168)) hours'"
+RC=$(mklong cmp1); RM=$(mklong cmp2); RN=$(mklong cmp3)
+eq "ONE pass is not enough for 36 years offline (it is limited); the cursor is saved" "$(q "select public.rider_state_catch_up_complete('$RC', $END2, 1)")" "f"
+eq "...and the rider is not at the requested instant yet" "$(q "select state_at < $END2 from public.riders where id='$RC'")" "t"
+eq "the complete catch-up repeats the passes and FINISHES in one call" "$(q "select public.rider_state_catch_up_complete('$RC', $END2)")" "t"
+eq "the rider is exactly at the requested instant" "$(q "select state_at = $END2 from public.riders where id='$RC'")" "t"
+eq "rider_state_catch_up_many returns 0 = nobody left behind (the stage may start)" "$(q "select public.rider_state_catch_up_many(array['$RM'::uuid], $END2)")" "0"
+eq "...and that rider is up to date with every week evaluated once (1900)" "$(q "select (state_at = $END2)::text || ':' || (select count(*) from public.rider_weekly_state w where w.rider_id = r.id) from public.riders r where r.id='$RM'")" "true:1900"
+eq "when the passes are not enough, many returns the number of riders STILL behind (1): the stage must not start" "$(q "select public.rider_state_catch_up_many(array['$RN'::uuid], $END2, 1)")" "1"
+eq "the progress made is kept (not rolled back): the rider moved on from the start" "$(q "select state_at > timestamptz '1990-01-01 00:00+00' from public.riders where id='$RN'")" "t"
+for i in 1 2 3 4 5 6; do q "select public.rider_state_catch_up_many(array['$RN'::uuid], $END2, 1)" >/dev/null; done
+eq "after enough calls it reaches 0 (nobody behind)" "$(q "select public.rider_state_catch_up_many(array['$RN'::uuid], $END2, 1)")" "0"
+eq "a staged catch-up (one pass at a time) == one finished call" "$(q "select (select condition::text || fitness_peak::text from public.riders where id='$RM') = (select condition::text || fitness_peak::text from public.riders where id='$RN')")" "t"
+q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
+
+echo "== the season start can not drift: ONE place in the database, ONE constant in the web"
+eq "no database function keeps the season start date inside (all read the setting); only the fallback default of game_season_one_start()" "$(q "select coalesce(string_agg(p.proname, ',' order by p.proname), 'none') from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosrc like '%2026-08-17%'")" "game_season_one_start"
+A=$(q "select (public.contract_expiry_at(timestamptz '2026-09-01 10:00+00', 10) at time zone 'utc')::text")
+q "update public.game_calendar_settings set season_one_start = date '2026-10-26'" >/dev/null
+B=$(q "select (public.contract_expiry_at(timestamptz '2026-09-01 10:00+00', 10) at time zone 'utc')::text")
+q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
+eq "contract expiry follows the season start setting (2026-08-17 -> 2026-11-09; start moved to 2026-10-26 -> 2027-01-04)" "$A|$B" "2026-11-09 00:00:00|2027-01-04 00:00:00"
+
 echo; echo "$pass passed, $fail failed"; [ $fail -eq 0 ]

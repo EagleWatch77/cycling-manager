@@ -17,14 +17,14 @@ const OFF = 'bg-surface text-navy-soft hover:bg-teal-rail';
 export interface DevelopmentPlanLabels {
   intro: string; main: string; supplementary: string; mode: string; modeFull: string; modeBasic: string; modeFullHint: string; modeBasicHint: string;
   sessionsAt: string; deadline: string; save: string; saving: string; saved: string; savedPlan: string; preselected: string; noPlan: string; locked: string;
-  blockedRaceWeek: string; blockedTour: string; errors: Record<string, string>;
+  blockedRaceWeek: string; blockedTour: string; blockedCalendar: string; errors: Record<string, string>;
 }
 
 export function DevelopmentPlanForm(props: {
   plans: PlanOption[]; dayLabels: readonly string[]; weekLabel: string;
   saved: { planId: number; mode: TrainingMode; applied: boolean } | null;
   preselect: { planId: number; mode: TrainingMode } | null;
-  blocked: 'race-week' | 'tour-conflict' | null;
+  blocked: 'race-week' | 'tour-conflict' | 'calendar' | null;
   labels: DevelopmentPlanLabels;
   saveAction: (i: { planId: number; mode: TrainingMode }) => Promise<SaveDevelopmentPlanResult>;
 }) {
@@ -50,7 +50,7 @@ export function DevelopmentPlanForm(props: {
   return (
     <div className="space-y-3">
       <p className="text-sm text-navy-soft">{L.intro}</p>
-      {props.blocked && <p className="rounded-lg bg-warn/10 px-3 py-2 text-sm font-medium text-warn">{props.blocked === 'race-week' ? L.blockedRaceWeek : L.blockedTour}</p>}
+      {props.blocked && <p className="rounded-lg bg-warn/10 px-3 py-2 text-sm font-medium text-warn">{props.blocked === 'race-week' ? L.blockedRaceWeek : props.blocked === 'calendar' ? L.blockedCalendar : L.blockedTour}</p>}
       {!props.saved && !props.blocked && <p className="text-xs text-navy-muted">{props.preselect ? L.preselected : L.noPlan}</p>}
       {props.saved && <p className="text-xs font-semibold text-teal-dark">{L.savedPlan}: {plans[props.saved.planId]?.name} · {props.saved.mode === 'full' ? L.modeFull : L.modeBasic}</p>}
 

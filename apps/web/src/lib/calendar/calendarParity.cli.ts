@@ -6,7 +6,7 @@ import { getCurrentSeasonInfo, SEASON_ONE_START } from './season';
 import { weekKind, trainingTarget } from './weekKind';
 import { gameWeekIndex } from '@/lib/contract/contract';
 import { LEAGUE_RACE_DAYS, LEAGUES, visibleStageCount } from '@/lib/leagues';
-import { TOUR_SCHEDULE } from '@/data/tourSchedule';
+import { TOUR_SCHEDULE_V1, TOUR_SCHEDULE_V2 } from '@/data/tourSchedule';
 
 const start = Date.parse(`${SEASON_ONE_START}T00:00:00Z`);
 const instants: Date[] = [];
@@ -16,4 +16,4 @@ const rows = instants.map((d) => { const i = getCurrentSeasonInfo(d), t = traini
   return { at: d.toISOString().replace('T', ' ').replace('Z', '+00'), season: i.seasonId, week: i.currentWeek, kind: weekKind(i.currentWeek), idx: gameWeekIndex(d), target: t ? `season-${t.seasonNumber}:${t.week}` : 'none' }; });
 console.log(JSON.stringify({ start: SEASON_ONE_START, rows,
   raceDays: Object.fromEntries(LEAGUES.map((l) => [l, [...LEAGUE_RACE_DAYS[l]]])), stages: Object.fromEntries(LEAGUES.map((l) => [l, visibleStageCount(l)])),
-  tours: Object.fromEntries(TOUR_SCHEDULE.map((t) => [t.tourId, t.weekNumber])) }));
+  tours: Object.fromEntries(TOUR_SCHEDULE_V2.map((t) => [t.tourId, t.weekNumber])), toursV1: Object.fromEntries(TOUR_SCHEDULE_V1.map((t) => [t.tourId, t.weekNumber])) }));

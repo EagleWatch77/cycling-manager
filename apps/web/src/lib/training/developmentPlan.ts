@@ -11,7 +11,7 @@ export interface DevelopmentPlanRow { planId: number; mode: TrainingMode; season
 
 export type SaveDevelopmentPlanResult =
   | { ok: true; plan: DevelopmentPlanRow }
-  | { ok: false; reason: 'no-rider' | 'invalid' | 'tour-conflict' | 'no-plannable-week' | 'already-processed' | 'disabled' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'invalid' | 'tour-conflict' | 'no-plannable-week' | 'already-processed' | 'disabled' | 'calendar-not-active' | 'error' };
 
 export { PLAN_OF_OLD_FOCUS, preselectFromOldPlan } from './oldPlanMap';
 
@@ -52,6 +52,7 @@ export async function saveDevelopmentPlan(planId: number, mode: TrainingMode): P
     if (m.includes('no_plannable_week')) return { ok: false, reason: 'no-plannable-week' };
     if (m.includes('already_processed')) return { ok: false, reason: 'already-processed' };
     if (m.includes('model_disabled')) return { ok: false, reason: 'disabled' };
+    if (m.includes('calendar_not_active')) return { ok: false, reason: 'calendar-not-active' };
     return { ok: false, reason: 'error' };
   }
   if (!data) return { ok: false, reason: 'error' };

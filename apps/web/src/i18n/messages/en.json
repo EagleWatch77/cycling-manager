@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Classics rider",
   "trainingPlans.plan.5": "Breakaway rider",
-  "trainingPlans.plan.6": "All-rounder"
+  "trainingPlans.plan.6": "All-rounder",
+  "trainingPlans.activeTitle": "This week's training",
+  "trainingPlans.activeRaceWeek": "This is a race week: there is no regular training.",
+  "trainingPlans.activeNoPlan": "You have no plan for this week. The deadline was Monday 18:00 UTC of the previous week and training cannot be done retroactively. Regeneration continues.",
+  "trainingPlans.activeLegacy": "This week has a training confirmed with your previous setting; it runs under the old rules.",
+  "trainingPlans.activeDone": "Done",
+  "trainingPlans.activeNext": "Next",
+  "trainingPlans.activePlanned": "Planned",
+  "trainingPlans.activeProgress": "Sessions done",
+  "trainingPlans.activeEvaluation": "week evaluated Monday 00:00 UTC",
+  "trainingPlans.activeLocked": "The plan has been locked since Monday 18:00 UTC.",
+  "trainingPlans.blockedCalendar": "The calendar does not match the database; planning is paused for now.",
+  "calendar.mismatch": "Dates cannot be verified right now: the web calendar does not match the database. The admin is on it."
 }

@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Spécialiste des classiques",
   "trainingPlans.plan.5": "Baroudeur",
-  "trainingPlans.plan.6": "Polyvalent"
+  "trainingPlans.plan.6": "Polyvalent",
+  "trainingPlans.activeTitle": "Entraînement de cette semaine",
+  "trainingPlans.activeRaceWeek": "Cette semaine est une semaine de course : pas d'entraînement régulier.",
+  "trainingPlans.activeNoPlan": "Tu n'as pas choisi de plan pour cette semaine. La date limite était le lundi 18:00 UTC de la semaine précédente ; on ne peut pas s'entraîner rétroactivement. La récupération continue.",
+  "trainingPlans.activeLegacy": "Cette semaine a un entraînement confirmé avec ton réglage précédent ; il suit les anciennes règles.",
+  "trainingPlans.activeDone": "Terminé",
+  "trainingPlans.activeNext": "Prochaine",
+  "trainingPlans.activePlanned": "Prévu",
+  "trainingPlans.activeProgress": "Séances faites",
+  "trainingPlans.activeEvaluation": "bilan de la semaine le lundi 00:00 UTC",
+  "trainingPlans.activeLocked": "Le plan est verrouillé depuis le lundi 18:00 UTC.",
+  "trainingPlans.blockedCalendar": "Le calendrier ne correspond pas à la base de données ; la planification est suspendue.",
+  "calendar.mismatch": "Les dates ne peuvent pas être vérifiées pour l'instant : le calendrier du site ne correspond pas à la base de données."
 }

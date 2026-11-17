@@ -1,5 +1,4 @@
 import { TOURS } from '@/data/tours';
-import { TOUR_SCHEDULE } from '@/data/tourSchedule';
 import { visibleStageCount } from '@/lib/leagues';
 import { SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { PERFORMANCE_FOCUS, TECHNICAL_FOCUS } from '@/lib/training/config';

@@ -812,5 +812,17 @@
   "trainingPlans.plan.3": "Puncheur",
   "trainingPlans.plan.4": "Klasikár",
   "trainingPlans.plan.5": "Únikár",
-  "trainingPlans.plan.6": "Univerzál"
+  "trainingPlans.plan.6": "Univerzál",
+  "trainingPlans.activeTitle": "Tréning tohto týždňa",
+  "trainingPlans.activeRaceWeek": "Tento týždeň sú preteky, pravidelný tréning sa nekoná.",
+  "trainingPlans.activeNoPlan": "Na tento týždeň nemáš zvolený plán. Termín skončil v pondelok o 18:00 UTC predošlého týždňa a spätne sa trénovať nedá. Regenerácia beží ďalej.",
+  "trainingPlans.activeLegacy": "Na tento týždeň máš potvrdený tréning podľa pôvodného nastavenia; beží podľa starých pravidiel.",
+  "trainingPlans.activeDone": "Hotový",
+  "trainingPlans.activeNext": "Nasleduje",
+  "trainingPlans.activePlanned": "Naplánovaný",
+  "trainingPlans.activeProgress": "Hotové tréningy",
+  "trainingPlans.activeEvaluation": "vyhodnotenie týždňa v pondelok 00:00 UTC",
+  "trainingPlans.activeLocked": "Plán je od pondelka 18:00 UTC zamknutý.",
+  "trainingPlans.blockedCalendar": "Kalendár sa nezhoduje s databázou, plánovanie je dočasne pozastavené.",
+  "calendar.mismatch": "Termíny sa momentálne nedajú overiť, kalendár webu sa nezhoduje s databázou. Správca to rieši."
 }
