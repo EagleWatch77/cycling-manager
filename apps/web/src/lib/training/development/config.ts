@@ -1,5 +1,5 @@
 import { PERFORMANCE_FOCUS } from '../config';
-import { SHAPES, type SkillAttribute } from '@/lib/rider/config';
+import { SHAPES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 
 /**
  * TRAINING 1.0 + RIDER DEVELOPMENT (model V2) — every tunable number in ONE place.
@@ -40,12 +40,19 @@ export interface DevelopmentConfig {
   threshold: number;
   /** visible maximum of every trainable attribute */
   maxAttribute: number;
-  cPhys: number; cTech: number;
-  /** share of the ACTIVE training capacity that goes to performance (the rest is technique): 80/20 */
-  physShare: number;
-  /** basic = 75 % training / 25 % regeneration, full = 100 % training */
+  /**
+   * ONE shared weekly progress budget (owner decision 2026-11-17, "58/18/14/10"). `weeklyBudget` raw progress units are spread over the 13
+   * trainable attributes (7 performance + 6 technique) by the shares below, so the total is the same for all seven plans and a plan can only
+   * move progress between attributes, never create more of it. Tactics are NOT trained here (they develop by racing). The value equals the old
+   * coefficient model's total (12 x (1.8 x 0.8 x 4.25 + 6.5 x 0.2 x 1.3) = 93.72), i.e. the overall pace of the approved F4 balance is kept.
+   */
+  weeklyBudget: number;
+  /** shares of the budget: 3 main performance attributes, 2 supplementary technique attributes, the other 4 performance, the other 4 technique */
+  shareMain: number; shareSupplementary: number; shareOtherPhysical: number; shareOtherTechnical: number;
+  /** split INSIDE a group (relative weights, rank 1..n of the plan): the strongest main attribute grows fastest */
+  ratioMain: readonly number[]; ratioSupplementary: readonly number[];
+  /** basic = 75 % training / 25 % regeneration, full = 100 % training (capacity of the week, independent of the number of sessions) */
   modeCapacity: Record<TrainingMode, number>;
-  coefPhys: readonly number[]; coefOther: number; coefTech: readonly number[];
   /** hard weekly limit on technique points per attribute */
   techWeeklyMax: number;
   /** G = clamp(1 + wTr x (Trainability-50)/50 + wPr x (Professionalism-50)/50, gMin, gMax). Potential is NOT a multiplier. */
@@ -76,9 +83,10 @@ export interface DevelopmentConfig {
 
 export const DEV_CONFIG: DevelopmentConfig = {
   threshold: 12, maxAttribute: 200,
-  cPhys: 1.8, cTech: 6.5, physShare: 0.8,
+  weeklyBudget: 93.72,
+  shareMain: 0.58, shareSupplementary: 0.18, shareOtherPhysical: 0.14, shareOtherTechnical: 0.10,
+  ratioMain: [1.15, 0.95, 0.75], ratioSupplementary: [0.85, 0.45],
   modeCapacity: { basic: 0.75, full: 1 },
-  coefPhys: [1.15, 0.95, 0.75], coefOther: 0.35, coefTech: [0.85, 0.45],
   techWeeklyMax: 4,
   wTrainability: 0.30, wProfessionalism: 0.15, gMin: 0.6, gMax: 1.5,
   capBase: 80, capSlope: 1.25, capExp: 2,
@@ -112,4 +120,21 @@ export interface DevRider {
 }
 
 export const PHYSICAL: readonly SkillAttribute[] = PERFORMANCE_FOCUS;
+export const TECHNICAL: readonly SkillAttribute[] = TECHNIQUE_ATTRIBUTES;
+
+/**
+ * Share of the weekly budget of EVERY trainable attribute for one plan (13 numbers that add up to 1 with the shares of the config).
+ * main: ranks 1-3 of the plan's performance attributes; supplementary: the plan's 2 technique attributes; the rest share what is left.
+ */
+export function progressShares(planId: number, cfg: DevelopmentConfig = DEV_CONFIG): Record<SkillAttribute, number> {
+  const plan = PLANS[planId];
+  const out = {} as Record<SkillAttribute, number>;
+  const sum = (a: readonly number[]) => a.reduce((x, y) => x + y, 0);
+  const restP = PHYSICAL.filter((a) => !plan.phys.includes(a)), restT = TECHNICAL.filter((a) => !plan.tech.includes(a));
+  plan.phys.forEach((a, i) => { out[a] = cfg.shareMain * cfg.ratioMain[i] / sum(cfg.ratioMain); });
+  plan.tech.forEach((a, i) => { out[a] = cfg.shareSupplementary * cfg.ratioSupplementary[i] / sum(cfg.ratioSupplementary); });
+  restP.forEach((a) => { out[a] = cfg.shareOtherPhysical / restP.length; });
+  restT.forEach((a) => { out[a] = cfg.shareOtherTechnical / restT.length; });
+  return out;
+}
 export const productionShape = (planId: number) => SHAPES.find((s) => s.id === SHAPE_OF_PLAN[planId])!;

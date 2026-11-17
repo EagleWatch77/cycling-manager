@@ -43,6 +43,7 @@ RC=$(mk $PC custom '{"energy":55,"fatigue":45,"form":83,"fitness":71,"morale":64
 
 echo "== migration (existing riders were created BEFORE it)"
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >"$DIR/m3.out" 2>&1 && ok "migration applies" || { bad "migration applies" "$(tail -3 "$DIR/m3.out")"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261117_04_training_plans_calendar.sql" >"$DIR/m4.out" 2>&1 && ok "migration 04 applies on top (legacy V1 plans keep their old week-end behaviour)" || { bad "migration 04 applies" "$(tail -3 "$DIR/m4.out")"; exit 1; }
 SNAP=$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_at, '|' order by id) from public.riders")
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >/dev/null 2>&1 && ok "migration is idempotent (second run)" || bad "second run" ""
 eq "second run changes no stored value (condition fix and coefficients happen only once)" "$(q "select string_agg(id::text||condition::text||energy_efficiency||fatigue_resistance||recovery_coef||fitness_peak||state_at, '|' order by id) from public.riders")" "$SNAP"
@@ -54,7 +55,7 @@ eq "state_at = the moment of the migration (nothing credited retroactively), ver
 eq "coefficients are inside 0.70-1.30 / 0.70-1.30 / 0.90-1.10" "$(q "select bool_and(energy_efficiency between 0.7 and 1.3 and fatigue_resistance between 0.7 and 1.3 and recovery_coef between 0.9 and 1.1) from public.riders")" "t"
 eq "the three coefficients differ between riders (independent, not one number)" "$(q "select count(distinct energy_efficiency) = 5 and count(distinct fatigue_resistance) = 5 and count(distinct recovery_coef) = 5 from public.riders")" "t"
 IDS="$RY $RV $RR $RL $RC"
-TSC=$(cd /tmp/cm/apps/web && npx --no-install tsx --tsconfig tsconfig.json src/lib/training/state/stateParity.cli.ts coef $IDS)
+TSC=$(cd "$ROOT/../apps/web" && npx --no-install tsx --tsconfig tsconfig.json src/lib/training/state/stateParity.cli.ts coef $IDS)
 SQLC=$(q "select string_agg(energy_efficiency||','||fatigue_resistance||','||recovery_coef, ';' order by array_position(string_to_array('$(echo $IDS | tr ' ' ',')', ','), id::text)) from public.riders")
 eq "SQL coefficients equal the TypeScript derivation from md5(id) (1e-9)" "$(python3 -c "
 import json

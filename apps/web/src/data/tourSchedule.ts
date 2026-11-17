@@ -29,16 +29,18 @@ export interface ScheduledTour {
 export const MAX_SEASON_TOUR_SELECTIONS = maxSeasonTours('rookie');
 
 /**
- * Rookie season — 5 Tour choices, repeated every season. Danube and Coastal
- * intentionally share week 5 (same real date range): a Rider may enter
- * either, never both.
+ * ONE calendar for every season (owner decision 2026-11-17): odd weeks are TRAINING weeks, even weeks are RACE weeks
+ * (see lib/calendar/weekKind.ts). One Tour per race week, so no two Tours overlap any more:
+ *   1 training · 2 Highlands · 3 training · 4 Danube · 5 training · 6 Coastal · 7 training · 8 Northern Crown ·
+ *   9 training · 10 Silver Horizon.
+ * Mirrored in public.tour_schedule (supabase/migrations/20261117_04_training_plans_calendar.sql); a drift test compares them.
  */
 export const TOUR_SCHEDULE: ScheduledTour[] = [
   { tourId: 'highlands-tour', weekNumber: 2, registrationOpen: true },
-  { tourId: 'danube-tour', weekNumber: 5, registrationOpen: true },
-  { tourId: 'coastal-tour', weekNumber: 5, registrationOpen: true },
-  { tourId: 'northern-crown-tour', weekNumber: 7, registrationOpen: true },
-  { tourId: 'silver-horizon-tour', weekNumber: 9, registrationOpen: true },
+  { tourId: 'danube-tour', weekNumber: 4, registrationOpen: true },
+  { tourId: 'coastal-tour', weekNumber: 6, registrationOpen: true },
+  { tourId: 'northern-crown-tour', weekNumber: 8, registrationOpen: true },
+  { tourId: 'silver-horizon-tour', weekNumber: 10, registrationOpen: true },
 ];
 
 /** A schedule entry joined with its Tour content and real calendar dates. */

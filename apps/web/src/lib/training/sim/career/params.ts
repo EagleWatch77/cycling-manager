@@ -36,8 +36,8 @@ export type StageKind = 'flat' | 'hilly' | 'mountain' | 'tt';
 export interface Stage { tourId: string; number: number; name: string; km: number; kind: StageKind; rough: boolean }
 export const TOUR_STAGES: Record<number, Stage[]> = {};
 for (const w of [2, 5, 7, 9]) {
-  const entry = TOUR_SCHEDULE.find((s) => s.weekNumber === w && s.tourId === TOUR_ID_BY_WEEK[w])!;
-  const tour = TOURS.find((t) => t.id === entry.tourId)!;
+  // the simulation keeps its own historical calendar (weeks 2/5/7/9); it does not read the live tour schedule (2/4/6/8/10)
+  const tour = TOURS.find((t) => t.id === TOUR_ID_BY_WEEK[w])!;
   TOUR_STAGES[w] = tour.masterStages.slice(0, visibleStageCount('rookie')).map((st) => ({
     tourId: tour.id, number: st.number, name: st.name, km: st.distanceKm,
     kind: TT_NAMES.has(st.name) ? 'tt' : (st.difficulty as StageKind), rough: ROUGH_NAMES.has(st.name),

@@ -74,6 +74,10 @@ eq "valid plan: plan_id + mode stored (week/season from the SQL calendar)" "$SAV
 has "a confirmed plan cannot be overwritten" "$(as $A "select * from public.save_my_development_plan(1,'full');")" "already_planned"
 q "delete from public.training_plans" >/dev/null
 
+echo "== migrations 03 + 04 (final state): the shared budget 58/18/14/10 % replaces the coefficient model"
+psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >"$DIR/m3.out" 2>&1 && ok "migration 03 applies" || { bad "migration 03" "$(tail -3 "$DIR/m3.out")"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261117_04_training_plans_calendar.sql" >"$DIR/m4.out" 2>&1 && ok "migration 04 applies" || { bad "migration 04" "$(tail -3 "$DIR/m4.out")"; exit 1; }
+
 echo "== a week WITHOUT a plan changes nothing"
 BEFORE=$(q "select attributes::text||condition::text from public.riders where id='$RD'")
 eq "processing with no plan applies nothing" "$(as $D "select public.process_my_due_training();")" "0"

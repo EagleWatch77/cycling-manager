@@ -27,7 +27,10 @@ import { HistoryToggle } from '@/components/training/HistoryToggle';
 import { RiderProgressCard } from '@/components/rider/RiderProgressCard';
 import { getMyRiderProgress } from '@/lib/rider/progressRepository';
 import { TrainingConfigForm } from '@/components/training/TrainingConfigForm';
-import { saveTrainingAction } from './actions';
+import { saveTrainingAction, saveDevelopmentPlanAction } from './actions';
+import { DevelopmentPlanForm, type PlanOption } from '@/components/training/DevelopmentPlanForm';
+import { PLANS } from '@/lib/training/development/config';
+import { currentPlanTarget, getDevelopmentPlan, isDevelopmentModelEnabled, preselectFromOldPlan } from '@/lib/training/developmentPlan';
 
 // Tactics/Technique attribute sets shown for reference on this page now come
 // from the centralized TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES (see
@@ -112,8 +115,22 @@ export default async function RiderTrainingPage({
       if (registrations.some((r) => getScheduleForTour(r.tourId)?.weekNumber === plannable)) blocked = 'tour-conflict';
     }
   }
+  // Seven plans (V2): shown only while the database switch is ON; otherwise the old single-focus form below is used unchanged.
+  const v2 = await isDevelopmentModelEnabled();
+  const v2Target = v2 ? currentPlanTarget() : null;
+  const v2Data = v2 && v2Target ? await getDevelopmentPlan(v2Target.seasonId, v2Target.week) : null;
+  let v2Blocked: 'race-week' | 'tour-conflict' | null = null;
+  if (v2) {
+    if (!v2Target) v2Blocked = 'race-week';
+    else {
+      const regs = await getMySeasonRegistrations(scheduled.map((v) => v.tour.id));
+      if (regs.some((r) => getScheduleForTour(r.tourId)?.weekNumber === v2Target.week)) v2Blocked = 'tour-conflict';
+    }
+  }
+  const planOptions: PlanOption[] = PLANS.map((p) => ({ id: p.id, name: t(`trainingPlans.plan.${p.id}`), main: p.phys.map((a) => t(`attr.${a}`)), supplementary: p.tech.map((a) => t(`attr.${a}`)) }));
   const seasonLabel = `${t('races.season')} ${season.seasonNumber}`;
-  const planCardTitle = plannable != null
+  const planCardTitle = v2 ? (v2Target ? `${t('trainingPage.forWeek')} ${v2Target.week} · ${t('races.season')} ${v2Target.seasonId.replace('season-', '')}` : t('trainingPlans.title'))
+    : plannable != null
     ? `${t('trainingPage.forWeek')} ${plannable} / ${season.totalWeeks} · ${seasonLabel}`
     : `${seasonLabel} · ${t('races.week')} ${season.currentWeek} / ${season.totalWeeks}`;
 
@@ -187,39 +204,63 @@ export default async function RiderTrainingPage({
         <div className="col-span-12 space-y-3 lg:col-span-8">
           <Card title={<CardTitle icon="calendar">{planCardTitle}</CardTitle>} dense>
             <div className="p-3.5">
-              <TrainingConfigForm
-                weekNumber={plannable ?? season.totalWeeks}
-                blocked={blocked}
-                totalWeeks={season.totalWeeks}
-                initialPlan={plan}
-                performanceFocus={performanceOptions}
-                technicalFocus={technicalOptions}
-                dayLabels={dayLabels}
-                labels={{
-                  forWeek: t('trainingPage.forWeek'),
-                  confirmedTitle: t('trainingPage.savedTitle'),
-                  statusLabel: t('trainingPage.statusLabel'),
-                  statusPlanned: t('trainingPage.statusPlanned'),
-                  typePerformance: t('trainingPage.typePerformance'),
-                  typeTechnical: t('trainingPage.typeTechnical'),
-                  focusLabel: t('trainingPage.focus'),
-                  intensityLabel: t('trainingPage.intensity'),
-                  intensityLight: t('trainingPage.intensityLight'),
-                  intensityNormal: t('trainingPage.intensityNormal'),
-                  intensityHard: t('trainingPage.intensityHard'),
-                  technicalSessionNote: t('trainingPage.technicalSessionNote'),
-                  save: t('trainingPage.save'),
-                  saving: t('trainingPage.saving'),
-                  focusRequired: t('trainingPage.focusRequired'),
-                  saveError: t('trainingPage.saveError'),
-                  lockedNote: t('trainingPage.lockedNote'),
-                  alreadyPlanned: t('trainingPage.alreadyPlanned'),
-                  deadlineNote: t('trainingPage.deadlineNote'),
-                  blockedSeasonEnd: t('trainingPage.blockedSeasonEnd'),
-                  blockedTour: t('trainingPage.blockedTour'),
-                }}
-                saveAction={saveTrainingAction}
-              />
+              {v2 ? (
+                <DevelopmentPlanForm
+                  plans={planOptions}
+                  dayLabels={dayLabels}
+                  weekLabel={v2Target ? `${t('trainingPage.forWeek')} ${v2Target.week}` : t('trainingPlans.title')}
+                  saved={v2Data?.plan ? { planId: v2Data.plan.planId, mode: v2Data.plan.mode, applied: v2Data.plan.applied } : null}
+                  preselect={v2Data?.oldFocus ? preselectFromOldPlan(v2Data.oldFocus.focus, v2Data.oldFocus.intensity) : null}
+                  blocked={v2Blocked}
+                  labels={{
+                    intro: t('trainingPlans.intro'), main: t('trainingPlans.main'), supplementary: t('trainingPlans.supplementary'),
+                    mode: t('trainingPlans.mode'), modeFull: t('trainingPlans.modeFull'), modeBasic: t('trainingPlans.modeBasic'),
+                    modeFullHint: t('trainingPlans.modeFullHint'), modeBasicHint: t('trainingPlans.modeBasicHint'), sessionsAt: t('trainingPlans.sessionsAt'),
+                    deadline: t('trainingPlans.deadline'), save: t('trainingPlans.save'), saving: t('trainingPage.saving'), saved: t('trainingPlans.saved'),
+                    savedPlan: t('trainingPlans.savedPlan'), preselected: t('trainingPlans.preselected'), noPlan: t('trainingPlans.noPlan'), locked: t('trainingPlans.locked'),
+                    blockedRaceWeek: t('trainingPlans.blockedRaceWeek'), blockedTour: t('trainingPlans.blockedTour'),
+                    errors: {
+                      'tour-conflict': t('trainingPlans.errTour'), 'no-plannable-week': t('trainingPlans.blockedRaceWeek'), 'already-processed': t('trainingPlans.locked'),
+                      disabled: t('trainingPlans.errDisabled'), error: t('trainingPage.saveError'), invalid: t('trainingPage.saveError'), 'no-rider': t('trainingPage.saveError'),
+                    },
+                  }}
+                  saveAction={saveDevelopmentPlanAction}
+                />
+              ) : (
+                <TrainingConfigForm
+                  weekNumber={plannable ?? season.totalWeeks}
+                  blocked={blocked}
+                  totalWeeks={season.totalWeeks}
+                  initialPlan={plan}
+                  performanceFocus={performanceOptions}
+                  technicalFocus={technicalOptions}
+                  dayLabels={dayLabels}
+                  labels={{
+                    forWeek: t('trainingPage.forWeek'),
+                    confirmedTitle: t('trainingPage.savedTitle'),
+                    statusLabel: t('trainingPage.statusLabel'),
+                    statusPlanned: t('trainingPage.statusPlanned'),
+                    typePerformance: t('trainingPage.typePerformance'),
+                    typeTechnical: t('trainingPage.typeTechnical'),
+                    focusLabel: t('trainingPage.focus'),
+                    intensityLabel: t('trainingPage.intensity'),
+                    intensityLight: t('trainingPage.intensityLight'),
+                    intensityNormal: t('trainingPage.intensityNormal'),
+                    intensityHard: t('trainingPage.intensityHard'),
+                    technicalSessionNote: t('trainingPage.technicalSessionNote'),
+                    save: t('trainingPage.save'),
+                    saving: t('trainingPage.saving'),
+                    focusRequired: t('trainingPage.focusRequired'),
+                    saveError: t('trainingPage.saveError'),
+                    lockedNote: t('trainingPage.lockedNote'),
+                    alreadyPlanned: t('trainingPage.alreadyPlanned'),
+                    deadlineNote: t('trainingPage.deadlineNote'),
+                    blockedSeasonEnd: t('trainingPage.blockedSeasonEnd'),
+                    blockedTour: t('trainingPage.blockedTour'),
+                  }}
+                  saveAction={saveTrainingAction}
+                />
+              )}
             </div>
           </Card>
           {progress && (

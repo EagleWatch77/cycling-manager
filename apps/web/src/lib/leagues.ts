@@ -16,14 +16,27 @@ export type LeagueId = (typeof LEAGUES)[number];
 const VISIBLE_STAGE_COUNT: Record<LeagueId, number> = {
   rookie: 3,
   amateur: 4,
-  continental: 5,
-  pro: 5,
+  continental: 4,
+  pro: 4,
   elite: 5,
 };
 
 export function visibleStageCount(league: LeagueId): number {
   return VISIBLE_STAGE_COUNT[league];
 }
+
+/**
+ * Stage days of a race week per league (0 = Monday … 6 = Sunday, UTC game calendar). The number of days IS the number of
+ * stages actually ridden and shown (owner 2026-11-17: Rookie 3, Amateur 4, Pro 4, Continental 4, Elite 5). Mirrored in
+ * public.league_race_days(); the future Race Engine reads this one place (it decides the time of day of each stage).
+ */
+export const LEAGUE_RACE_DAYS: Record<LeagueId, readonly number[]> = {
+  rookie: [0, 2, 4],
+  amateur: [0, 1, 3, 4],
+  continental: [0, 1, 3, 4],
+  pro: [0, 1, 3, 4],
+  elite: [0, 1, 2, 3, 4],
+};
 
 /**
  * How many Tours a Rider in this league may select per season. Only Rookie

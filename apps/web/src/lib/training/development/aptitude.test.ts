@@ -63,5 +63,5 @@ check('training does NOT level everything: untrained attributes keep their own c
 const neutral = { ...mk(5), aptitude: undefined }; const nr = run(neutral, 300);
 check('a rider without a profile (legacy) behaves exactly as before: no technique ceiling', nr.attrs.descending >= 190, `${nr.attrs.descending}`);
 check('PLANS unchanged (still the seven approved plans)', PLANS.length === 7 && PLANS[0].phys.join() === 'climbing,endurance,hills');
-check('coefficients unchanged', DEV_CONFIG.cPhys === 1.8 && DEV_CONFIG.cTech === 6.5 && DEV_CONFIG.coefPhys.join() === '1.15,0.95,0.75' && DEV_CONFIG.coefTech.join() === '0.85,0.45');
+check('weights unchanged (58/18/14/10)', DEV_CONFIG.shareMain === 0.58 && DEV_CONFIG.shareSupplementary === 0.18 && DEV_CONFIG.shareOtherPhysical === 0.14 && DEV_CONFIG.shareOtherTechnical === 0.10);
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

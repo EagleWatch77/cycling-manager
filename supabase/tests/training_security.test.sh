@@ -219,8 +219,12 @@ has "anon cannot call admin_list_riders" "$(asanon "select * from public.admin_l
 
 echo "== 10. legitimate flows still work"
 as $P1 "select 1;" >/dev/null
-has "Tour registration (policy reads riders) still works" "$(as $P1 "insert into public.tour_registrations (rider_id, tour_id) values ('$R1','danube-tour') returning tour_id;")" "danube-tour"
+# The test must not depend on today's date: P1 saved a plan for the plannable week above, so registering for a Tour
+# that runs in THAT week is (correctly) refused by the training guard. Use a throwaway Tour in a different week.
+q "insert into public.tour_schedule (tour_id, week_number) values ('test-tour-policy', case when coalesce(public.training_plannable_week(now()),0) = 1 then 2 else 1 end) on conflict (tour_id) do update set week_number = excluded.week_number;" >/dev/null
+has "Tour registration (policy reads riders) still works" "$(as $P1 "insert into public.tour_registrations (rider_id, tour_id) values ('$R1','test-tour-policy') returning tour_id;")" "test-tour-policy"
 eq "registration list can read rider names (public columns)" "$(as $P1 "select count(*) from public.tour_registrations t join public.riders r on r.id=t.rider_id where t.rider_id='$R1';")" "1"
+q "delete from public.tour_registrations where tour_id = 'test-tour-policy'; delete from public.tour_schedule where tour_id = 'test-tour-policy';" >/dev/null
 eq "bike_condition of own rider is readable" "$(as $P3 "select count(*) from public.bike_condition where rider_id='$NEWID';")" "1"
 has "league placement function still works for a rider owner" "$(as $P1 "select count(*) from public.assign_my_league_division();")" "1"
 eq "Season aging (definer) can still update riders" "$(q "select count(*) from pg_proc where proname='process_season_aging'")" "1"
@@ -254,7 +258,10 @@ eq "week 9 plans week 10" "$(pw 2026-12-22T12:00:00Z)" "10"
 eq "week 10: nothing is plannable (no week 1 of the next season)" "$(pw 2026-12-30T12:00:00Z)" "none"
 eq "last second of week 10 / first second of next season" "$(pw 2027-01-03T23:59:59Z)|$(pw 2027-01-04T00:00:00Z)" "none|2"
 eq "no plan can ever target week 1 (plannable week is always 2..10)" "$(q "select count(*) from generate_series(timestamp '2026-08-17', timestamp '2027-12-31', interval '1 day') d where public.training_plannable_week(d::timestamptz) is not null and public.training_plannable_week(d::timestamptz) < 2")" "0"
-eq "tour_schedule == data/tourSchedule.ts" "$(q "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourSchedule'])")"
+# the calendar (Tour weeks 2/4/6/8/10) comes from migration 20261117_04 (needs _01 and _03 first); checked in a throwaway copy so scenario A stays comparable to schema.sql
+psqlc postgres -c "drop database if exists t_cal" >/dev/null; psqlc postgres -c "create database t_cal template t" >/dev/null
+for m in 20261117_01_development_model_v2 20261117_03_rider_state_model 20261117_04_training_plans_calendar; do [ -f "$ROOT/migrations/$m.sql" ] && psqlc t_cal -f "$ROOT/migrations/$m.sql" >/dev/null 2>&1; done
+eq "tour_schedule == data/tourSchedule.ts" "$(psqlc t_cal -c "select string_agg(tour_id||':'||week_number, ',' order by tour_id) from public.tour_schedule")" "$(ref "','.join(d['tourSchedule'])")"
 has "clients cannot write tour_schedule" "$(as $P1 "update public.tour_schedule set week_number = 1;")" "permission denied"
 eq "clients can read tour_schedule" "$(as $P1 "select count(*) from public.tour_schedule;")" "5"
 

@@ -23,3 +23,24 @@ export const performanceInputs = (r: StateRider, preparednessValue: number): Per
   ({ energy: r.energy, fatigue: r.fatigue, fitness: r.fitness, preparedness: preparednessValue, morale: r.morale });
 /** The one thing that must not be in PerformanceInputs. */
 export const EXCLUDED_FROM_RACE_MATHS = ['form', 'ovr'] as const;
+
+/**
+ * RACE PROGRESS (interface only - no distribution is implemented and no race results are produced here).
+ *
+ * Attribute progress earned in a race is NOT split by the rider's last training plan. The Race Engine will report what a rider did in a stage and a
+ * separate, later-tuned distribution (BALANCE_PLACEHOLDER) will turn it into attribute points. Until then nothing calls this: the type only fixes the
+ * shape of the hand-over so the Engine and the web app can be built independently.
+ *   - `stageKey`  : idempotency key (the same stage is never credited twice)
+ *   - `points`    : race progress per attribute in the SAME unit as training progress (fractional points, before the 200 cap); the Engine decides how
+ *                   it is composed (tactics are trained by racing); the web side only applies it with the same room / cap rules as training.
+ * XP stays race-bound and is reported separately from `points`.
+ */
+export interface RaceProgressReport {
+  riderId: string;
+  stageKey: string;
+  at: string;                                   // ISO instant the stage ended
+  points: Partial<Record<string, number>>;      // attribute key -> fractional progress points (>= 0)
+  experienceGain: number;                       // XP from this stage (>= 0)
+}
+/** Not implemented on purpose: returns null until the distribution is designed. Never fabricate a result. */
+export const distributeRaceProgress = (_report: RaceProgressReport): null => null;

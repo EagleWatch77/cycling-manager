@@ -1,4 +1,4 @@
 # CURRENT_TASK
-C-084 Stav jazdca 1.0, etapy A–C hotové v kóde a v migrácii 20261117_03 (nespustená, spínač vypnutý): koeficienty, priebežná regenerácia podľa skutočne uplynutého času (state_at, doťahovanie pri dotyku jazdca), Kondícia, Forma, história, rozhranie pre Race Engine, bezpečný prestup.
-Poradie migrácií na spustenie: 20261117_01 (vývoj V2), 20261117_02 (OVR F4), 20261117_03 (stav jazdca); potom až zapnutie prepínačov.
-Ďalej D–F: Morálka a ciele (dátový model, bez falošných výsledkov Tour), UI profilu z DB (volať refresh_my_rider_state), napojenie Vitality, finálne testy a dokumentácia.
+C-085 Sedem tréningových plánov + jeden kalendár hotové v kóde a v migrácii 20261117_04 (NESPUSTENÁ, spínače vypnuté, nič nenasadené/nepushnuté).
+Pred zapnutím: spustiť migrácie v poradí 01, 02, 03, 04; skontrolovať `select * from calendar_v2_conflicts()` (vlastník DB); rozhodnúť o prípadných starých registráciách na Tour v posunutých týždňoch; potom zapnúť `development_model_settings` a `rider_state_settings`.
+Ďalej: Race Engine (pokrok z pretekov cez `RaceProgressReport`), Morálka a ciele, kalibrácia záťaže etáp.

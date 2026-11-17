@@ -1,0 +1,10 @@
+import { PLAN_OF_OLD_FOCUS, preselectFromOldPlan } from './oldPlanMap';
+import { PLANS } from './development/config';
+let ok = 0, bad = 0;
+const check = (n: string, c: boolean) => { c ? ok++ : (bad++, console.log('  FAIL', n)); };
+check('every old performance focus maps to a real plan id', Object.values(PLAN_OF_OLD_FOCUS).every((id) => id >= 0 && id < PLANS.length));
+check('old climbing focus -> Vrchár (0) and the plan leads with climbing', preselectFromOldPlan('climbing', 'light').planId === 0 && PLANS[0].phys[0] === 'climbing');
+check('old sprint focus -> Šprintér (1)', preselectFromOldPlan('sprint', 'normal').planId === 1);
+check('technical / unknown old focus -> Univerzál (6), nobody gets an invalid plan', preselectFromOldPlan('cornering', 'light').planId === 6 && preselectFromOldPlan(null, null).planId === 6);
+check('hard -> Full, light/normal/none -> Basic (never more load than before)', preselectFromOldPlan('flat', 'hard').mode === 'full' && preselectFromOldPlan('flat', 'normal').mode === 'basic' && preselectFromOldPlan('flat', 'light').mode === 'basic' && preselectFromOldPlan(null, undefined).mode === 'basic');
+console.log(`${ok} passed, ${bad} failed`); process.exit(bad ? 1 : 0);

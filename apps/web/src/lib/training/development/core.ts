@@ -1,4 +1,4 @@
-import { PHYSICAL, PLANS, DEV_CONFIG, ALLROUNDER_PLAN, productionShape, type DevRider, type DevelopmentConfig, type EfficiencyTable, type TrainingMode } from './config';
+import { PHYSICAL, TECHNICAL, PLANS, DEV_CONFIG, progressShares, ALLROUNDER_PLAN, productionShape, type DevRider, type DevelopmentConfig, type EfficiencyTable, type TrainingMode } from './config';
 import { ageFactor } from '../config';
 import { SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 
@@ -76,6 +76,8 @@ export interface WeeklyContext {
   facilityMultiplier?: number;
   /** Recovery Center multiplier of the existing facility system; default 1 */
   recoveryFacility?: number;
+  /** average readiness measured just before the week's training sessions (Rider State loop); default = the rider's current Energy/Fatigue */
+  readiness?: number;
 }
 
 /**
@@ -86,28 +88,28 @@ export function weeklyTraining(rider: DevRider, setting: WeeklySetting | null, c
   if (setting === null) return { rider, rawProgress: zeroAttrs(), gains: zeroAttrs(), readiness: readinessOf(rider.energy, rider.fatigue), efficiency: 0, processed: false };
   const plan = PLANS[setting.planId];
   const a = cfg.modeCapacity[setting.mode];
-  const R = readinessOf(rider.energy, rider.fatigue);
+  const R = ctx.readiness ?? readinessOf(rider.energy, rider.fatigue);
   const eff = efficiencyOf(R, cfg.efficiencyTable);
   const { G } = trainingFactor(rider, cfg);
   const al = ageFactor(rider.age), alT = (1 + al) / 2;
   const attrs = { ...rider.attrs }, progress = { ...rider.progress };
   const rawProgress = zeroAttrs(), gains = zeroAttrs();
 
+  const share = progressShares(setting.planId, cfg);
+  const budget = cfg.weeklyBudget * a;                       // ONE budget for the whole week, whatever the plan
   for (const j of PHYSICAL) {
-    const rank = plan.phys.indexOf(j);
-    const coef = rank >= 0 ? cfg.coefPhys[rank] : cfg.coefOther;
     const room = roomPhys(attrs[j], effectiveCap(rider, j, cfg), cfg);
-    const raw = cfg.threshold * coef * cfg.cPhys * a * cfg.physShare * eff * G * al * room * (ctx.facilityMultiplier ?? 1);
+    const raw = budget * share[j] * eff * G * al * room * (ctx.facilityMultiplier ?? 1);
     rawProgress[j] = raw;
     const r = accumulate(progress[j] ?? 0, raw, cfg.threshold, cfg.maxAttribute, attrs[j]);
     attrs[j] = r.attr; progress[j] = r.progress; gains[j] = r.gain;
   }
-  plan.tech.forEach((k, i) => {
-    const raw = cfg.threshold * cfg.coefTech[i] * cfg.cTech * a * (1 - cfg.physShare) * eff * G * alT * roomTech(attrs[k], cfg, techCapOf(rider, k, cfg));
+  for (const k of TECHNICAL) {
+    const raw = budget * share[k] * eff * G * alT * roomTech(attrs[k], cfg, techCapOf(rider, k, cfg));
     rawProgress[k] = raw;
     const r = accumulate(progress[k] ?? 0, raw, cfg.threshold, cfg.maxAttribute, attrs[k], cfg.techWeeklyMax);
     attrs[k] = r.attr; progress[k] = r.progress; gains[k] = r.gain;
-  });
+  }
 
   const e = cfg.energy[setting.mode], rm = recoveryMultiplier(rider.hidden.recovery, cfg) * (ctx.recoveryFacility ?? 1);
   const fin = (v: number) => { const x = cfg.roundCondition ? Math.round(v) : v; return Math.max(0, Math.min(100, x)); };

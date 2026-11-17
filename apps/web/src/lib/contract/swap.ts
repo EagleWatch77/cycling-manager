@@ -1,4 +1,4 @@
-import { WEEK_LENGTH_DAYS } from '@/lib/calendar/season';
+import { WEEK_LENGTH_DAYS, SEASON_ONE_START } from '@/lib/calendar/season';
 import { gameWeekIndex, seasonWeekOfIndex, type SeasonWeek } from './contract';
 
 /**
@@ -19,7 +19,7 @@ export interface SwapPlan {
 }
 
 const MS_PER_DAY = 86_400_000;
-const ANCHOR_MS = Date.parse('2026-08-17T00:00:00Z');
+const ANCHOR_MS = Date.parse(`${SEASON_ONE_START}T00:00:00Z`);
 
 export function planSwap(purchasedAt: Date): SwapPlan {
   const idx = gameWeekIndex(purchasedAt);

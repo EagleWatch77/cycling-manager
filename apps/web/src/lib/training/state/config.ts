@@ -8,8 +8,15 @@ export const STATE_CONFIG = {
   coef: { energyEffMin: 0.70, energyEffMax: 1.30, fatigueResMin: 0.70, fatigueResMax: 1.30, recoveryMin: 0.90, recoveryMax: 1.10 },
   /** daily regeneration: gain = (base + slope x Recovery) x individual recovery coefficient */
   regen: { energyBase: 9, energySlope: 0.04, fatigueBase: 6, fatigueSlope: 0.04 },
-  /** weekly training plan load, applied ONCE on the plan's last day, scaled by the rider's individual coefficients; no recovery days inside any more */
-  training: { energyPerUnit: 30, fatiguePerUnit: 22, unitsFull: 1.0, unitsBasic: 0.6, unitsV1Hard: 1.0, unitsV1Normal: 0.7, unitsV1Light: 0.4, unitsV1Technical: 0.4 },
+  /**
+   * weekly training plan load. A V2 plan (seven plans) is spread over its SESSIONS at their exact times (Tuesday/Thursday/Saturday for Full,
+   * Tuesday/Friday for Basic, 12:00 UTC), each session carrying an equal part of the weekly load (Full 30 E / 22 F in 3 parts, Basic 18 E / 13.2 F in 2),
+   * scaled by the rider's individual coefficients at every session. The number of sessions never changes the weekly total or the weekly progress.
+   * Legacy V1 plans (no plan id) keep the old behaviour: the whole load once at the week end. No recovery days inside any more.
+   */
+  training: { energyPerUnit: 30, fatiguePerUnit: 22, unitsFull: 1.0, unitsBasic: 0.6, unitsV1Hard: 1.0, unitsV1Normal: 0.7, unitsV1Light: 0.4, unitsV1Technical: 0.4,
+    /** weekday index 0 = Monday ... 6 = Sunday (UTC game calendar) */
+    sessionDays: { full: [1, 3, 5], basic: [1, 4] }, sessionHourUtc: 12 },
   /** reference stage load of the brief (-16 / +11); Race Engine supplies the real values per stage via the load-event interface */
   stageReference: { energy: 16, fatigue: 11, raceUnits: 0.25 },
   /** weekly stimulus: s = 1 - exp(-L / satLoad), L = training units + race units; overload (high Fatigue / low Energy at week end) cuts it */
@@ -46,4 +53,5 @@ export interface StateRider {
 }
 
 /** First day of the game calendar (a Monday); day index 0. Mirrors lib/calendar/season.ts SEASON_ONE_START. */
-export const CALENDAR_ANCHOR = '2026-08-17';
+import { SEASON_ONE_START } from '@/lib/calendar/season';
+export const CALENDAR_ANCHOR: string = SEASON_ONE_START;

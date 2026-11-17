@@ -84,39 +84,59 @@ export function formWeek(r: StateRider, prep: number): { target: number; form: n
 
 /** A load with its exact time. `at` = seconds since the calendar anchor (Monday 00:00 UTC of season 1). `id` identifies it so it is applied exactly once. */
 export interface LoadEvent { id: number; at: number; energy: number; fatigue: number; raceUnits: number }
+/**
+ * Plan of one game week: a plain number = LEGACY plan (V1), its units are applied once at the week end;
+ * an object = V2 plan, its units are applied in equal parts at the SESSIONS (`days`: 0 = Monday .. 6 = Sunday, at sessionHourUtc).
+ */
+export type PlanLoad = number | { units: number; days: readonly number[] };
 export interface DayInputs {
-  /** training units per plan, keyed by the zero-based GLOBAL week index (season 1 week 1 = 0); a missing key = no plan that week */
-  plans: ReadonlyMap<number, number>;
+  /** plans keyed by the zero-based GLOBAL week index (season 1 week 1 = 0); a missing key = no plan that week */
+  plans: ReadonlyMap<number, PlanLoad>;
   events: readonly LoadEvent[];
 }
-export interface WeekRecord { week: number; trainingUnits: number; raceUnits: number; stimulus: number; energyEnd: number; fatigueEnd: number; fitnessEnd: number; formEnd: number }
+export interface WeekRecord { week: number; trainingUnits: number; raceUnits: number; stimulus: number; energyEnd: number; fatigueEnd: number; fitnessEnd: number; formEnd: number;
+  /** sessions processed and the average readiness measured just before them (null = none); the weekly training progress uses this average */
+  sessionsDone: number; readinessAvg: number | null }
 export const WEEK_SECONDS = 7 * SECONDS_PER_DAY;
 /** the instant a game week ends (= the next Monday 00:00 UTC) */
 export const weekEnd = (week: number) => (week + 1) * WEEK_SECONDS;
+/** the sessions of a V2 plan: seconds since the anchor */
+export const sessionTimes = (week: number, days: readonly number[]) => days.map((d) => week * WEEK_SECONDS + d * SECONDS_PER_DAY + C.training.sessionHourUtc * 3600);
+export const sessionDaysOf = (mode: 'full' | 'basic'): readonly number[] => C.training.sessionDays[mode];
 
 /**
  * Brings a rider from `lastAt` to `now` (seconds since the anchor). ONE chronological pass over the NEXT item in time:
- *   - the end of a game week (the plan's load is applied, then Fitness + Form are evaluated), or
- *   - a stage / other load event with its exact time.
- * Between items the rider regenerates for exactly the elapsed time. At equal times the week end goes first (an event at the boundary belongs to the
- * new week). A load that was reported late (at <= the cursor) is applied at the cursor. `applied` holds the ids already applied (mutated).
+ *   - the end of a game week (a legacy plan's load, then Fitness + Form are evaluated), or
+ *   - a stage / other load event with its exact time, or
+ *   - a training SESSION of a V2 plan (readiness is measured just before it, then its part of the weekly load is applied).
+ * Between items the rider regenerates for exactly the elapsed time. At equal times: week end, then event, then session. A load that was reported late
+ * (at <= the cursor) is applied at the cursor. `applied` holds the ids of events already applied and `sessions` the sessions already done per week
+ * (both mutated); a session at or before `lastAt` counts as done (a plan can only be saved before its first session, so nothing is skipped by mistake).
  */
-export function catchUp(start: StateRider, lastAt: number, now: number, inp: DayInputs, history: Map<number, number> = new Map(), applied: Set<number> = new Set()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
-  let r = start, cursor = lastAt; const weeks: WeekRecord[] = [];
+export function catchUp(start: StateRider, lastAt: number, now: number, inp: DayInputs, history: Map<number, number> = new Map(), applied: Set<number> = new Set(),
+  sessions: Map<number, { n: number; sum: number }> = new Map()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
+  let r = start, cursor = lastAt, sessFloor = lastAt; const weeks: WeekRecord[] = [];
   if (now <= lastAt) return { rider: r, lastAt, weeks };
+  let complete = false;
   for (let guard = 0; guard < C.maxCatchUpItems; guard++) {
     const week = Math.floor(cursor / WEEK_SECONDS);           // the week the cursor is in; its end is the next boundary
     const boundary = weekEnd(week);
     let next: LoadEvent | undefined;
     for (const e of inp.events) if (!applied.has(e.id) && e.at <= now && (!next || e.at < next.at || (e.at === next.at && e.id < next.id))) next = e;
     const evTime = next ? Math.max(next.at, cursor) : Infinity;
-    const takeBoundary = boundary <= now && boundary <= evTime;
-    if (!takeBoundary && !next) break;
-    const t = takeBoundary ? boundary : evTime;
+    const plan = inp.plans.get(week);
+    let sessT = Infinity, sessN = 0;
+    if (typeof plan === 'object') { sessN = plan.days.length; for (const t of sessionTimes(week, plan.days)) if (t > sessFloor && t <= now) { sessT = Math.max(t, cursor); break; } }
+    const takeBoundary = boundary <= now && boundary <= evTime && boundary <= sessT;
+    const takeEvent = !takeBoundary && next !== undefined && evTime <= sessT;
+    const takeSession = !takeBoundary && !takeEvent && sessT !== Infinity;
+    if (!takeBoundary && !takeEvent && !takeSession) { complete = true; break; }
+    const t = takeBoundary ? boundary : takeEvent ? evTime : sessT;
     r = regen(r, t - cursor); cursor = t;
     if (takeBoundary) {
-      const units = inp.plans.get(week) ?? 0;
-      if (units > 0) { const l = trainingLoad(units); r = applyLoad(r, l.energy, l.fatigue); }
+      const done = sessions.get(week);
+      const units = plan === undefined ? 0 : typeof plan === 'number' ? plan : plan.units * (done?.n ?? 0) / sessN;
+      if (typeof plan === 'number' && units > 0) { const l = trainingLoad(units); r = applyLoad(r, l.energy, l.fatigue); }
       const raceUnits = inp.events.filter((e) => e.at >= week * WEEK_SECONDS && e.at < boundary).reduce((s, e) => s + e.raceUnits, 0);
       const stim = weeklyStimulus(units + raceUnits, r.energy, r.fatigue);
       const fit = fitnessWeek(r, stim);
@@ -125,14 +145,22 @@ export function catchUp(start: StateRider, lastAt: number, now: number, inp: Day
       const prep = preparedness([stim, history.get(week - 1) ?? null, history.get(week - 2) ?? null]);
       const form = formWeek(rr, prep).form;
       r = { ...rr, form };
-      weeks.push({ week, trainingUnits: units, raceUnits, stimulus: stim, energyEnd: r.energy, fatigueEnd: r.fatigue, fitnessEnd: fit, formEnd: form });
-    } else if (next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id); }
+      weeks.push({ week, trainingUnits: units, raceUnits, stimulus: stim, energyEnd: r.energy, fatigueEnd: r.fatigue, fitnessEnd: fit, formEnd: form,
+        sessionsDone: done?.n ?? 0, readinessAvg: done && done.n > 0 ? done.sum / done.n : null });
+    } else if (takeEvent && next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id);
+    } else if (takeSession && typeof plan === 'object') {
+      const d = sessions.get(week) ?? { n: 0, sum: 0 };
+      sessions.set(week, { n: d.n + 1, sum: d.sum + (r.energy + (100 - r.fatigue)) / 2 });   // readiness BEFORE the session
+      const l = trainingLoad(plan.units / sessN); r = applyLoad(r, l.energy, l.fatigue);
+      sessFloor = t;
+    }
   }
+  // A very long offline period can exceed one pass: then the state is saved at the cursor (nothing is skipped) and the next call continues from there.
+  if (!complete) return { rider: r, lastAt: cursor, weeks };
   r = regen(r, now - cursor);
   return { rider: r, lastAt: now, weeks };
 }
 
-/** Deterministic individual coefficients from three uniform numbers in [0,1) (SQL feeds them from md5(rider id)). Bell-shaped (mean of two uniforms). */
 export function coefficientsFromUniforms(u: readonly number[]): { energyEff: number; fatigueRes: number; recoveryCoef: number } {
   const c = C.coef; const bell = (a: number, b: number) => (a + b) / 2;
   return {

@@ -72,6 +72,7 @@ psqlc t -f "$M2" >/dev/null 2>&1 && ok "migration 08 applies on top of legacy da
 psqlc t -f "$M2" >/dev/null 2>&1 && ok "migration 08 is idempotent (second run)" || bad "second run" "$(psqlc t -f "$M2" | tail -3)"
 psqlc t -f "$ROOT/migrations/20261117_01_development_model_v2.sql" >/dev/null 2>&1 || { echo "dev v2 migration failed"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >/dev/null 2>&1 || { echo "state migration failed"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261117_04_training_plans_calendar.sql" >/dev/null 2>&1 || { echo "migration 04 failed"; exit 1; }
 ok "state-model migration applies on top"
 
 

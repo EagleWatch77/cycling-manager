@@ -5,7 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 import { STATE_CONFIG as C, CALENDAR_ANCHOR, type StateRider } from './config';
-import { catchUp, coefficientsFromUniforms, SECONDS_PER_DAY, type LoadEvent } from './core';
+import { catchUp, coefficientsFromUniforms, SECONDS_PER_DAY, sessionDaysOf, type LoadEvent, type PlanLoad } from './core';
 
 const unit = (id: string, salt: string) => parseInt(createHash('md5').update(`${id}:${salt}`).digest('hex').slice(0, 8), 16) / 4294967296;
 if (process.argv[2] === 'coef') {
@@ -37,4 +37,24 @@ for (const s of scenarios) {
   const res = calls.map((c) => catchUp(r, 0, c.at, { plans, events }));
   out[s.name] = { after: res.map((x) => x.rider), weeks: res.map((x) => x.weeks.length) };
 }
-console.log(JSON.stringify({ anchor: CALENDAR_ANCHOR, calls, scenarios, out }));
+// ---- V2 plans: sessions (Full Tue/Thu/Sat, Basic Tue/Fri at 12:00 UTC) in training weeks, stages in race weeks (1-based weeks) ----
+interface V2 { name: string; age: number; vitality: number; trainability: number; professionalism: number; recovery: number; coef: [number, number, number]; energy: number; fatigue: number; form: number; fitness: number; peak: number;
+  plans: [number, 'full' | 'basic'][]; stageAt: number[] }
+const v2scenarios: V2[] = [
+  { name: 'cycle_full', age: 22, vitality: 60, trainability: 70, professionalism: 60, recovery: 55, coef: [0.9, 1.1, 1.0], energy: 80, fatigue: 20, form: 75, fitness: 74, peak: 80,
+    plans: [[3, 'full'], [5, 'full'], [7, 'basic']], stageAt: [...stageWeek(3, [0, 2, 4]), ...stageWeek(5, [0, 1, 3, 4]), ...stageWeek(7, [0, 1, 2, 3, 4])] },
+  { name: 'cycle_basic', age: 28, vitality: 40, trainability: 50, professionalism: 50, recovery: 40, coef: [1.25, 0.75, 0.95], energy: 55, fatigue: 45, form: 70, fitness: 70, peak: 76,
+    plans: [[1, 'basic'], [3, 'basic'], [5, 'full'], [9, 'basic']], stageAt: [...stageWeek(1, [0, 2, 4]), ...stageWeek(7, [0, 1, 3, 4])] },
+];
+const v2calls = ['2026-09-01T11:59:59.000Z', '2026-09-01T12:00:00.000Z', '2026-09-02T00:00:00.000Z', '2026-09-03T12:00:00.000Z', '2026-09-05T12:00:01.000Z', '2026-09-07T00:00:00.000Z', '2026-09-21T10:11:12.000Z', '2026-10-19T06:00:00.000Z', '2026-11-17T14:03:09.250Z']
+  .map((iso) => ({ now: iso.replace('T', ' ').replace('Z', '+00'), at: secs(iso) }));
+const outV2: Record<string, unknown> = {};
+for (const s of v2scenarios) {
+  const plans = new Map<number, PlanLoad>(s.plans.map(([w, m]) => [w - 1, { units: m === 'full' ? C.training.unitsFull : C.training.unitsBasic, days: sessionDaysOf(m) }] as [number, PlanLoad]));
+  const events: LoadEvent[] = s.stageAt.map((at, i) => ({ id: i + 1, at, energy: 16, fatigue: 11, raceUnits: C.stageReference.raceUnits }));
+  const r: StateRider = { age: s.age, vitality: s.vitality, trainability: s.trainability, professionalism: s.professionalism, recovery: s.recovery,
+    energyEff: s.coef[0], fatigueRes: s.coef[1], recoveryCoef: s.coef[2], energy: s.energy, fatigue: s.fatigue, form: s.form, fitness: s.fitness, fitnessPeak: s.peak, morale: 70 };
+  const res = v2calls.map((c) => catchUp(r, 0, c.at, { plans, events }));
+  outV2[s.name] = { after: res.map((x) => x.rider), weeks: res.map((x) => x.weeks.map((w) => ({ week: w.week, trainingUnits: w.trainingUnits, sessionsDone: w.sessionsDone, readinessAvg: w.readinessAvg }))) };
+}
+console.log(JSON.stringify({ anchor: CALENDAR_ANCHOR, calls, scenarios, out, v2calls, v2scenarios, outV2 }));

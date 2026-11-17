@@ -4,7 +4,7 @@
  */
 import { PERFORMANCE_FOCUS } from '../config';
 import { TECHNIQUE_ATTRIBUTES, SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
-import { DEV_CONFIG, PLANS, TRAINING_MODEL_VERSION, type DevRider, type HiddenTraits } from './config';
+import { progressShares, DEV_CONFIG, PLANS, TRAINING_MODEL_VERSION, type DevRider, type HiddenTraits } from './config';
 import {
   trainingFactor, softCap, weeklyTraining, seasonStart, declineOnset, readinessOf, efficiencyOf, accumulate, attributeGap,
 } from './core';
@@ -35,9 +35,10 @@ const sum = (r: DevRider, keys: readonly SkillAttribute[]) => keys.reduce((s, k)
 
 // ---- 0. switch + frozen constants of training 1.0 ----
 check('switch defaults to the OLD model (v1)', TRAINING_MODEL_VERSION === 'v1');
-check('frozen constants cPhys 1.8, cTech 6.5, 80/20, coefficients, max 200',
-  DEV_CONFIG.cPhys === 1.8 && DEV_CONFIG.cTech === 6.5 && DEV_CONFIG.physShare === 0.8
-  && DEV_CONFIG.coefPhys.join() === '1.15,0.95,0.75' && DEV_CONFIG.coefOther === 0.35 && DEV_CONFIG.coefTech.join() === '0.85,0.45' && DEV_CONFIG.maxAttribute === 200);
+check('constants: ONE weekly budget 93.72, shares 58/18/14/10 %, ratios, max 200',
+  DEV_CONFIG.weeklyBudget === 93.72 && DEV_CONFIG.shareMain === 0.58 && DEV_CONFIG.shareSupplementary === 0.18 && DEV_CONFIG.shareOtherPhysical === 0.14 && DEV_CONFIG.shareOtherTechnical === 0.10
+  && DEV_CONFIG.ratioMain.join() === '1.15,0.95,0.75' && DEV_CONFIG.ratioSupplementary.join() === '0.85,0.45' && DEV_CONFIG.maxAttribute === 200);
+check('the budget equals the old coefficient model total (12 x (1.8 x 0.8 x 4.25 + 6.5 x 0.2 x 1.3))', near(DEV_CONFIG.weeklyBudget, 12 * (1.8 * 0.8 * 4.25 + 6.5 * 0.2 * 1.3), 1e-9));
 check('basic = 75 % training, full = 100 %', DEV_CONFIG.modeCapacity.basic === 0.75 && DEV_CONFIG.modeCapacity.full === 1);
 check('seven plans exactly as approved in F4', PLANS.length === 7
   && PLANS[0].phys.join() === 'climbing,endurance,hills' && PLANS[0].tech.join() === 'descending,cornering'
@@ -53,17 +54,19 @@ check('cap formula = candidate B: 80 + 125 x (Pot/100)^2', near(softCap(100), 20
 {
   const pts = trainingFactor(mk(), DEV_CONFIG);
   check('neutral rider (hidden 50) has G = 1', near(pts.G, 1));
-  // full week, climber, age 20 (alpha 1.2), level 100 -> room ~1: climbing = 1.15 x 1.8 x 1 x 0.8 x 1 x 1 x 1.2 x room
+  // full week, climber, age 20 (alpha 1.2), level 100 -> raw = budget x share x eff x G x alpha x room
   const r = mk({ age: 20 });
   const o = weeklyTraining(r, { planId: 0, mode: 'full' }, plain);
+  const sh = progressShares(0);
   const room = 1 / (1 + Math.exp((100 - (softCap(50) - 0 - 10)) / 7));
-  const expectClimb = 12 * 1.15 * 1.8 * 0.8 * 1 * 1 * 1.2 * room;
-  check('physical raw progress = 12 x coefP x cPhys x sp x eff x G x alpha x room', near(o.rawProgress.climbing, expectClimb, 1e-6), `${o.rawProgress.climbing} vs ${expectClimb}`);
-  const expectTech = 12 * 0.85 * 6.5 * 1 * 0.2 * 1 * 1 * ((1 + 1.2) / 2) * Math.max(0.1, Math.min(1, (200 - 100) / 60));
-  check('technical raw progress = 12 x coefT x cTech x (1-sp) x eff x G x (1+alpha)/2 x roomT', near(o.rawProgress.descending, expectTech, 1e-6), `${o.rawProgress.descending} vs ${expectTech}`);
-  check('unplanned (other) attribute trains at 0.35', near(o.rawProgress.sprint / (12 * 0.35 * 1.8 * 0.8 * 1.2 * 1 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7))), 1, 1e-6));
-  check('plan technique 2nd attribute uses 0.45', near(o.rawProgress.cornering / o.rawProgress.descending, 0.45 / 0.85, 1e-6));
-  check('non-plan technique attributes do not train', (o.rawProgress.wetHandling ?? 0) === 0 && (o.rawProgress.packRiding ?? 0) === 0);
+  const expectClimb = 93.72 * sh.climbing * 1 * 1 * 1.2 * room;
+  check('physical raw progress = budget x share x eff x G x alpha x room', near(o.rawProgress.climbing, expectClimb, 1e-6), `${o.rawProgress.climbing} vs ${expectClimb}`);
+  check('main attribute #1 share = 58 % x 1.15 / 2.85', near(sh.climbing, 0.58 * 1.15 / 2.85, 1e-12));
+  const expectTech = 93.72 * sh.descending * 1 * 1 * ((1 + 1.2) / 2) * Math.max(0.1, Math.min(1, (200 - 100) / 60));
+  check('technical raw progress = budget x share x eff x G x (1+alpha)/2 x roomT', near(o.rawProgress.descending, expectTech, 1e-6), `${o.rawProgress.descending} vs ${expectTech}`);
+  check('other performance attribute shares 14 % / 4 = 3.5 % of the budget', near(sh.sprint, 0.035, 1e-12) && near(o.rawProgress.sprint / (93.72 * 0.035 * 1.2 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7))), 1, 1e-6));
+  check('plan technique 2nd attribute uses 0.45 / 0.85 of the first', near(o.rawProgress.cornering / o.rawProgress.descending, 0.45 / 0.85, 1e-6));
+  check('non-plan technique attributes get a SMALL progress (10 % / 4 each)', near(sh.wetHandling, 0.025, 1e-12) && (o.rawProgress.wetHandling ?? 0) > 0 && (o.rawProgress.wetHandling ?? 0) < o.rawProgress.cornering * 0.5);
   check('tactics and experience are not touched by training', (o.rawProgress.experience ?? 0) === 0 && (o.rawProgress.positioning ?? 0) === 0);
 }
 

@@ -23,8 +23,8 @@ const highlands = views.find((v) => v.tour.id === 'highlands-tour')!;
 const northernCrown = views.find((v) => v.tour.id === 'northern-crown-tour')!;
 const silverHorizon = views.find((v) => v.tour.id === 'silver-horizon-tour')!;
 
-check('Danube and Coastal share the same real date range (intentional overlap)',
-  danube.weekStart.getTime() === coastal.weekStart.getTime() && danube.weekEnd.getTime() === coastal.weekEnd.getTime());
+check('one Tour per race week: no two Tours share a date range any more',
+  views.every((a, i) => views.every((b, j) => i === j || a.weekEnd.getTime() < b.weekStart.getTime() || b.weekEnd.getTime() < a.weekStart.getTime())));
 
 // Nothing selected yet: everything available.
 {
@@ -33,19 +33,14 @@ check('Danube and Coastal share the same real date range (intentional overlap)',
   check('no selection -> Coastal available', getSelectionState('coastal-tour', views, none) === 'available');
 }
 
-// Selecting Danube blocks Coastal (same dates) but not Highlands (different dates).
+// Selecting Danube blocks nothing by overlap (every Tour has its own week).
 {
   const selected = new Set(['danube-tour']);
   check('Danube selected -> Danube reports "selected"', getSelectionState('danube-tour', views, selected) === 'selected');
-  check('Danube selected -> Coastal becomes "overlap"', getSelectionState('coastal-tour', views, selected) === 'overlap');
+  check('Danube selected -> Coastal stays "available" (own week)', getSelectionState('coastal-tour', views, selected) === 'available');
   check('Danube selected -> Highlands (week 2, already started on 2026-09-06) is "started"', getSelectionState('highlands-tour', views, selected) === 'started');
 }
 
-// Symmetric: selecting Coastal instead blocks Danube.
-{
-  const selected = new Set(['coastal-tour']);
-  check('Coastal selected -> Danube becomes "overlap"', getSelectionState('danube-tour', views, selected) === 'overlap');
-}
 
 // Season limit: 3 non-overlapping picks -> the 4th (non-overlapping) Tour is "season-limit".
 {
@@ -55,22 +50,22 @@ check('Danube and Coastal share the same real date range (intentional overlap)',
     getSelectionState('danube-tour', views, selected) === 'selected');
 }
 
-// Overlap is checked before the season limit for a Tour that is both full-blocked and overlapping.
+// With one Tour per week the season limit is the only blocker.
 {
   const selected = new Set(['danube-tour', 'highlands-tour', 'northern-crown-tour']);
-  check('3/3 selected + overlapping -> reports "overlap", not silently "season-limit"',
-    getSelectionState('coastal-tour', views, selected) === 'overlap');
+  check('3/3 selected -> Coastal is "season-limit" (no overlap rule involved)', getSelectionState('coastal-tour', views, selected) === 'season-limit');
 }
 
+void coastal;
 void silverHorizon;
 
 // A Tour whose week started cannot be joined late; the next Tour stays open.
 {
   const none = new Set<string>();
   check('past Tour (Highlands, week 2) -> "started" with nothing selected', getSelectionState('highlands-tour', views, none) === 'started');
-  const monday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-14T00:00:01Z')));
-  check('Danube on its first day (Mon of week 5) -> "started"', getSelectionState('danube-tour', monday, none) === 'started');
-  const sunday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-13T23:00:00Z')));
+  const monday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-07T00:00:01Z')));
+  check('Danube on its first day (Mon of week 4) -> "started"', getSelectionState('danube-tour', monday, none) === 'started');
+  const sunday = getSeasonSchedule(getCurrentSeasonInfo(new Date('2026-09-06T23:00:00Z')));
   check('Danube the evening before it starts -> still "available"', getSelectionState('danube-tour', sunday, none) === 'available');
   check('a Rider who already selected a Tour keeps "selected" after it starts',
     getSelectionState('danube-tour', monday, new Set(['danube-tour'])) === 'selected');
@@ -83,9 +78,9 @@ void silverHorizon;
   const d2 = v2.find((v) => v.tour.id === 'danube-tour')!;
   check('season 2 is current on 2026-11-14', s2.seasonId === 'season-2', s2.seasonId);
   check('season 2 has the same 5 Tours', v2.length === 5, `${v2.length}`);
-  check('season 2 Danube is week 5', d2.schedule.weekNumber === 5);
-  check('season 2 Danube starts 2026-11-23', d2.weekStart.toISOString().slice(0, 10) === '2026-11-23', d2.weekStart.toISOString());
-  check('season 2 Danube ends 2026-11-29', d2.weekEnd.toISOString().slice(0, 10) === '2026-11-29', d2.weekEnd.toISOString());
+  check('season 2 Danube is week 4 (same calendar every season)', d2.schedule.weekNumber === 4);
+  check('season 2 Danube starts 2026-11-16', d2.weekStart.toISOString().slice(0, 10) === '2026-11-16', d2.weekStart.toISOString());
+  check('season 2 Danube ends 2026-11-22', d2.weekEnd.toISOString().slice(0, 10) === '2026-11-22', d2.weekEnd.toISOString());
 }
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
