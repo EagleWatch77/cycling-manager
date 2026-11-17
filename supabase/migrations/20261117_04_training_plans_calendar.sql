@@ -417,8 +417,9 @@ $$;
 revoke all on function public.apply_development_plan_v2(uuid) from public, anon, authenticated;
 
 -- ---- 5. sessions + configurable calendar + no skipped items in the Rider State loop --------------------------------
--- the instant a stage was CREDITED to a week: its own time, or the cursor when it was reported after its week had been evaluated (see the loop below)
-alter table public.rider_load_events add column if not exists credited_at timestamptz;
+-- A stage reported AFTER its own game week was already evaluated is DEFERRED (deferred_at is set): it is never applied to Energy/Fatigue, never counted in any
+-- week and never moved into another week. Its proper processing is decided together with the Race Engine (see rider_deferred_stage_loads()).
+alter table public.rider_load_events add column if not exists deferred_at timestamptz;
 
 create or replace function public.rider_state_catch_up_internal(p_rider uuid, p_now timestamptz)
 returns void
@@ -463,6 +464,11 @@ begin
   v_sess_floor := r.state_at;                                     -- a session at or before the processed-up-to instant counts as done
   v_anchor := (public.game_season_one_start())::timestamp at time zone 'utc';   -- the ONE configurable season start (a Monday, 00:00 UTC)
 
+  -- stages of a week that was already evaluated before this pass (their week is behind the open week): marked for later processing, nothing else happens to them
+  update public.rider_load_events ev set deferred_at = p_now
+   where ev.rider_id = p_rider and ev.applied_at is null and ev.deferred_at is null
+     and ev.at < v_anchor + floor(extract(epoch from (v_cursor - v_anchor)) / 604800)::bigint * interval '168 hours';
+
   v_cond := r.condition;
   e := (v_cond ->> 'energy')::float8; f := (v_cond ->> 'fatigue')::float8; k := (v_cond ->> 'fitness')::float8; form := (v_cond ->> 'form')::float8;
   peak := r.fitness_peak;
@@ -488,7 +494,7 @@ begin
     v_wk := (mod(v_week, 10) + 1)::int;
     select * into pl from public.training_plans tp where tp.rider_id = p_rider and tp.season_id = v_season and tp.week_number = v_wk;
     select ev.id, ev.at, ev.energy_base, ev.fatigue_base into v_ev_id, v_ev_at, v_ev_e, v_ev_f
-      from public.rider_load_events ev where ev.rider_id = p_rider and ev.applied_at is null and ev.at <= p_now order by ev.at, ev.id limit 1;
+      from public.rider_load_events ev where ev.rider_id = p_rider and ev.applied_at is null and ev.deferred_at is null and ev.at <= p_now order by ev.at, ev.id limit 1;
     v_ev_time := case when v_ev_id is null then null else greatest(v_ev_at, v_cursor) end;   -- a load reported late is applied at the cursor
     -- the next training session of a V2 plan of this week (legacy V1 plans have none: their load is applied at the week end)
     v_sess_time := null; v_n_sess := 0;
@@ -533,11 +539,10 @@ begin
       end if;
 
       v_ws := ((v_boundary - interval '168 hours') at time zone 'utc')::date;
-      -- race units of the stages CREDITED to this week (each stage exactly once; a stage reported after its week was evaluated counts in the open week,
-      -- closed weeks are never re-evaluated)
+      -- race units of the stages of THIS week that were applied (each stage exactly once, in its own race week; deferred stages are never counted)
       select coalesce(sum(ev.race_units), 0) into v_race from public.rider_load_events ev
        where ev.rider_id = p_rider and ev.applied_at is not null
-         and coalesce(ev.credited_at, ev.at) >= v_boundary - interval '168 hours' and coalesce(ev.credited_at, ev.at) < v_boundary;
+         and ev.at >= v_boundary - interval '168 hours' and ev.at < v_boundary;
       v_l := v_units + v_race;
       v_raw := 1 - exp(-v_l / c_sat);
       v_o := greatest(least(greatest((f - c_ov_f_from) / c_ov_f_span, 0), 1), least(greatest((c_ov_e_below - e) / c_ov_e_below, 0), 1));
@@ -571,7 +576,7 @@ begin
       -- a stage / other load at its exact time, applied exactly once
       e := greatest(0, e - v_ev_e * r.energy_efficiency);
       f := least(100, f + v_ev_f * r.fatigue_resistance);
-      update public.rider_load_events set applied_at = p_now, credited_at = v_t where id = v_ev_id;   -- v_t = max(stage time, cursor): a late stage counts in the OPEN week
+      update public.rider_load_events set applied_at = p_now where id = v_ev_id;
     else
       -- a training session of a V2 plan: readiness BEFORE it is recorded (efficiency of the week's progress), then its equal part of the weekly load,
       -- scaled by this rider's individual coefficients
@@ -689,3 +694,12 @@ end;
 $$;
 revoke all on function public.process_my_due_training() from public, anon, authenticated;
 grant execute on function public.process_my_due_training() to authenticated;
+
+-- Stages waiting for their proper processing (reported after their week was evaluated). Read-only list for the database owner / the Race Engine.
+create or replace function public.rider_deferred_stage_loads()
+returns table (rider_id uuid, source_key text, stage_at timestamptz, race_units float8, deferred_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select ev.rider_id, ev.source_key, ev.at, ev.race_units, ev.deferred_at from public.rider_load_events ev
+   where ev.deferred_at is not null and ev.applied_at is null order by ev.at, ev.id;
+$$;
+revoke all on function public.rider_deferred_stage_loads() from public, anon, authenticated;

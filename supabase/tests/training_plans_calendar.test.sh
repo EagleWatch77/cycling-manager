@@ -117,6 +117,14 @@ has "a processed plan can never be changed" "$(as $P1 "select * from public.save
 q "insert into public.tour_schedule (tour_id, week_number) values ('test-tour-here', $TARGET) on conflict (tour_id) do update set week_number = excluded.week_number; insert into public.tour_registrations (rider_id, tour_id, season_id) values ('$R2','test-tour-here','$TSEASON')" >/dev/null
 has "a rider registered for a Tour in that week cannot plan (defence in depth)" "$(as $P2 "select * from public.save_my_development_plan(2,'full');")" "tour_conflict"
 q "delete from public.tour_registrations where tour_id = 'test-tour-here'; delete from public.tour_schedule where tour_id = 'test-tour-here'; delete from public.training_plans;" >/dev/null
+# week 1 of a season (the first week is a TRAINING week): in the last week of a season (10) the plan for week 1 of the NEXT season can be saved
+setweek 10
+HM=$(q "select extract(isodow from now() at time zone 'utc')::int * 100 + extract(hour from now() at time zone 'utc')::int")
+if [ "$HM" -ge 100 ] && [ "$HM" -le 117 ]; then ok "week 1 save check skipped: today is Monday before 18:00 UTC (the open window is the one of week 10 itself)"; else
+  eq "week 1 of the next season is plannable during week 10: stored for week 1 of season-2 (a training week)" "$(as $P1 "select week_number || ':' || season_id || ':' || mode from public.save_my_development_plan(6,'basic');")" "1:season-2:basic"
+  eq "and it can be changed until the deadline" "$(as $P1 "select plan_id || ':' || mode from public.save_my_development_plan(0,'full');")" "0:full"
+fi
+q "delete from public.training_plans" >/dev/null
 q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
 
 echo "== sessions in the Rider State loop == TypeScript (Full Tue/Thu/Sat, Basic Tue/Fri, stages in race weeks)"
@@ -186,7 +194,7 @@ eq "after the following calls the rider is up to date" "$(q "select state_at = $
 eq "every game week of those 36 years was evaluated exactly once (1900 completed weeks)" "$(q "select count(*) || ':' || count(distinct week_start) from public.rider_weekly_state where rider_id='$RL'")" "1900:1900"
 eq "every plan (900 odd training weeks) got its 3 sessions and was applied once" "$(q "select count(*) filter (where readiness_n = 3 and applied_at is not null) || '/' || count(*) from public.training_plans where rider_id='$RL'")" "900/900"
 
-echo "== a stage that arrives after its week was closed (late stage): counted ONCE, closed weeks untouched, == TypeScript"
+echo "== a stage that arrives after its week was closed (late stage): DEFERRED, never applied or counted in another week, == TypeScript"
 q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
 RS=$(mk $(mkplayer) late)
 python3 - "$STATE" "$RS" > "$DIR/late.sql" <<'PY'
@@ -209,14 +217,17 @@ o=json.load(open(sys.argv[1]))['late']['after2']; got=[float(x) for x in sys.arg
 print(all(abs(a-b)<1e-7 for a,b in zip(got,[o['energy'],o['fatigue'],o['fitness'],o['form']])))
 PY
 )
-eq "state after the late report == TypeScript (Energy, Fatigue, Fitness, Form)" "$RES" "True"
-eq "weekly race units: week 0 keeps its own stage, week 1 none, the LATE stage is credited to the open week 2" "$(q "select string_agg(race_units::text, ',' order by week_start) from public.rider_weekly_state where rider_id='$RS'")" "0.25,0,0.25"
-eq "no stage is lost or counted twice: the sum of all weeks = both stages" "$(q "select sum(race_units) from public.rider_weekly_state where rider_id='$RS'")" "0.5"
-eq "both stages are applied exactly once" "$(q "select count(*) filter (where applied_at is not null) || '/' || count(*) from public.rider_load_events where rider_id='$RS'")" "2/2"
+eq "state after the late report == TypeScript (the late stage changes nothing: Energy, Fatigue, Fitness, Form)" "$RES" "True"
+eq "weekly race units: week 0 keeps its own stage, no later training/race week gets any from the late stage" "$(q "select string_agg(race_units::text, ',' order by week_start) from public.rider_weekly_state where rider_id='$RS'")" "0.25,0,0"
+eq "only the on-time stage was applied; the late one is marked deferred and NOT applied" "$(q "select count(*) filter (where applied_at is not null) || '/' || count(*) filter (where deferred_at is not null and applied_at is null) || '/' || count(*) from public.rider_load_events where rider_id='$RS'")" "1/1/2"
+eq "the deferred stage is the late one and the owner list shows exactly it (for the later processing)" "$(q "select string_agg(source_key, ',') from public.rider_deferred_stage_loads() where rider_id='$RS'")" "late-late"
+has "clients cannot read the deferred list" "$(printf "set role authenticated;\nselect * from public.rider_deferred_stage_loads();\n" | psqlc t)" "permission denied"
 BEFORE=$(q "select condition::text || state_at::text from public.riders where id='$RS'")
 q "select public.rider_state_catch_up_internal('$RS', timestamptz '$T2')" >/dev/null
 eq "a repeated call at the same instant changes nothing (no double count)" "$(q "select condition::text || state_at::text from public.riders where id='$RS'")" "$BEFORE"
-eq "weeks that were already evaluated were not rewritten (still exactly 3 weekly rows)" "$(q "select count(*) from public.rider_weekly_state where rider_id='$RS'")" "3"
+q "select public.rider_state_catch_up_internal('$RS', timestamptz '$T2' + interval '1000 hours')" >/dev/null
+eq "even a much later call never applies or counts the deferred stage (still 1 applied, 1 deferred)" "$(q "select count(*) filter (where applied_at is not null) || '/' || count(*) filter (where deferred_at is not null and applied_at is null) from public.rider_load_events where rider_id='$RS'")" "1/1"
+eq "...and the race units of every evaluated week still total 0.25" "$(q "select sum(race_units) from public.rider_weekly_state where rider_id='$RS'")" "0.25"
 
 echo "== catch-up before a stage is really FINISHED (not postponed): complete / many"
 q "update public.game_calendar_settings set season_one_start = date '1990-01-01'" >/dev/null

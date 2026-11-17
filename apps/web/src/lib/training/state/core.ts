@@ -114,15 +114,20 @@ export const sessionDaysOf = (mode: 'full' | 'basic'): readonly number[] => C.tr
  * (both mutated); a session at or before `lastAt` counts as done (a plan can only be saved before its first session, so nothing is skipped by mistake).
  */
 export function catchUp(start: StateRider, lastAt: number, now: number, inp: DayInputs, history: Map<number, number> = new Map(), applied: Set<number> = new Set(),
-  sessions: Map<number, { n: number; sum: number }> = new Map(), credited: Map<number, number> = new Map()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
+  sessions: Map<number, { n: number; sum: number }> = new Map(), deferred: Set<number> = new Set()): { rider: StateRider; lastAt: number; weeks: WeekRecord[] } {
   let r = start, cursor = lastAt, sessFloor = lastAt; const weeks: WeekRecord[] = [];
   if (now <= lastAt) return { rider: r, lastAt, weeks };
+  // A stage that belongs to a week that was ALREADY evaluated (reported too late) is never applied to this rider's current state and never counted: it is
+  // DEFERRED (marked) for a later, explicit processing together with the Race Engine. It must not charge Energy/Fatigue of another week or add race
+  // units to a training week; nothing is counted twice because a deferred stage is never applied here.
+  const openWeekStart = Math.floor(lastAt / WEEK_SECONDS) * WEEK_SECONDS;
+  for (const e of inp.events) if (!applied.has(e.id) && e.at < openWeekStart) deferred.add(e.id);
   let complete = false;
   for (let guard = 0; guard < C.maxCatchUpItems; guard++) {
     const week = Math.floor(cursor / WEEK_SECONDS);           // the week the cursor is in; its end is the next boundary
     const boundary = weekEnd(week);
     let next: LoadEvent | undefined;
-    for (const e of inp.events) if (!applied.has(e.id) && e.at <= now && (!next || e.at < next.at || (e.at === next.at && e.id < next.id))) next = e;
+    for (const e of inp.events) if (!applied.has(e.id) && !deferred.has(e.id) && e.at <= now && (!next || e.at < next.at || (e.at === next.at && e.id < next.id))) next = e;
     const evTime = next ? Math.max(next.at, cursor) : Infinity;
     const plan = inp.plans.get(week);
     let sessT = Infinity, sessN = 0;
@@ -137,9 +142,8 @@ export function catchUp(start: StateRider, lastAt: number, now: number, inp: Day
       const done = sessions.get(week);
       const units = plan === undefined ? 0 : typeof plan === 'number' ? plan : plan.units * (done?.n ?? 0) / sessN;
       if (typeof plan === 'number' && units > 0) { const l = trainingLoad(units); r = applyLoad(r, l.energy, l.fatigue); }
-      // A stage's race units are counted in the week they were CREDITED: normally its own week; a stage reported after its week was already evaluated is
-      // credited to the open week in which it is applied (the closed week is never re-evaluated). Each event is counted exactly once.
-      const raceUnits = inp.events.filter((e) => { const c = credited.get(e.id) ?? e.at; return applied.has(e.id) && c >= week * WEEK_SECONDS && c < boundary; }).reduce((s, e) => s + e.raceUnits, 0);
+      // race units of the stages of THIS week that were applied (each stage counts exactly once, in its own race week)
+      const raceUnits = inp.events.filter((e) => applied.has(e.id) && e.at >= week * WEEK_SECONDS && e.at < boundary).reduce((s, e) => s + e.raceUnits, 0);
       const stim = weeklyStimulus(units + raceUnits, r.energy, r.fatigue);
       const fit = fitnessWeek(r, stim);
       const rr = { ...r, fitness: fit, fitnessPeak: Math.max(r.fitnessPeak, fit) };
@@ -149,7 +153,7 @@ export function catchUp(start: StateRider, lastAt: number, now: number, inp: Day
       r = { ...rr, form };
       weeks.push({ week, trainingUnits: units, raceUnits, stimulus: stim, energyEnd: r.energy, fatigueEnd: r.fatigue, fitnessEnd: fit, formEnd: form,
         sessionsDone: done?.n ?? 0, readinessAvg: done && done.n > 0 ? done.sum / done.n : null });
-    } else if (takeEvent && next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id); credited.set(next.id, t);
+    } else if (takeEvent && next) { r = applyLoad(r, next.energy, next.fatigue); applied.add(next.id);
     } else if (takeSession && typeof plan === 'object') {
       const d = sessions.get(week) ?? { n: 0, sum: 0 };
       sessions.set(week, { n: d.n + 1, sum: d.sum + (r.energy + (100 - r.fatigue)) / 2 });   // readiness BEFORE the session

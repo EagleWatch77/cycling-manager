@@ -10,8 +10,9 @@ import type { StateRider } from './config';
  * 2. FRESHNESS - before a stage the engine calls rider_state_catch_up_many(entrants, stage_start_time). It returns the number of entrants that are STILL NOT
  *    caught up (a very long offline period needs several 4000-item passes; the function repeats them, up to 50). The stage may start ONLY when it returns 0 -
  *    otherwise call it again. Nobody starts with a stale state. The stage's own load is recorded with the time it ends.
- * 2b. LATE STAGES - a stage reported after its week was already evaluated is charged to Energy/Fatigue at the cursor and its race units are credited ONCE
- *    to the open week (Fitness/Form of closed weeks are never rewritten, nothing is counted twice).
+ * 2b. LATE STAGES - a stage reported after ITS OWN game week was already evaluated is DEFERRED (rider_load_events.deferred_at): it is never applied to
+ *    Energy/Fatigue, never counted in any week and never moved into another week (so a training week can never receive wrong race progress, and nothing is
+ *    counted twice). The list is rider_deferred_stage_loads(); how such a stage is finally processed is decided together with the Race Engine.
  * 3. NO DOUBLE COUNTING - Form is a displayed SUMMARY of Fitness, Energy, Fatigue and 3-week preparedness; it is NOT an input of the race maths.
  *    The engine uses these separate, non-overlapping modifiers (performanceInputs): Energy and Fatigue (direct, per stage), Fitness (long-term physical
  *    level) and a SMALL preparedness effect. Morale touches only the five tactical attributes (+-2 %) and never OVR or the physical attributes.

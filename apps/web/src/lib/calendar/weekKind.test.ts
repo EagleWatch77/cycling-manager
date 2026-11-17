@@ -25,6 +25,11 @@ check('Monday 18:00 of week 5 locks week 5 (no target during race week 6)', tgt(
 check('Monday 18:00 of week 9 -> week 10 is a race week -> nothing', tgt(T(9, 0, 18)) === 'none');
 check('Monday 18:00 of week 10 opens week 1 of the NEXT season (window crosses the season boundary)', tgt(T(10, 0, 17, 59)) === 'none' && tgt(T(10, 0, 18)) === '2:1' && tgt(T(10, 6, 23, 59)) === '2:1');
 check('week 1 of season 2 stays open until its Monday 18:00', tgt(T(1, 0, 17, 59, 59, 1)) === '2:1' && tgt(T(1, 0, 18, 0, 0, 1)) === 'none');
+// WEEK 1 of the very first season: it is a training week and its plan can be set until Monday 18:00 UTC of week 1 (and, before the season starts, already now)
+check('week 1 is a training week', weekKind(1) === 'training');
+check('season 1, week 1: plannable until Monday 17:59:59, locked from 18:00:00', tgt(T(1, 0, 17, 59, 59)) === '1:1' && tgt(T(1, 0, 18)) === 'none' && tgt(T(1, 3)) === 'none');
+check('before the season starts (pre-season) week 1 is already plannable', tgt(new Date(start - 6 * 86400_000)) === '1:1' && tgt(new Date(start - 86400_000)) === '1:1');
+check('the window for week 1 of season 1 closes exactly at its first Monday 18:00 UTC (the first session is Tuesday 12:00)', tgt(new Date(start + 18 * 3600_000 - 1000)) === '1:1' && tgt(new Date(start + 18 * 3600_000)) === 'none');
 // a plan can never be created for a week that has started: the target week is always strictly in the future or the very Monday before 18:00
 {
   let bad = 0;

@@ -57,17 +57,17 @@ for (const s of v2scenarios) {
   const res = v2calls.map((c) => catchUp(r, 0, c.at, { plans, events }));
   outV2[s.name] = { after: res.map((x) => x.rider), weeks: res.map((x) => x.weeks.map((w) => ({ week: w.week, trainingUnits: w.trainingUnits, sessionsDone: w.sessionsDone, readinessAvg: w.readinessAvg }))) };
 }
-// LATE STAGE: a stage of week 0 reported while the rider is already in week 2 (its week was evaluated). Two calls: before and after the late report.
+// LATE STAGE: a stage of week 0 reported while the rider is already in week 2 (its week was evaluated): it is DEFERRED. Two calls: before and after the late report.
 const lateStart: StateRider = { age: 25, vitality: 60, trainability: 60, professionalism: 60, recovery: 50, energyEff: 1.1, fatigueRes: 0.9, recoveryCoef: 1.05, energy: 85, fatigue: 15, form: 70, fitness: 68, fitnessPeak: 72, morale: 70 };
 const W7 = 7 * SECONDS_PER_DAY, anchorMs = Date.parse(`${CALENDAR_ANCHOR}`.length > 10 ? CALENDAR_ANCHOR : `${CALENDAR_ANCHOR}T00:00:00Z`);
 const isoAt = (sec: number) => new Date(anchorMs + sec * 1000).toISOString().replace('T', ' ').replace('Z', '+00');
 const evBase: LoadEvent = { id: 1, at: 2 * SECONDS_PER_DAY, energy: 16, fatigue: 11, raceUnits: C.stageReference.raceUnits };
 const evLate: LoadEvent = { id: 2, at: 3 * SECONDS_PER_DAY, energy: 16, fatigue: 11, raceUnits: C.stageReference.raceUnits };
-const lh = new Map<number, number>(), la = new Set<number>(), ls = new Map<number, { n: number; sum: number }>(), lc = new Map<number, number>();
+const lh = new Map<number, number>(), la = new Set<number>(), ls = new Map<number, { n: number; sum: number }>(), ld = new Set<number>();
 const noPl = new Map<number, PlanLoad>();
 const lt1 = 2 * W7 + SECONDS_PER_DAY, lt2 = 3 * W7 + 5 * 3600;
-const l1 = catchUp(lateStart, 0, lt1, { plans: noPl, events: [evBase] }, lh, la, ls, lc);
-const l2 = catchUp(l1.rider, l1.lastAt, lt2, { plans: noPl, events: [evBase, evLate] }, lh, la, ls, lc);
+const l1 = catchUp(lateStart, 0, lt1, { plans: noPl, events: [evBase] }, lh, la, ls, ld);
+const l2 = catchUp(l1.rider, l1.lastAt, lt2, { plans: noPl, events: [evBase, evLate] }, lh, la, ls, ld);
 const late = { start: lateStart, atBase: evBase.at, atLate: evLate.at, t1: isoAt(lt1), t2: isoAt(lt2), after1: l1.rider, after2: l2.rider,
-  raceUnits: [...l1.weeks, ...l2.weeks].map((w) => ({ week: w.week, raceUnits: w.raceUnits })) };
+  raceUnits: [...l1.weeks, ...l2.weeks].map((w) => ({ week: w.week, raceUnits: w.raceUnits })), deferred: [...ld] };
 console.log(JSON.stringify({ anchor: CALENDAR_ANCHOR, calls, scenarios, out, v2calls, v2scenarios, outV2, late }));
