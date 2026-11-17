@@ -824,5 +824,7 @@
   "trainingPlans.activeEvaluation": "evaluación de la semana el lunes 00:00 UTC",
   "trainingPlans.activeLocked": "El plan está bloqueado desde el lunes a las 18:00 UTC.",
   "trainingPlans.blockedCalendar": "El calendario no coincide con la base de datos; la planificación está en pausa.",
-  "calendar.mismatch": "Las fechas no se pueden verificar ahora: el calendario web no coincide con la base de datos."
+  "calendar.mismatch": "Las fechas no se pueden verificar ahora: el calendario web no coincide con la base de datos.",
+  "trainingPlans.activeEditable": "Aún puedes cambiar el plan hasta el lunes a las 18:00 UTC (formulario abajo).",
+  "trainingPlans.activeNoPlanOpen": "Aún no tienes plan para esta semana. Puedes elegirlo abajo hasta el lunes a las 18:00 UTC."
 }

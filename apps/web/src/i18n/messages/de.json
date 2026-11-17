@@ -824,5 +824,7 @@
   "trainingPlans.activeEvaluation": "Wochenauswertung am Montag 00:00 UTC",
   "trainingPlans.activeLocked": "Der Plan ist seit Montag 18:00 UTC gesperrt.",
   "trainingPlans.blockedCalendar": "Der Kalender stimmt nicht mit der Datenbank überein, die Planung ist vorübergehend pausiert.",
-  "calendar.mismatch": "Die Termine lassen sich gerade nicht bestätigen: Der Kalender der Website stimmt nicht mit der Datenbank überein."
+  "calendar.mismatch": "Die Termine lassen sich gerade nicht bestätigen: Der Kalender der Website stimmt nicht mit der Datenbank überein.",
+  "trainingPlans.activeEditable": "Der Plan ist bis Montag 18:00 UTC noch änderbar (Formular unten).",
+  "trainingPlans.activeNoPlanOpen": "Für diese Woche hast du noch keinen Plan. Du kannst ihn unten bis Montag 18:00 UTC wählen."
 }

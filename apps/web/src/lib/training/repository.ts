@@ -86,7 +86,7 @@ export async function listRecentCompletedTrainings(limit = 3): Promise<TrainingP
 
 export type SaveTrainingResult =
   | { ok: true; plan: TrainingPlan }
-  | { ok: false; reason: 'no-rider' | 'invalid-focus' | 'already-planned' | 'tour-conflict' | 'no-plannable-week' | 'error' };
+  | { ok: false; reason: 'no-rider' | 'invalid-focus' | 'already-planned' | 'tour-conflict' | 'no-plannable-week' | 'legacy-closed' | 'error' };
 
 /**
  * Saves the current player's training plan for the one week that's ever
@@ -127,6 +127,7 @@ export async function saveTrainingPlan(input: {
     if (msg.includes('already_planned')) return { ok: false, reason: 'already-planned' };
     if (msg.includes('tour_conflict')) return { ok: false, reason: 'tour-conflict' };
     if (msg.includes('no_plannable_week')) return { ok: false, reason: 'no-plannable-week' };
+    if (msg.includes('legacy_planning_closed')) return { ok: false, reason: 'legacy-closed' };
     return { ok: false, reason: 'error' };
   }
   if (!data) return { ok: false, reason: 'error' };

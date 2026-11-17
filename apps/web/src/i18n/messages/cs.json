@@ -824,5 +824,7 @@
   "trainingPlans.activeEvaluation": "vyhodnocení týdne v pondělí 00:00 UTC",
   "trainingPlans.activeLocked": "Plán je od pondělí 18:00 UTC uzamčen.",
   "trainingPlans.blockedCalendar": "Kalendář se neshoduje s databází, plánování je dočasně pozastaveno.",
-  "calendar.mismatch": "Termíny se momentálně nedají ověřit, kalendář webu se neshoduje s databází. Správce to řeší."
+  "calendar.mismatch": "Termíny se momentálně nedají ověřit, kalendář webu se neshoduje s databází. Správce to řeší.",
+  "trainingPlans.activeEditable": "Plán můžeš ještě měnit do pondělí 18:00 UTC (formulář níže).",
+  "trainingPlans.activeNoPlanOpen": "Na tento týden ještě nemáš plán. Můžeš ho zvolit níže do pondělí 18:00 UTC."
 }

@@ -1,4 +1,5 @@
-import { buildActiveWeek } from './activeWeek';
+import { buildActiveWeek, isPlanFormLocked } from './activeWeek';
+import { trainingTarget } from '@/lib/calendar/weekKind';
 let ok = 0, bad = 0;
 const check = (n: string, c: boolean) => { c ? ok++ : (bad++, console.log('  FAIL', n)); };
 const mon = new Date('2026-08-17T00:00:00Z');                      // week 1 (a training week) of season 1
@@ -20,4 +21,15 @@ check('Basic has Tue/Fri (days 1,4); 1 of 2 done on Wednesday', b.kind === 'plan
 check('no plan chosen in a training week -> a clear "no-plan" state (never silently empty)', buildActiveWeek({ ...base, now: at('2026-08-19T08:00:00Z'), plan: null }).kind === 'no-plan');
 check('an old single-focus plan of that week is reported as legacy, not as "no plan"', buildActiveWeek({ ...base, now: at('2026-08-19T08:00:00Z'), plan: null, hasLegacyPlan: true }).kind === 'legacy-plan');
 check('race week (even) -> no regular training, whatever plan rows exist', buildActiveWeek({ ...base, weekNumber: 2, weekStart: new Date('2026-08-24T00:00:00Z'), now: at('2026-08-25T08:00:00Z'), plan: { planId: 1, mode: 'full' } }).kind === 'race-week');
+// BEFORE Monday 18:00 UTC the plan of the current training week is still EDITABLE (not locked); from 18:00 it is locked
+const pl = { planId: 3, mode: 'basic' as const };
+const w = (now: string, plan: typeof pl | null) => buildActiveWeek({ ...base, now: at(now), plan });
+check('Monday 17:59:59 with a saved plan: editable (not locked)', (() => { const a = w('2026-08-17T17:59:59Z', pl); return a.kind === 'plan' && a.editable; })());
+check('Monday 18:00:00 with a saved plan: locked', (() => { const a = w('2026-08-17T18:00:00Z', pl); return a.kind === 'plan' && !a.editable; })());
+check('Monday morning without a plan: "no plan yet" and still editable (the deadline has NOT passed)', (() => { const a = w('2026-08-17T09:00:00Z', null); return a.kind === 'no-plan' && a.editable; })());
+check('Wednesday without a plan: deadline passed, not editable', (() => { const a = w('2026-08-19T09:00:00Z', null); return a.kind === 'no-plan' && !a.editable; })());
+// the planner form: the target of the form at Monday 17:59:59 is THIS week (the same one the card shows) and a saved, unprocessed plan keeps it unlocked
+const sat = (iso: string) => { const t = trainingTarget(at(iso)); return t ? `${t.seasonNumber}:${t.week}` : 'none'; };
+check('at Monday 17:59:59 of week 1 the form plans week 1 (current week); at 18:00 nothing is open (week 2 is a race week)', sat('2026-08-17T17:59:59Z') === '1:1' && sat('2026-08-17T18:00:00Z') === 'none');
+check('a saved, not yet processed plan does not lock the form; a processed one or a blocked week does', !isPlanFormLocked({ applied: false }, null) && isPlanFormLocked({ applied: true }, null) && isPlanFormLocked(null, 'race-week') && !isPlanFormLocked(null, null));
 console.log(`${ok} passed, ${bad} failed`); process.exit(bad ? 1 : 0);

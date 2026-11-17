@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SaveDevelopmentPlanResult } from '@/lib/training/developmentPlan';
 import type { TrainingMode } from '@/lib/training/development/config';
+import { isPlanFormLocked } from '@/lib/training/activeWeek';
 
 export interface PlanOption { id: number; name: string; main: string[]; supplementary: string[] }
 
@@ -36,7 +37,7 @@ export function DevelopmentPlanForm(props: {
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const locked = props.saved?.applied === true || props.blocked != null;
+  const locked = isPlanFormLocked(props.saved, props.blocked);
   const dirty = props.saved == null || props.saved.planId !== planId || props.saved.mode !== mode;
 
   const submit = () => {

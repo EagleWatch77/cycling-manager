@@ -824,5 +824,7 @@
   "trainingPlans.activeEvaluation": "podsumowanie tygodnia w poniedziałek 00:00 UTC",
   "trainingPlans.activeLocked": "Plan jest zablokowany od poniedziałku 18:00 UTC.",
   "trainingPlans.blockedCalendar": "Kalendarz nie zgadza się z bazą danych, planowanie jest wstrzymane.",
-  "calendar.mismatch": "Terminów nie można teraz zweryfikować: kalendarz strony nie zgadza się z bazą danych."
+  "calendar.mismatch": "Terminów nie można teraz zweryfikować: kalendarz strony nie zgadza się z bazą danych.",
+  "trainingPlans.activeEditable": "Plan możesz jeszcze zmienić do poniedziałku 18:00 UTC (formularz poniżej).",
+  "trainingPlans.activeNoPlanOpen": "Nie masz jeszcze planu na ten tydzień. Możesz go wybrać poniżej do poniedziałku 18:00 UTC."
 }

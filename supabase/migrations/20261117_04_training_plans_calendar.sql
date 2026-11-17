@@ -623,19 +623,36 @@ end;
 $$;
 revoke all on function public.rider_state_catch_up_complete(uuid, timestamptz, int) from public, anon, authenticated;
 
--- Race Engine interface: before a stage starts EVERY entrant must be fully caught up to the stage start. Returns the number of riders that are STILL NOT
--- caught up (0 = all ready: only then may the stage start). It never raises over an unfinished rider, so the progress already made is kept; call it
--- again until it returns 0.
+-- Race Engine interface: the state of EVERY entrant at the stage start. Status per requested rider:
+--   ready   = the state is exactly at p_now (caught up now if needed);
+--   behind  = could not be finished within p_max_passes (progress is kept; call again);
+--   ahead   = the rider's state was already moved PAST p_now (e.g. the owner opened the profile after the start): the state at p_now can not be rebuilt;
+--   missing = the id is not a rider.
+-- Only when every entrant is 'ready' may the stage start.
+create or replace function public.rider_state_catch_up_report(p_riders uuid[], p_now timestamptz, p_max_passes int default 50)
+returns table (rider_id uuid, status text) language plpgsql security definer set search_path = public as $$
+declare v_id uuid; v_at timestamptz;
+begin
+  for v_id in select distinct x from unnest(p_riders) x loop
+    select r.state_at into v_at from public.riders r where r.id = v_id;
+    rider_id := v_id;
+    if not found then status := 'missing';
+    elsif v_at > p_now then status := 'ahead';
+    elsif v_at = p_now then status := 'ready';
+    elsif public.rider_state_catch_up_complete(v_id, p_now, p_max_passes) then status := 'ready';
+    else status := 'behind';
+    end if;
+    return next;
+  end loop;
+end;
+$$;
+revoke all on function public.rider_state_catch_up_report(uuid[], timestamptz, int) from public, anon, authenticated;
+
+-- Returns the number of requested riders that are NOT ready (behind, ahead or missing). 0 = the stage may start. Never raises, so progress already made is kept.
 drop function if exists public.rider_state_catch_up_many(uuid[], timestamptz);
 create or replace function public.rider_state_catch_up_many(p_riders uuid[], p_now timestamptz, p_max_passes int default 50)
-returns int language plpgsql security definer set search_path = public as $$
-declare v_id uuid; v_left int := 0;
-begin
-  for v_id in select id from public.riders where id = any (p_riders) and state_at < p_now loop
-    if not public.rider_state_catch_up_complete(v_id, p_now, p_max_passes) then v_left := v_left + 1; end if;
-  end loop;
-  return v_left;
-end;
+returns int language sql security definer set search_path = public as $$
+  select count(*)::int from public.rider_state_catch_up_report(p_riders, p_now, p_max_passes) where status <> 'ready';
 $$;
 revoke all on function public.rider_state_catch_up_many(uuid[], timestamptz, int) from public, anon, authenticated;
 
@@ -703,3 +720,83 @@ language sql stable security definer set search_path = public as $$
    where ev.deferred_at is not null and ev.applied_at is null order by ev.at, ev.id;
 $$;
 revoke all on function public.rider_deferred_stage_loads() from public, anon, authenticated;
+
+-- ---- the OLD single-focus save: closed / limited once the ONE calendar is active (copy of the 20261115_02 version with the guard) ----
+create or replace function public.save_my_training_plan(p_week_type text, p_focus text, p_intensity text)
+returns public.training_plans
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_rider uuid;
+  v_intensity text;
+  v_now timestamptz := clock_timestamp();
+  v_season text;
+  v_week int;
+  v_row public.training_plans;
+begin
+  if v_uid is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  select id into v_rider from public.riders where player_id = v_uid;
+  if v_rider is null then
+    raise exception 'no_rider';
+  end if;
+
+  if p_week_type = 'performance' then
+    if p_intensity is null or p_intensity not in ('light', 'normal', 'hard')
+       or p_focus is null or not public.is_performance_attribute(p_focus) then
+      raise exception 'invalid_focus';
+    end if;
+    v_intensity := p_intensity;
+  elsif p_week_type = 'technical' then
+    if p_focus is null or not public.is_technical_attribute(p_focus) then
+      raise exception 'invalid_focus';
+    end if;
+    v_intensity := 'light'; -- placeholder, no player-facing intensity
+  else
+    raise exception 'invalid_focus';
+  end if;
+
+  -- Season and the ONE plannable week come from the UTC server calendar only.
+  v_season := public.season_id_at(v_now);
+  v_week := public.training_plannable_week(v_now);
+  if public.game_calendar_v2_active() then
+    -- ONE calendar is active: the old single-focus plan is closed while the seven plans are enabled (only save_my_development_plan writes plans then);
+    -- while they are not enabled it may only be saved in the open training window (odd weeks, Monday 18:00 UTC deadline), never for a race week.
+    if public.development_model_enabled() then raise exception 'legacy_planning_closed'; end if;
+    select t.season_id, t.week_number into v_season, v_week from public.training_target_week(v_now) t;
+  end if;
+  if v_week is null then
+    raise exception 'no_plannable_week';
+  end if;
+
+  -- Serialise with Tour registration for this rider (see the trigger below).
+  perform pg_advisory_xact_lock(hashtextextended('training-tour:' || v_rider::text, 0));
+
+  if exists (
+    select 1
+    from public.tour_registrations r
+    join public.tour_schedule s on s.tour_id = r.tour_id
+    where r.rider_id = v_rider and r.season_id = v_season and s.week_number = v_week
+  ) then
+    raise exception 'tour_conflict';
+  end if;
+
+  -- First write wins; a confirmed plan is never touched again (no DO UPDATE).
+  insert into public.training_plans (rider_id, season_id, week_number, week_type, focus, intensity)
+  values (v_rider, v_season, v_week, p_week_type, p_focus, v_intensity)
+  on conflict (rider_id, season_id, week_number) do nothing
+  returning * into v_row;
+
+  if v_row.id is null then
+    raise exception 'already_planned';
+  end if;
+  return v_row;
+end;
+$$;
+
+revoke all on function public.save_my_training_plan(text, text, text) from public, anon, authenticated;
+grant execute on function public.save_my_training_plan(text, text, text) to authenticated;

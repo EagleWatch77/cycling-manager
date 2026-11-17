@@ -90,7 +90,11 @@ export default async function RiderTrainingPage({
   // in the last week (10) nothing is plannable. Display mirror of
   // public.training_plannable_week() — save_my_training_plan() recomputes it
   // server-side and never takes a season/week from the client.
-  const plannable = getPlannableWeek(season);
+  // With the ONE calendar active the database accepts the old plan only in the open training window (odd weeks, Monday 18:00 UTC); mirror that here.
+  const legacyTarget = cal.version === 2 ? currentPlanTarget() : null;
+  const plannable = cal.version === 2
+    ? (legacyTarget && legacyTarget.seasonId === season.seasonId ? legacyTarget.week : null)
+    : getPlannableWeek(season);
 
   const [plan, recent, progress] = await Promise.all([
     getTrainingPlan(season.seasonId, plannable ?? season.currentWeek),
@@ -224,7 +228,7 @@ export default async function RiderTrainingPage({
                     title: t('trainingPlans.activeTitle'), raceWeek: t('trainingPlans.activeRaceWeek'), noPlan: t('trainingPlans.activeNoPlan'), legacy: t('trainingPlans.activeLegacy'),
                     mode: t('trainingPlans.mode'), modeFull: t('trainingPlans.modeFull'), modeBasic: t('trainingPlans.modeBasic'),
                     done: t('trainingPlans.activeDone'), next: t('trainingPlans.activeNext'), planned: t('trainingPlans.activePlanned'),
-                    progress: t('trainingPlans.activeProgress'), evaluation: t('trainingPlans.activeEvaluation'), locked: t('trainingPlans.activeLocked'), sessionTime: '12:00 UTC',
+                    progress: t('trainingPlans.activeProgress'), evaluation: t('trainingPlans.activeEvaluation'), locked: t('trainingPlans.activeLocked'), editable: t('trainingPlans.activeEditable'), noPlanOpen: t('trainingPlans.activeNoPlanOpen'), sessionTime: '12:00 UTC',
                   }}
                 />
               </div>

@@ -125,6 +125,19 @@ if [ "$HM" -ge 100 ] && [ "$HM" -le 117 ]; then ok "week 1 save check skipped: t
   eq "and it can be changed until the deadline" "$(as $P1 "select plan_id || ':' || mode from public.save_my_development_plan(0,'full');")" "0:full"
 fi
 q "delete from public.training_plans" >/dev/null
+
+echo "== the OLD single-focus save after the calendar is active"
+setweek $TW
+has "seven plans enabled -> the old save is closed (legacy_planning_closed): only save_my_development_plan writes plans" "$(as $P1 "select * from public.save_my_training_plan('performance','climbing','normal');")" "legacy_planning_closed"
+eq "...and nothing was written" "$(q "select count(*) from public.training_plans")" "0"
+q "update public.development_model_settings set enabled = false" >/dev/null
+setweek $RW
+has "seven plans NOT enabled, next week is a race week -> the old save refuses (no_plannable_week), like the new calendar" "$(as $P1 "select * from public.save_my_training_plan('performance','climbing','normal');")" "no_plannable_week"
+setweek $TW
+TT=$(q "select week_number from public.training_target_week(now())")
+eq "seven plans NOT enabled, open training window -> the old plan is stored for the TARGET training week (odd), not for 'next week'" "$(as $P1 "select week_number || ':' || focus from public.save_my_training_plan('performance','climbing','normal');")" "$TT:climbing"
+eq "...and that week is a training week" "$(q "select public.game_week_kind($TT)")" "training"
+q "delete from public.training_plans; update public.development_model_settings set enabled = true; update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
 q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
 
 echo "== sessions in the Rider State loop == TypeScript (Full Tue/Thu/Sat, Basic Tue/Fri, stages in race weeks)"
@@ -245,6 +258,13 @@ eq "the progress made is kept (not rolled back): the rider moved on from the sta
 for i in 1 2 3 4 5 6; do q "select public.rider_state_catch_up_many(array['$RN'::uuid], $END2, 1)" >/dev/null; done
 eq "after enough calls it reaches 0 (nobody behind)" "$(q "select public.rider_state_catch_up_many(array['$RN'::uuid], $END2, 1)")" "0"
 eq "a staged catch-up (one pass at a time) == one finished call" "$(q "select (select condition::text || fitness_peak::text from public.riders where id='$RM') = (select condition::text || fitness_peak::text from public.riders where id='$RN')")" "t"
+MISSING=$(q "select gen_random_uuid()")
+eq "report: a rider that does not exist is 'missing' (not silently skipped); an up-to-date rider is 'ready'" "$(q "select string_agg(status, ',' order by status) from public.rider_state_catch_up_report(array['$RC'::uuid, '$MISSING'::uuid], $END2)")" "missing,ready"
+eq "many counts the missing rider as NOT ready (1): the stage must not start" "$(q "select public.rider_state_catch_up_many(array['$RC'::uuid, '$MISSING'::uuid], $END2)")" "1"
+eq "a rider whose state was already moved PAST the stage start is 'ahead' (the state at the start can not be rebuilt) and counts as not ready" "$(q "select string_agg(status, ',') from public.rider_state_catch_up_report(array['$RC'::uuid], $END2 - interval '48 hours')")|$(q "select public.rider_state_catch_up_many(array['$RC'::uuid], $END2 - interval '48 hours')")" "ahead|1"
+eq "...and 'ahead' did not touch the rider (state unchanged at the later instant)" "$(q "select state_at = $END2 from public.riders where id='$RC'")" "t"
+eq "mixed entrants: two riders already past the start (ahead) + one missing = 3 not ready" "$(q "select public.rider_state_catch_up_many(array['$RC'::uuid, '$RM'::uuid, '$MISSING'::uuid], $END2 - interval '48 hours')")" "3"
+eq "the same rider listed twice is counted once" "$(q "select count(*) from public.rider_state_catch_up_report(array['$RC'::uuid, '$RC'::uuid], $END2)")" "1"
 q "update public.game_calendar_settings set season_one_start = date '2026-08-17'" >/dev/null
 
 echo "== the season start can not drift: ONE place in the database, ONE constant in the web"

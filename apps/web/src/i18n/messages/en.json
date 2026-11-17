@@ -824,5 +824,7 @@
   "trainingPlans.activeEvaluation": "week evaluated Monday 00:00 UTC",
   "trainingPlans.activeLocked": "The plan has been locked since Monday 18:00 UTC.",
   "trainingPlans.blockedCalendar": "The calendar does not match the database; planning is paused for now.",
-  "calendar.mismatch": "Dates cannot be verified right now: the web calendar does not match the database. The admin is on it."
+  "calendar.mismatch": "Dates cannot be verified right now: the web calendar does not match the database. The admin is on it.",
+  "trainingPlans.activeEditable": "You can still change the plan until Monday 18:00 UTC (form below).",
+  "trainingPlans.activeNoPlanOpen": "You have no plan for this week yet. You can choose one below until Monday 18:00 UTC."
 }
