@@ -62,3 +62,8 @@ Used by (all verified by grep):
 
 ## C-098 — Old admin market generator switched off (owner 2026-11-19)
 `generateMarketPool()` no longer reads or writes anything and returns `generator-disabled` (the old generator made ~OVR 130 riders). The admin button is permanently disabled. The reset confirmation and button use the exact count of rows the reset can delete (`resettableInSeason`: available, never owned, in the season). A new generator and any week-6 automatic generation need a separate approval.
+
+## C-099 — Rollbacky mimo migrácií; kontrola po fázach; bezpečný postup pri probléme s B (owner 2026-11-19)
+- `supabase/migrations/` obsahuje len migrácie, ktoré sa majú aplikovať. Manuálne rollbacky sú v `supabase/diagnostics/market_launch/manual_rollbacks/` (`SAFE_B_nudzove_zatvorenie_trhu.sql`, `ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` s poistkou, `ROLLBACK_S1O5_rozvoj.sql`). Test `predeploy_check.test.sh` a `market_launch.test.sh` strážia, že v migráciách nie je rollback súbor.
+- Pri probléme s B sa skryté hodnoty neodomykajú: najprv oprava kódu/buildu, pri neistote `SAFE_B…` (úplné zatvorenie), potom B znova. Odomknutie je len vedomé rozhodnutie majiteľa (ručná úprava poistky).
+- `00_predeploy_kontrola_LEN_CITANIE.sql` rozlišuje fázy 0–5 (pripravenosť, A, kód+B, S1+O5, 100 jazdcov, čistenie 45) so stavmi SPLNENÉ/ČAKÁ/CHYBA a riadkom ĎALŠÍ KROK.

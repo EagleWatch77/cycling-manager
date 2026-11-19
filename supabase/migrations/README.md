@@ -92,11 +92,13 @@ Tests: `supabase/tests/development_v2.test.sh`, `ovr_f4.test.sh`, `rider_state.t
 |---|---|
 | `20261119_01_market_hidden_columns_A.sql` | **Part A** — adds `potential_to_stars()` (stars by the approved Potential bands) + `market_riders.potential_stars`; `my_rider_estimates()` uses the same bands and the admin function `admin_market_riders(season)`. Changes no data, revokes nothing; safe BEFORE the code. |
 | `20261119_02_market_hidden_columns_B.sql` | **Part B** — run ONLY after A and after the new code is deployed (green Vercel build). Players may then read only the public columns + `potential_stars`. Refuses to run when A is missing. |
-| `20261119_03_market_hidden_columns_ROLLBACK.sql` | Only if needed: gives the old SELECT right back (undoes B). |
 | `20261119_04_dev_cap_s1_youth_floor_o5.sql` | **Working model S1 + O5** (owner 2026-11-19, a working balance, NOT a final confirmation of the career mechanics): soft cap 80 + 150·(Potenciál/100)² and a youth floor of the physical room factor (0.30 up to age 21, linearly to 0 at 26; hard max 200 unchanged). Adds `dev_phys_room()` and redefines `apply_development_plan_v2` (changes training results from the next processed week; changes no stored data). Run only on the owner's word. Rollback: re-run the function from `20261117_04_training_plans_calendar.sql`. |
-| `20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql` | Only if needed: restores EXACTLY the old `apply_development_plan_v2` (cap 1.25, no youth floor) and drops `dev_phys_room`. Changes no data. Tested byte-identical (`dev_s1o5_rollback.test.sh`). |
 | `../seeds/20261119_launch_market_100.sql` | Seed (not a migration): exactly 100 new free riders, OVR 69–75 by the real F4 formula, age 17–20, Skúsenosti 1–20 of 200, Potenciál podľa schválených pásiem. Idempotent (fixed ids), verifies itself, rolls back on any mismatch. |
 | `../diagnostics/` + deletion script (delivered separately) | Backup + removal of exactly the 45 old `starter-v1` test riders — run LAST, only after the Trh shows the new riders. |
 
 Order: **A → deploy code → B → seed (100 riders) → check the Trh → deletion of the 45 old riders (with the checksum pasted in).**
 Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_launch.test.sh` (as `postgres`).
+
+**Pravidlo: v tomto priečinku sú LEN migrácie, ktoré chceme skutočne aplikovať.** Rollbacky a núdzové skripty sú zámerne mimo (aby ich nič nespustilo automaticky) v
+`../diagnostics/market_launch/manual_rollbacks/`: `SAFE_B_nudzove_zatvorenie_trhu.sql` (odporúčaný postup pri probléme s B, nič neodhalí),
+`ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` (NEBEZPEČNÉ, má poistku), `ROLLBACK_S1O5_rozvoj.sql`. Čísla 03 a 05 sú preto v číslovaní vynechané. Test `predeploy_check.test.sh` stráži, že v tomto priečinku nie je súbor s rollbackom.

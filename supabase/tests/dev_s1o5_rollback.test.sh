@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ROLLBACK of S1+O5 (20261119_05): after rollback the function is byte-identical to the one before S1+O5; no data changes.
+# ROLLBACK of S1+O5 (manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql): after rollback the function is byte-identical to the one before S1+O5; no data changes.
 # (setup copied from development_v2.test.sh) Development model V2 — SQL vs TypeScript parity, switch behaviour, no-plan week, ageing. REAL local Postgres, never a real database.
 #   REF=/path/ref.json bash supabase/tests/development_v2.test.sh      (run as a non-root OS user, e.g. postgres)
 #   REF = output of apps/web/src/lib/training/development/dbParityV2.cli.ts (generated here when REF is not given and npx works)
@@ -68,11 +68,11 @@ eq "S1+O5 is active (slope 1.5 and helper used)" "$(q "select (prosrc like '%c_c
 A=$(q "insert into auth.users default values returning id" | head -1)
 q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values ('$A','R','B','Slovakia','SK',19,'{\"climbing\":120,\"hills\":110}','{\"energy\":70,\"fatigue\":30}','{\"energy\":70,\"fatigue\":30}','climber',30,50,50,50)" >/dev/null
 SNAP=$(q "select md5(string_agg(r::text, '|' order by id)) from public.riders r")
-psqlc t -f "$ROOT/migrations/20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql" >"$DIR/m19r.out" 2>&1 && ok "rollback applies" || { bad "rollback applies" "$(tail -3 "$DIR/m19r.out")"; exit 1; }
+psqlc t -f "$ROOT/diagnostics/market_launch/manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql" >"$DIR/m19r.out" 2>&1 && ok "rollback applies" || { bad "rollback applies" "$(tail -3 "$DIR/m19r.out")"; exit 1; }
 eq "after the rollback the function is BYTE-IDENTICAL to the one before S1+O5" "$(fdef)" "$BEFORE"
 eq "the S1+O5 helper function is gone" "$(q "select count(*) from pg_proc where proname='dev_phys_room'")" "0"
 eq "rollback changed no rider data" "$(q "select md5(string_agg(r::text, '|' order by id)) from public.riders r")" "$SNAP"
-psqlc t -f "$ROOT/migrations/20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql" >/dev/null 2>&1 && ok "rollback is idempotent (second run)" || bad "rollback second run" ""
+psqlc t -f "$ROOT/diagnostics/market_launch/manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql" >/dev/null 2>&1 && ok "rollback is idempotent (second run)" || bad "rollback second run" ""
 eq "function still not callable by players" "$(q "select has_function_privilege('authenticated','public.apply_development_plan_v2(uuid)','execute')::text")" "false"
 psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >/dev/null 2>&1 && ok "S1+O5 can be applied again after a rollback" || bad "re-apply" ""
 eq "...and is active again" "$(q "select (prosrc like '%dev_phys_room%')::text from pg_proc where oid='public.apply_development_plan_v2(uuid)'::regprocedure")" "true"

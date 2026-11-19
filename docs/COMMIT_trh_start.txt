@@ -5,6 +5,8 @@ Trh štart: radar 1–200, trvalý trh, skryté hodnoty, 100 nových jazdcov, mo
 - Skryté hodnoty trhu zatvorené (migrácie A/B + rollback), hviezdičky podľa pásiem Potenciálu
 - Generátor a seed 100 jazdcov (OVR 69–75, vek 17–20, Skúsenosti 1–20)
 - Pracovný model rozvoja S1+O5 v TypeScripte aj SQL, testy zhody
+- Staré admin generovanie vypnuté, reset ukazuje presný počet
+- Rollbacky mimo migrácií (manual_rollbacks), kontrola 00 po fázach
 - Skripty na kontrolu/zálohu/zmazanie 45 starých jazdcov, testy a dokumentácia
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>

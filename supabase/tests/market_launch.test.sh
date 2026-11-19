@@ -31,7 +31,7 @@ for m in $(ls $ROOT/migrations/2026*_*.sql | grep -v "20261114_league_divisions.
   psqlc t -f "$m" >/dev/null 2>&1 || { echo "migration $m failed"; psqlc t -f "$m" | tail -3; exit 1; }
 done
 echo "migrations 2026* applied"
-A="$ROOT/migrations/20261119_01_market_hidden_columns_A.sql"; B="$ROOT/migrations/20261119_02_market_hidden_columns_B.sql"; RB="$ROOT/migrations/20261119_03_market_hidden_columns_ROLLBACK.sql"
+A="$ROOT/migrations/20261119_01_market_hidden_columns_A.sql"; B="$ROOT/migrations/20261119_02_market_hidden_columns_B.sql"; MR="$ROOT/diagnostics/market_launch/manual_rollbacks"; RB="$MR/ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql"; SAFE="$MR/SAFE_B_nudzove_zatvorenie_trhu.sql"
 has "part B refuses to run before part A (nothing changed)" "$(psqlc t -f "$B")" "Part A .* has not been run"
 psqlc t -f "$A" >/dev/null || { echo "part A failed"; psqlc t -f "$A" | tail -3; exit 1; }
 ok "part A runs"
@@ -100,8 +100,23 @@ eq "a player sees the new riders in the current season" "$(as $PL "select count(
 OUT2=$(psqlc t -f "$SEED"); has "second run is accepted (idempotent)" "$OUT2" "newly added: 0"
 eq "second run adds nothing" "$(q "select count(*) from public.market_riders")" "$((BEFORE+100))"
 eq "existing test riders A/B/C/D untouched" "$(q "select count(*) from public.market_riders where surname in ('Free','Prem')")" "4"
-echo "== rollback file"
-psqlc t -f "$RB" >/dev/null; has "rollback restores select of hidden columns for a player" "$(as $PL "select count(potential) from public.market_riders where tier='free';")" "^[0-9]"
+echo "== manual rollbacks are NOT migrations and the dangerous one is guarded"
+eq "no rollback/undo file is inside supabase/migrations (nothing can run it automatically)" "$(ls "$ROOT/migrations" | grep -ci 'rollback\|undo\|revert')" "0"
+eq "the manual rollbacks live in manual_rollbacks/" "$(ls "$MR" | tr '\n' ' ')" "ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql ROLLBACK_S1O5_rozvoj.sql SAFE_B_nudzove_zatvorenie_trhu.sql "
+has "UNEDITED dangerous rollback refuses to run" "$(psqlc t -f "$RB" 2>&1)" "ZASTAVEN"
+has "...and changed nothing: hidden columns still closed after B" "$(as $PL "select potential from public.market_riders;")" "permission denied"
+echo "== safe emergency procedure for a problem with B: closes the Trh completely, leaks nothing, purchase + admin keep working"
+psqlc t -f "$SAFE" >/dev/null
+has "after SAFE: player cannot read hidden columns" "$(as $PL "select potential from public.market_riders;")" "permission denied"
+has "after SAFE: player cannot read ANY column (public ones neither)" "$(as $PL "select first_name from public.market_riders;")" "permission denied"
+has "after SAFE: anonymous cannot read either" "$(printf "set role anon;\nselect first_name from public.market_riders;\n" | psqlc t 2>&1)" "permission denied"
+has "after SAFE: reserve_market_rider (definer) still works" "$(as $PL "select status from public.reserve_market_rider('$MID');" 2>&1 | head -3)" "pending\|already\|swap"
+eq "after SAFE: admin function still returns the whole market" "$(as $ADM "select count(*) > 0 from public.admin_market_riders();")" "t"
+psqlc t -f "$SAFE" >/dev/null && ok "SAFE is idempotent"
+psqlc t -f "$B" >/dev/null; has "part B again (after the fix) reopens ONLY the public columns" "$(as $PL "select potential from public.market_riders;")" "permission denied"
+eq "...public columns readable again" "$(as $PL "select count(first_name) >= 0 from public.market_riders;")" "t"
+sed "s/v_potvrdenie constant text := 'NIE'/v_potvrdenie constant text := 'ANO-ODHALIT-SKRYTE-HODNOTY'/" "$RB" > "$DIR/rb_confirmed.sql"
+psqlc t -f "$DIR/rb_confirmed.sql" >/dev/null; has "only the deliberately edited rollback reopens the hidden columns" "$(as $PL "select count(potential) from public.market_riders where tier='free';")" "^[0-9]"
 psqlc t -f "$B" >/dev/null; has "part B closes it again" "$(as $PL "select potential from public.market_riders;")" "permission denied"
 echo "== permanent market: riders of earlier seasons stay visible and purchasable"
 q "insert into public.market_riders (season_id,tier,status,first_name,surname,country_name,country_iso2,age,attributes,condition,inferred_archetype,potential,trainability,professionalism,recovery,source) values

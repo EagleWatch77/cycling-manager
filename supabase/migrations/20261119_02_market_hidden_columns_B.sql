@@ -3,7 +3,8 @@
 -- Hidden: potential, trainability, professionalism, recovery, vitality, aptitude_profile, energy_efficiency, fatigue_resistance,
 --         recovery_coef, fitness_peak, condition, generator_version, source, generated_at, acquired_by_player_id, acquired_at.
 -- Row-level security policies stay exactly as they are; INSERT / UPDATE / DELETE rights stay as they are (RLS: admin only).
--- Changes no data. Idempotent. If anything in the Trh breaks after this file: run 20261119_03_market_hidden_columns_ROLLBACK.sql.
+-- Changes no data. Idempotent. If anything in the Trh breaks after this file: do NOT reopen the hidden columns. Run
+-- supabase/diagnostics/market_launch/manual_rollbacks/SAFE_B_nudzove_zatvorenie_trhu.sql (closes the Trh for players completely), fix the code, then run this file again.
 do $guard$
 begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'market_riders' and column_name = 'potential_stars')

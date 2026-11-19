@@ -7,3 +7,4 @@ Open (needs owner): S1+O5 and goals 160/180/190 are WORKING/orientational; ×1,5
 Not done on purpose: finances, contracts, auctions, existing riders, OVR F4 formula, swap switch.
 
 Update (review fixes, 2026-11-19): old admin market generator switched OFF (C-098); reset shows the exact resettable count and is disabled at 0; 55–95 audit (C-097, comment only, no mechanics); read-only pre-deploy check `00_predeploy_kontrola_LEN_CITANIE.sql`; separate S1+O5 rollback `20261119_05_…ROLLBACK.sql`; deploy doc has the B-rollback warning. Nothing deployed/run.
+Update (safety, 2026-11-19): rollbacks moved out of supabase/migrations to diagnostics/market_launch/manual_rollbacks/ (dangerous B rollback now has a lock; new SAFE_B closure script); check 00 rewritten to phases 0–5 with verdicts + next step; deploy guide rewritten in Slovak. Nothing deployed/run.
