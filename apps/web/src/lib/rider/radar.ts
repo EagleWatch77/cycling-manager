@@ -5,6 +5,7 @@ import {
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { meanOf, normalizeScore } from './score';
 import type { SegmentLevel } from './development';
+import type { MarketEstimateLevels } from '@/lib/market/estimates';
 
 /**
  * Ability radar model — pure math, no I/O. Reuses the SAME group means and
@@ -152,4 +153,42 @@ export function buildRadarModel(
       development,
     ],
   };
+}
+
+/**
+ * Radar model for a MARKET rider: same skill groups as buildRadarModel, but Rozvoj and Skúsenosti are ROUGH estimates only, consistent with the
+ * Rozvoj card of the market detail. Experience carries no number (value null, position = the middle of its fifth) and Rozvoj covers all five hidden
+ * values (incl. Vitalita) as 1-5 levels, so neither the labels nor the geometry of the polygon reveal an exact figure. Never takes a hidden number:
+ * the levels come from lib/market/estimates.ts.
+ */
+export function buildMarketRadarModel(
+  attributes: Record<SkillAttribute, number>,
+  levels: MarketEstimateLevels,
+  label: (key: string) => string,
+): RadarModel {
+  const base = buildRadarModel(attributes, NO_DEVELOPMENT_ESTIMATES, label);
+  const norm = (l: SegmentLevel) => (l - 0.5) / 5;
+  const devKeys = ['potential', 'trainability', 'professionalism', 'recovery', 'vitality'] as const;
+  const lv = devKeys.map((k) => levels[k]);
+  const all = lv.every((l) => l !== null);
+  const known = lv.filter((l): l is SegmentLevel => l !== null);
+  const meanLevel = all ? (Math.max(1, Math.min(5, Math.round(known.reduce((s, l) => s + l, 0) / known.length))) as SegmentLevel) : null;
+
+  const groups = base.groups.map((g): RadarGroup => {
+    if (g.id === 'experience') {
+      return { ...g, value: null, range: null, norm: norm(levels.experience), normRange: null, level: levels.experience, attributes: [] };
+    }
+    if (g.id === 'development') {
+      return {
+        ...g, value: null, range: null, normRange: null, level: meanLevel,
+        norm: all ? known.reduce((s, l) => s + norm(l), 0) / known.length : null,
+        attributes: devKeys.map((k) => ({
+          key: k, label: label(`dev.${k}`), value: null, range: null, normRange: null,
+          level: levels[k], norm: levels[k] ? norm(levels[k] as SegmentLevel) : null,
+        })),
+      };
+    }
+    return g;
+  });
+  return { groups };
 }

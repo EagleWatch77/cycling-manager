@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getServerDictionary } from '@/i18n/server';
-import { getMarketRiderDetail } from '@/lib/market/playerRepository';
+import { getMarketRiderDetail, getMarketRiderEstimates } from '@/lib/market/playerRepository';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
 import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES } from '@/lib/rider/config';
 import { AppShell } from '@/components/AppShell';
@@ -16,8 +16,8 @@ import { PendingSwapRows } from '@/components/rider/PendingSwapRows';
 import { CardTitle } from '@/components/ui/CardTitle';
 import { CountryFlag } from '@/components/ui/CountryFlag';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
-import { DevelopmentCard } from '@/components/rider/DevelopmentCard';
-import { buildRadarModel, NO_DEVELOPMENT_ESTIMATES, type DevelopmentLevels } from '@/lib/rider/radar';
+import { MarketDevelopmentCard } from '@/components/market/MarketDevelopmentCard';
+import { buildMarketRadarModel } from '@/lib/rider/radar';
 
 // TACTICS_ATTRIBUTES/TECHNIQUE_ATTRIBUTES now come from lib/rider/config.ts (previously duplicated locally here).
 
@@ -35,8 +35,8 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
   const { id } = await params;
   const rider = await getMarketRiderDetail(id);
   if (!rider) notFound();
-  // Only the public 1-5 star bucket of Potential exists for a market rider; every other development value stays unknown (hidden by migration B).
-  const devLevels: DevelopmentLevels = { potential: rider.potentialStars, trainability: null, professionalism: null, recovery: null };
+  // Rough 1-5 levels only (database function market_rider_estimates + public Experience bucket); no hidden or exact number reaches this page.
+  const levels = await getMarketRiderEstimates(rider);
   const [enabled, pendingSwap] = await Promise.all([isSwapEnabled(), getMyPendingSwap()]);
 
   return (
@@ -93,13 +93,13 @@ export default async function MarketRiderDetailPage({ params }: { params: Promis
         {/* B. Radar + F. Rozvoj + G. Stav jazdca. Only what a market rider's public columns allow: star buckets, never raw hidden values. */}
         <div className="grid grid-cols-12 gap-3">
           <AbilityRadar title={t('profile.radarTitle')} className="col-span-12 lg:col-span-7"
-            model={buildRadarModel(rider.attributes, NO_DEVELOPMENT_ESTIMATES, t, devLevels)}
+            model={buildMarketRadarModel(rider.attributes, levels, t)}
             labels={{
               overview: t('radar.overview'), estimate: t('radar.estimate'), unknown: t('radar.unknown'),
               note: t('radar.devNote'), noteUnknown: t('radar.devNoteUnknown'), aria: t('radar.aria'),
             }} />
           <div className="col-span-12 flex flex-col gap-3 lg:col-span-5">
-            <DevelopmentCard t={t} levels={devLevels} experience={rider.attributes.experience} />
+            <MarketDevelopmentCard t={t} levels={levels} />
             <Card title={<CardTitle icon="heart">{t('market.detail.state')}</CardTitle>} dense>
               <p className="px-3.5 py-3 text-sm text-navy-soft">{t('market.detail.stateAfter')}</p>
             </Card>

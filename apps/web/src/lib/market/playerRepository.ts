@@ -6,6 +6,7 @@ import { overallRating } from '@/lib/rider/score';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import type { MarketTier } from './repository';
 import { sortByOverall } from './marketSort';
+import { toMarketEstimateLevels, type MarketEstimateLevels } from './estimates';
 
 export const MARKET_PAGE_SIZE = 20;
 
@@ -212,4 +213,17 @@ export async function getMarketRiderDetail(id: string): Promise<MarketRiderDetai
 
   if (error || !data) return null;
   return { ...toView(data), attributes: data.attributes as Record<SkillAttribute, number> };
+}
+
+/**
+ * Coarse 1-5 levels for the Rozvoj section of one market rider. Calls the SECURITY DEFINER function public.market_rider_estimates()
+ * (migration 20261119_06), which reads the hidden values inside the database and returns ONLY levels; no hidden number ever reaches the app.
+ * If the function is not installed yet (or returns no row) the hidden levels stay null ("estimate not available") and Potential falls back to
+ * the public star bucket - the page never breaks and never invents a value. Experience is public and bucketed here.
+ */
+export async function getMarketRiderEstimates(detail: MarketRiderDetail): Promise<MarketEstimateLevels> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('market_rider_estimates', { p_id: detail.id });
+  const row = !error && Array.isArray(data) && data.length > 0 ? (data[0] as Record<string, unknown>) : null;
+  return toMarketEstimateLevels(row, detail.attributes.experience, detail.potentialStars);
 }
