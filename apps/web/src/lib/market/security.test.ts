@@ -43,14 +43,31 @@ check('toView()\'s returned object does not include a bare `attributes:` field (
   !/\n\s*attributes,?\s*\n/.test(toViewFn) && !/attributes:\s*(row\.attributes|attributes)\s*,/.test(toViewFn.replace(/const attributes = row\.attributes.*?;/, '')));
 check('toView() never returns raw trainability/professionalism/recovery fields',
   !/trainability:|professionalism:|recovery:/.test(toViewFn));
-check('toView() never returns the raw potential number (only potentialStars, a 1-5 bucket, via potentialToStars())',
-  !/potential:\s*row\.potential/.test(toViewFn) && /potentialStars:\s*potentialToStars/.test(toViewFn));
+check('toView() never returns the raw potential number (only potentialStars, the 1-5 bucket computed by the database)',
+  !/potential:\s*row\.potential\b/.test(toViewFn) && /potentialStars:\s*row\.potential_stars/.test(toViewFn));
 
 // 4. The scores are computed server-side (imported from lib/rider/score, a
 // 'server-only'-free pure module, but only ever called from this
 // 'server-only' repository file — never from a client component).
 check('overallRating is imported from lib/rider/score', /from '@\/lib\/rider\/score'/.test(src));
 check('playerRepository.ts is marked server-only', /import 'server-only'/.test(src));
+
+// 5. O-011: the player-facing repository reads ONLY granted public columns (hidden columns are not selectable by `authenticated`).
+const HIDDEN_COLS = ['potential', 'trainability', 'professionalism', 'recovery', 'vitality', 'aptitude_profile', 'energy_efficiency', 'fatigue_resistance',
+  'recovery_coef', 'fitness_peak', 'condition', 'generator_version', 'source', 'generated_at', 'acquired_by_player_id', 'acquired_at'];
+const publicCols = src.match(/MARKET_PUBLIC_COLUMNS\s*=\s*'([^']*)'/)?.[1] ?? '';
+check('MARKET_PUBLIC_COLUMNS constant exists', publicCols.length > 0);
+check('public columns include potential_stars (database-computed bucket)', publicCols.split(',').map((c) => c.trim()).includes('potential_stars'));
+check('public columns contain no hidden column', !publicCols.split(',').map((c) => c.trim()).some((c) => HIDDEN_COLS.includes(c)), publicCols);
+const codeOnly = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+check("player repository never uses select('*')", !/select\(\s*'\*'/.test(codeOnly));
+const usedCols = [...codeOnly.matchAll(/\.(?:eq|neq|gt|gte|lt|lte|order|ilike)\(\s*'([a-z_]+)'/g)].map((m) => m[1]);
+const sortCols = [...(codeOnly.match(/const SORT_COLUMN[\s\S]*?\n\};/)?.[0] ?? '').matchAll(/:\s*'([a-z_]+)'/g)].map((m) => m[1]);
+check('player repository never filters or sorts by a hidden column', usedCols.length > 0 && sortCols.length === 5 && ![...usedCols, ...sortCols].some((c) => HIDDEN_COLS.includes(c)), [...usedCols, ...sortCols].join());
+check('stars filter and sort use potential_stars', /eq\('potential_stars'/.test(src) && /potential:\s*'potential_stars'/.test(src));
+const adminSrc = fs.readFileSync(path.join(__dirname, 'repository.ts'), 'utf8');
+check("admin repository reads full rows only through the admin_market_riders() function (no select('*') on the table)", /rpc\('admin_market_riders'/.test(adminSrc) && !/select\(\s*'\*'/.test(adminSrc));
+check('admin summary does not select hidden columns directly from the table', !/\.select\('tier, status, generated_at, source'\)/.test(adminSrc));
 
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

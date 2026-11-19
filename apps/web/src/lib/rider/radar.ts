@@ -1,6 +1,5 @@
 import {
-  ATTR_MIN, ATTR_MAX, PERFORMANCE_MIN, PERFORMANCE_MAX,
-  POTENTIAL_MIN, POTENTIAL_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES,
+  DISPLAY_SCALE, POTENTIAL_MIN, POTENTIAL_MAX, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES,
   type SkillAttribute,
 } from './config';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
@@ -142,12 +141,12 @@ export function buildRadarModel(
 
   return {
     groups: [
-      skillGroup('performance', PERFORMANCE_FOCUS, PERFORMANCE_MIN, PERFORMANCE_MAX),
-      skillGroup('tactics', TACTICS_ATTRIBUTES, ATTR_MIN, ATTR_MAX),
-      skillGroup('technique', TECHNIQUE_ATTRIBUTES, ATTR_MIN, ATTR_MAX),
+      skillGroup('performance', PERFORMANCE_FOCUS, DISPLAY_SCALE.min, DISPLAY_SCALE.max),
+      skillGroup('tactics', TACTICS_ATTRIBUTES, DISPLAY_SCALE.min, DISPLAY_SCALE.max),
+      skillGroup('technique', TECHNIQUE_ATTRIBUTES, DISPLAY_SCALE.min, DISPLAY_SCALE.max),
       {
         id: 'experience', label: label('attr.experience'),
-        value: attributes.experience, range: null, norm: frac(attributes.experience, ATTR_MIN, ATTR_MAX),
+        value: attributes.experience, range: null, norm: frac(attributes.experience, DISPLAY_SCALE.min, DISPLAY_SCALE.max),
         normRange: null, level: null, attributes: [],
       },
       development,

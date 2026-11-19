@@ -66,12 +66,11 @@ export interface MarketPoolSummary {
 /** Status the admin panel (and later the real market page) reads — never generates anything itself. */
 export async function getMarketPoolSummary(seasonId: string): Promise<MarketPoolSummary> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('market_riders')
-    .select('tier, status, generated_at, source')
-    .eq('season_id', seasonId);
+  // Hidden/admin columns are not selectable by a session since 20261119_02 — the admin reads through the checked function.
+  const { data: raw, error } = await supabase.rpc('admin_market_riders', { p_season_id: seasonId });
+  const data = (raw ?? []) as Record<string, unknown>[];
 
-  if (error || !data || data.length === 0) {
+  if (error || data.length === 0) {
     return { seasonId, active: false, freeCount: 0, premiumCount: 0, acquiredCount: 0, generatedAt: null, source: null };
   }
 
@@ -80,7 +79,7 @@ export async function getMarketPoolSummary(seasonId: string): Promise<MarketPool
   const premiumCount = available.filter((r) => r.tier === 'premium').length;
   const acquiredCount = data.filter((r) => r.status === 'acquired').length;
   const generatedAt = available.length > 0
-    ? available.reduce((latest, r) => (r.generated_at > latest ? r.generated_at : latest), available[0].generated_at as string)
+    ? available.reduce((latest, r) => ((r.generated_at as string) > latest ? (r.generated_at as string) : latest), available[0].generated_at as string)
     : null;
   const source = (available[0]?.source as MarketGenerationSource | undefined) ?? null;
 
@@ -181,12 +180,8 @@ export async function resetAvailableMarketPool(seasonId: string): Promise<{ ok: 
 /** Admin-only raw list (all tiers/statuses) — for the admin Market Tools panel. */
 export async function getAdminMarketRiders(seasonId: string): Promise<MarketRiderRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('market_riders')
-    .select('*')
-    .eq('season_id', seasonId)
-    .order('generated_at', { ascending: false });
+  const { data, error } = await supabase.rpc('admin_market_riders', { p_season_id: seasonId });
 
   if (error || !data) return [];
-  return data.map(fromRow);
+  return (data as Record<string, unknown>[]).map(fromRow);
 }

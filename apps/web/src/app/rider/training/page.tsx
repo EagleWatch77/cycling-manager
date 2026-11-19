@@ -2,8 +2,7 @@ import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
 import {
   SKILL_ATTRIBUTES,
-  ATTR_MIN,
-  ATTR_MAX,
+  DISPLAY_SCALE,
   TACTICS_ATTRIBUTES,
   TECHNIQUE_ATTRIBUTES,
   type SkillAttribute,
@@ -159,7 +158,7 @@ export default async function RiderTrainingPage({
   // Rozvoj never shows exact development numbers — only a 1-5 visual read.
   // See lib/rider/development.ts for the centralized value->level mapping.
   const { potentialStars, trainabilityLevel, professionalismLevel, recoveryLevel } = rider.estimates;
-  const experienceLevel = scoreToLevel(rider.attributes.experience, ATTR_MIN, ATTR_MAX);
+  const experienceLevel = scoreToLevel(rider.attributes.experience, DISPLAY_SCALE.min, DISPLAY_SCALE.max);
 
   // Real bonus overlay: only the single most recently processed training,
   // never anything guessed. Condition fields have no such gain in the real

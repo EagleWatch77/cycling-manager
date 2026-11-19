@@ -35,6 +35,8 @@ export const MARKET_GEN_CONFIG = {
   physAptSpanMin: 6, physAptSpanRange: 8, techAptSpan: 18, shapeTactBoost: 8, shapeTechBoost: 0,
   noisePhys: 3, noiseTech: 5, noiseTact: 4, expMin: 15, expRange: 30,
   hiddenMean: 50, hiddenSd: 20,
+  /** null = the four development traits follow N(hiddenMean, hiddenSd); a range = uniform integer inside it (launch market: the production 55..95 scale). Vitality always follows the bell. */
+  devRange: null as { min: number; max: number } | null,
 };
 
 /** The rule is checked with the ONE official OVR (ovr.ts). */
@@ -80,7 +82,8 @@ export function generateMarketRider(seed: number, range: OvrRange | null, c = MA
   const age = intBetween(r, c.ageMin, c.ageMax);
   const shape = Math.floor(r() * 7);
   const aptitude = generateAptitudeProfile(Math.floor(r() * 4294967296), shape);
-  const hidden = Object.fromEntries((['potential', 'trainability', 'professionalism', 'recovery', 'vitality'] as const).map((k) => [k, clamp(Math.round(c.hiddenMean + c.hiddenSd * gauss(r)), 1, 100)])) as unknown as HiddenTraits;
+  const hidden = Object.fromEntries((['potential', 'trainability', 'professionalism', 'recovery', 'vitality'] as const).map((k) => [k,
+    c.devRange && k !== 'vitality' ? intBetween(r, c.devRange.min, c.devRange.max) : clamp(Math.round(c.hiddenMean + c.hiddenSd * gauss(r)), 1, 100)])) as unknown as HiddenTraits;
   const levels = (): [number, number, number] => {
     if (!range) { const Lp = c.laterCentre + c.laterSd * gauss(r); return [Lp, Lp - 10 + c.laterTechSd * gauss(r), Lp - 10 + c.laterTactSd * gauss(r)]; }
     const centre = (range.min + range.max) / 2;

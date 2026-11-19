@@ -85,3 +85,16 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/rider_swap
 | `20261117_03_rider_state_model.sql` | rider state: coefficients, continuous (time-proportional) Energy/Fatigue regeneration catch-up, Fitness/Form, history, Race Engine load interface, transfer carries the state (switch `rider_state_settings`, default OFF) |
 | `20261117_04_training_plans_calendar.sql` | one calendar (odd weeks training, even race weeks, Tours 2/4/6/8/10, configurable season start `game_calendar_settings`), seven training plans with ONE shared progress budget, plan window Monday 18:00 UTC, training sessions in the state catch-up (Full Tue/Thu/Sat, Basic Tue/Fri 12:00 UTC), `league_race_days`, read-only `calendar_v2_conflicts()`, late stages deferred (never credited to another week), finished catch-up (`rider_state_catch_up_complete/many`); the Tour weeks move ONLY with `activate_game_calendar_v2()` (switches stay OFF; needs 01 + 03 first) |
 Tests: `supabase/tests/development_v2.test.sh`, `ovr_f4.test.sh`, `rider_state.test.sh`, `rider_swaps_state.test.sh`, `training_plans_calendar.test.sh` (run as a non-root OS user).
+
+
+## 2026-11-19 — Market start: hidden values closed (O-011) + 100 launch riders (NOT RUN)
+| File | What it does |
+|---|---|
+| `20261119_01_market_hidden_columns_A.sql` | **Part A** — adds `market_riders.potential_stars` (database-computed 1-5 bucket) and the admin function `admin_market_riders(season)`. Changes no data, revokes nothing; safe BEFORE the code. |
+| `20261119_02_market_hidden_columns_B.sql` | **Part B** — run ONLY after A and after the new code is deployed (green Vercel build). Players may then read only the public columns + `potential_stars`. Refuses to run when A is missing. |
+| `20261119_03_market_hidden_columns_ROLLBACK.sql` | Only if needed: gives the old SELECT right back (undoes B). |
+| `../seeds/20261119_launch_market_100.sql` | Seed (not a migration): exactly 100 new free riders, OVR 69–75 by the real F4 formula, age 17–20, Skúsenosti 1–20 of 200. Idempotent (fixed ids), verifies itself, rolls back on any mismatch. |
+| `../diagnostics/` + deletion script (delivered separately) | Backup + removal of exactly the 45 old `starter-v1` test riders — run LAST, only after the Trh shows the new riders. |
+
+Order: **A → deploy code → B → seed (100 riders) → check the Trh → deletion of the 45 old riders (with the checksum pasted in).**
+Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_launch.test.sh` (as `postgres`).

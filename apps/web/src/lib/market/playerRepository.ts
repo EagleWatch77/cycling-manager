@@ -1,12 +1,19 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { potentialToStars, type SegmentLevel } from '@/lib/rider/development';
-import { POTENTIAL_MIN, POTENTIAL_MAX, type SkillAttribute } from '@/lib/rider/config';
+import type { SegmentLevel } from '@/lib/rider/development';
+import type { SkillAttribute } from '@/lib/rider/config';
 import { overallRating } from '@/lib/rider/score';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import type { MarketTier } from './repository';
 
 export const MARKET_PAGE_SIZE = 20;
+
+/**
+ * The ONLY market_riders columns a player's session may read (O-011, migration 20261119_02 — column-level GRANT). Hidden values
+ * (potential, trainability, professionalism, recovery, vitality, aptitude, state coefficients, generator metadata) are not selectable
+ * by `authenticated` at all; `potential_stars` is the 1-5 bucket computed by the database. Never select('*') here.
+ */
+const MARKET_PUBLIC_COLUMNS = 'id, tier, first_name, surname, country_name, country_iso2, age, attributes, inferred_archetype, potential_stars';
 
 /**
  * The ONLY shape a player's browser ever receives for a market rider.
@@ -69,7 +76,7 @@ export interface MarketPageResult {
 }
 
 function toView(row: Record<string, unknown>): MarketRiderView {
-  // `attributes` is fetched from the DB row (getMarketPage selects '*') to
+  // `attributes` is fetched from the DB row (getMarketPage selects MARKET_PUBLIC_COLUMNS) to
   // compute the two safe derived scores below, but is deliberately NEVER
   // included in the returned object itself — a Free Market caller gets the
   // 0-100 scores only, never the raw attribute breakdown they're built from.
@@ -83,7 +90,7 @@ function toView(row: Record<string, unknown>): MarketRiderView {
     countryIso2: row.country_iso2 as string,
     age: row.age as number,
     archetype: row.inferred_archetype as string,
-    potentialStars: potentialToStars(row.potential as number, POTENTIAL_MIN, POTENTIAL_MAX),
+    potentialStars: row.potential_stars as SegmentLevel,
     overallRating: overallRating(attributes),
   };
 }
@@ -93,10 +100,9 @@ const SORT_COLUMN: Record<MarketSort, string> = {
   age: 'age',
   country: 'country_name',
   archetype: 'inferred_archetype',
-  // Sorting by potential is allowed server-side (the DB compares the real
-  // number) even though the value returned to the browser is only the star
-  // bucket — the client never sees the number used to order the rows.
-  potential: 'potential',
+  // Sorting by potential uses the star bucket (the raw number is not
+  // selectable by players at all); ties keep the id order below.
+  potential: 'potential_stars',
 };
 
 /**
@@ -131,7 +137,7 @@ export async function getMarketPage(query: MarketQuery): Promise<MarketPageResul
 
   let builder = supabase
     .from('market_riders')
-    .select('*', { count: 'exact' })
+    .select(MARKET_PUBLIC_COLUMNS, { count: 'exact' })
     .eq('season_id', query.seasonId)
     .eq('tier', tier)
     .eq('status', 'available');
@@ -145,10 +151,7 @@ export async function getMarketPage(query: MarketQuery): Promise<MarketPageResul
     if (query.archetype) builder = builder.eq('inferred_archetype', query.archetype);
     if (query.ageMin != null) builder = builder.gte('age', query.ageMin);
     if (query.ageMax != null) builder = builder.lte('age', query.ageMax);
-    if (query.potentialStars) {
-      const { min, max } = starsToRawRange(query.potentialStars);
-      builder = builder.gte('potential', min).lte('potential', max);
-    }
+    if (query.potentialStars) builder = builder.eq('potential_stars', query.potentialStars);
   }
 
   const sortColumn = SORT_COLUMN[(isPremiumQuery && query.sort) || 'name'];
@@ -179,19 +182,11 @@ export async function getMarketRiderDetail(id: string): Promise<MarketRiderDetai
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('market_riders')
-    .select('id, tier, first_name, surname, country_name, country_iso2, age, inferred_archetype, potential, attributes')
+    .select(MARKET_PUBLIC_COLUMNS)
     .eq('id', id)
     .eq('status', 'available')
     .maybeSingle();
 
   if (error || !data) return null;
   return { ...toView(data), attributes: data.attributes as Record<SkillAttribute, number> };
-}
-
-/** Inverse of scoreToLevel's percentage banding, for the Premium potential-category filter. */
-function starsToRawRange(stars: SegmentLevel): { min: number; max: number } {
-  const span = POTENTIAL_MAX - POTENTIAL_MIN;
-  const min = POTENTIAL_MIN + ((stars - 1) / 5) * span;
-  const max = stars === 5 ? POTENTIAL_MAX : POTENTIAL_MIN + (stars / 5) * span;
-  return { min: Math.round(min), max: Math.round(max) };
 }

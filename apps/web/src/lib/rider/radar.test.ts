@@ -12,7 +12,7 @@ import {
 } from './radar';
 import { riderOverall, meanOf } from './score';
 import { PERFORMANCE_FOCUS } from '@/lib/training/config';
-import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from './config';
+import { TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, DISPLAY_SCALE, displayFraction, type SkillAttribute } from './config';
 import { AbilityRadar } from '@/components/rider/AbilityRadar';
 import sk from '@/i18n/messages/sk.json';
 
@@ -129,6 +129,19 @@ check('page passes only radar model + labels to the client radar (no rider.poten
   /<AbilityRadar[\s\S]*?\/>/.test(page) && !/<AbilityRadar[^>]*rider\.(potential|trainability|professionalism|recovery)/.test(page.match(/<AbilityRadar[\s\S]*?\/>/)![0]));
 check('estimates provider is server-only and takes only the rider id', /import 'server-only'/.test(estSrc) && /getDevelopmentEstimates\(_riderId: string\)/.test(estSrc));
 check('serialised model contains no hidden-looking numbers for Rozvoj', !/"(potential|trainability|professionalism|recovery)":\s*\d/.test(JSON.stringify(m)));
+
+// ---- full 1–200 display scale (market start: Skúsenosti 1–20 must not look like zero) ----
+const expNorm = (v: number) => buildRadarModel({ ...attrs, experience: v }, NO_DEVELOPMENT_ESTIMATES, lbl).groups.find((x) => x.id === 'experience')!.norm!;
+check('display scale is 1..200', DISPLAY_SCALE.min === 1 && DISPLAY_SCALE.max === 200);
+check('Skúsenosti 1 -> centre (0)', expNorm(1) === 0);
+check('Skúsenosti 20 -> about 10 % of the axis', Math.abs(expNorm(20) - 0.10) < 1e-9, String(expNorm(20)));
+check('Skúsenosti 100 -> about half the axis', Math.abs(expNorm(100) - 0.50) < 1e-9, String(expNorm(100)));
+check('Skúsenosti 200 -> full axis (1)', expNorm(200) === 1);
+check('Skúsenosti 250 / 0 are clamped to 0..1', expNorm(250) === 1 && expNorm(0) === 0);
+const flat79 = Object.fromEntries(KEYS.map((k) => [k, 79])) as Record<SkillAttribute, number>;
+const m79 = buildRadarModel(flat79, NO_DEVELOPMENT_ESTIMATES, lbl);
+check('a rider with all attributes 79 shows ~39 % on skill axes (not 0)', m79.groups.filter((x) => x.id !== 'development').every((x) => Math.abs(x.norm! - 0.39) < 1e-9));
+check('displayFraction(130) is about 65 %', Math.abs(displayFraction(130) - 0.648) < 0.001);
 
 // ---- write static SVGs for visual inspection ----
 mkdirSync('/tmp/radar', { recursive: true });

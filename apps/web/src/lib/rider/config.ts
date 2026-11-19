@@ -72,6 +72,20 @@ export const PERFORMANCE_MIN = ATTR_MIN;
 export const PERFORMANCE_MAX = 200;
 
 /**
+ * Player-facing DISPLAY scale (radar, bars, Skúsenosti stars): the full
+ * 1–200 attribute scale (C-093). 20/200 reads as ~10 %, 100/200 as about
+ * half, 200/200 as the full axis. Display only — the generators and the
+ * OVR formula keep their own constants above.
+ */
+export const DISPLAY_SCALE = { min: 1, max: 200 } as const;
+
+/** 0..1 position of an attribute value on the display scale (clamped). */
+export function displayFraction(value: number): number {
+  const f = (value - DISPLAY_SCALE.min) / (DISPLAY_SCALE.max - DISPLAY_SCALE.min);
+  return Math.max(0, Math.min(1, f));
+}
+
+/**
  * Canonical Tactics/Technique attribute groupings — centralizes what used
  * to be duplicated ad hoc as local TACTICS_KEYS/TECHNIQUE_KEYS arrays in
  * app/rider/page.tsx, app/rider/training/page.tsx, and

@@ -1,3 +1,6 @@
-# Current task — Visual unification + Rebríčky look (C-064)
-Status: UI + data layer done (real data where it exists); migration 20261116_04 prepared, NOT run. Waiting for owner decisions O-026.
-Not done on purpose: scoring values, promotion/relegation counts, tie-break, MS system, country picker in settings, writing league points after stages.
+# Current task — Market start: 100 new free riders, 1–200 radar, hidden values closed (C-093, C-094)
+Status: code + SQL prepared and tested in a sandbox Postgres; NOTHING run on production, nothing deployed.
+Order: migration A (`20261119_01_…_A.sql`) → deploy code (green Vercel build) → migration B (`…_02_…_B.sql`) → seed `supabase/seeds/20261119_launch_market_100.sql` → check the Trh → `supabase/diagnostics/market_launch/02_…zmazanie.sql` (deletes exactly the 45 old `starter-v1` riders, with backup; checksum f8830b1336a1a3a025dccac1619b5d13 already filled in).
+Done: radar/bars/Skúsenosti stars on the display scale 1–200 (`DISPLAY_SCALE`); launch generator (`launchMarket.ts`, OVR 69–75 by real F4, age 17–20, Skúsenosti 1–20, hidden 55–95); `potential_stars` + `admin_market_riders()`; Trh code reads public columns only.
+Open (needs owner): decision snippet `docs/snippets/DECISIONS_C-087_C-094_append.md` not yet merged into DECISIONS.md; Trh filters by `season_id` (riders vanish at season 3 — "stable market" is a later step); new starter generator for managers must fit Rookie OVR 75 (`create_my_starter_rider` bounds 112–148 still old); real-browser confirmation of saving/changing the training plan.
+Not done on purpose: finances, contracts, auctions, existing riders, OVR F4 formula, swap switch.

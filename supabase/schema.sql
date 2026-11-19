@@ -4167,3 +4167,7 @@ grant execute on function public.my_pending_swap() to authenticated;
 
 -- ---- League standings (migration 20261116_04): see supabase/migrations/20261116_04_league_standings.sql
 -- profiles.country_code, league_points, league_ms_status, league_standing_managers/points/seasons.
+
+
+-- ---- Market hidden values O-011 (migrations 20261119_01 / _02 / _03): see supabase/migrations/20261119_01_market_hidden_columns_A.sql
+-- market_riders.potential_stars (generated), admin_market_riders(season); part B = column-level SELECT grant for authenticated.
