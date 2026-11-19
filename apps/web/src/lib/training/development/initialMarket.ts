@@ -1,4 +1,4 @@
-import { SKILL_ATTRIBUTES, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
+import { POTENTIAL_BANDS, SKILL_ATTRIBUTES, TACTICS_ATTRIBUTES, TECHNIQUE_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
 import { clamp, intBetween, pickWeighted, COUNTRIES, FIRST, SUR, type Rng } from '@/lib/rider/shared';
 import { officialOvr } from './ovr';
 import { PHYSICAL, SHAPE_OF_PLAN, ALLROUNDER_PLAN, productionShape, type HiddenTraits } from './config';
@@ -35,8 +35,8 @@ export const MARKET_GEN_CONFIG = {
   physAptSpanMin: 6, physAptSpanRange: 8, techAptSpan: 18, shapeTactBoost: 8, shapeTechBoost: 0,
   noisePhys: 3, noiseTech: 5, noiseTact: 4, expMin: 15, expRange: 30,
   hiddenMean: 50, hiddenSd: 20,
-  /** null = the four development traits follow N(hiddenMean, hiddenSd); a range = uniform integer inside it (launch market: the production 55..95 scale). Vitality always follows the bell. */
-  devRange: null as { min: number; max: number } | null,
+  /** false = Potential follows N(hiddenMean, hiddenSd) like the other traits; true = the approved Potential bands (config.ts POTENTIAL_BANDS), drawn probabilistically. */
+  potentialBands: false,
 };
 
 /** The rule is checked with the ONE official OVR (ovr.ts). */
@@ -57,6 +57,12 @@ const OFFICIAL_PHYSICAL_WEIGHT = 0.60; // weight of V (physical rating) in the o
 const OFFICIAL_EXPERIENCE_WEIGHT = 0.15; // weight of Experience in the official OVR (C-083, F4)
 const OFFICIAL_TACTICS_WEIGHT = 0.15; // weight of the best Tactics attribute in the official OVR (C-083, F4); all tactics shift together
 const gauss = (r: Rng) => { let u = 0; for (let i = 0; i < 6; i++) u += r(); return (u - 3) / 0.7071; };
+/** Potential from the approved bands: pick a band by its probability, then a uniform integer inside it (no forced counts). */
+function bandPotential(r: Rng): number {
+  const u = r() * 100; let acc = 0;
+  for (const b of POTENTIAL_BANDS) { acc += b.share; if (u < acc) return b.min + Math.floor(r() * (b.max - b.min + 1)); }
+  return 100;
+}
 const I = (v: number) => Math.max(1, Math.min(200, Math.round(v)));
 
 function candidate(r: Rng, shape: number, aptitude: AptitudeProfile, L: number, Lt: number, Lc: number, c = MARKET_GEN_CONFIG): Record<SkillAttribute, number> {
@@ -83,7 +89,7 @@ export function generateMarketRider(seed: number, range: OvrRange | null, c = MA
   const shape = Math.floor(r() * 7);
   const aptitude = generateAptitudeProfile(Math.floor(r() * 4294967296), shape);
   const hidden = Object.fromEntries((['potential', 'trainability', 'professionalism', 'recovery', 'vitality'] as const).map((k) => [k,
-    c.devRange && k !== 'vitality' ? intBetween(r, c.devRange.min, c.devRange.max) : clamp(Math.round(c.hiddenMean + c.hiddenSd * gauss(r)), 1, 100)])) as unknown as HiddenTraits;
+    c.potentialBands && k === 'potential' ? bandPotential(r) : clamp(Math.round(c.hiddenMean + c.hiddenSd * gauss(r)), 1, 100)])) as unknown as HiddenTraits;
   const levels = (): [number, number, number] => {
     if (!range) { const Lp = c.laterCentre + c.laterSd * gauss(r); return [Lp, Lp - 10 + c.laterTechSd * gauss(r), Lp - 10 + c.laterTactSd * gauss(r)]; }
     const centre = (range.min + range.max) / 2;

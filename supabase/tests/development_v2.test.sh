@@ -78,6 +78,25 @@ echo "== migrations 03 + 04 (final state): the shared budget 58/18/14/10 % repla
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >"$DIR/m3.out" 2>&1 && ok "migration 03 applies" || { bad "migration 03" "$(tail -3 "$DIR/m3.out")"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261117_04_training_plans_calendar.sql" >"$DIR/m4.out" 2>&1 && ok "migration 04 applies" || { bad "migration 04" "$(tail -3 "$DIR/m4.out")"; exit 1; }
 
+echo "== migration 20261119_04 (S1 + O5 working model): cap slope 1.5 + youth floor, same function, TypeScript parity"
+psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >"$DIR/m19.out" 2>&1 && ok "S1+O5 migration applies" || { bad "S1+O5 migration" "$(tail -3 "$DIR/m19.out")"; exit 1; }
+psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >/dev/null 2>&1 && ok "S1+O5 migration is idempotent" || bad "S1+O5 second run" ""
+GRID="$DIR/grid.json"; (cd "$REPO/apps/web" && npx --no-install tsx --tsconfig tsconfig.json src/lib/training/development/roomGrid.cli.ts) > "$GRID" || { bad "room grid reference" ""; exit 1; }
+python3 - "$GRID" > "$DIR/grid.sql" <<'PY'
+import json,sys
+for g in json.load(open(sys.argv[1])): print(f"{g['cur']}|{g['cap']}|{g['age']}|{g['room']!r}")
+PY
+q "create temp table g(cur float8, cap float8, age int, room float8)" >/dev/null 2>&1
+psqlc t -c "create table public.room_grid(cur float8, cap float8, age int, room float8)" >/dev/null
+psqlc t -c "\\copy public.room_grid from '$DIR/grid.sql' with (format csv, delimiter '|')" >/dev/null
+eq "dev_phys_room equals TypeScript roomPhys on the whole grid (ages 16..35, caps 40..230, values 1..201): max abs diff < 1e-9" "$(q "select count(*) from public.room_grid where abs(public.dev_phys_room(cur, cap, age) - room) > 1e-9")" "0"
+eq "grid size (594 points)" "$(q "select count(*) from public.room_grid")" "594"
+eq "age 21: floor 0.30 above the ceiling; age 26: no floor" "$(q "select round(public.dev_phys_room(150, 90, 21)::numeric,2)||':'||(public.dev_phys_room(150, 90, 26) < 0.001)")" "0.30:true"
+eq "age 23: floor 0.18 (linear 21 -> 26)" "$(q "select round(public.dev_phys_room(150, 90, 23)::numeric,2)")" "0.18"
+eq "hard maximum: room 0 at 200 even for age 17" "$(q "select public.dev_phys_room(200, 90, 17)")" "0"
+eq "players cannot call the internal room function" "$(as $A "select public.dev_phys_room(1,1,1);" | grep -c 'permission denied')" "1"
+psqlc t -c "drop table public.room_grid" >/dev/null
+
 echo "== a week WITHOUT a plan changes nothing"
 BEFORE=$(q "select attributes::text||condition::text from public.riders where id='$RD'")
 eq "processing with no plan applies nothing" "$(as $D "select public.process_my_due_training();")" "0"

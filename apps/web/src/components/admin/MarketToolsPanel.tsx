@@ -33,7 +33,7 @@ export function MarketToolsPanel({ seasonId, initialSummary }: { seasonId: strin
 
   function handleReset() {
     if (!window.confirm(
-      `Naozaj zmazať ${summary.freeCount + summary.premiumCount} dostupných (nepodpísaných) market riderov pre ${seasonId}? ` +
+      `Naozaj zmazať ${summary.availableInSeason} dostupných (nepodpísaných) market riderov vygenerovaných v ${seasonId} (jazdci z iných sezón ostanú)? ` +
       'Podpísaní/získaní rideri zostanú netknutí. Túto akciu nemožno vrátiť späť.',
     )) return;
 
@@ -55,7 +55,7 @@ export function MarketToolsPanel({ seasonId, initialSummary }: { seasonId: strin
           <>
             <p className="text-sm font-bold text-teal-dark">Market pool active</p>
             <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-              <div className="flex justify-between gap-3"><dt className="text-navy-soft">Season</dt><dd className="font-semibold text-navy">{summary.seasonId}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-navy-soft">Current season</dt><dd className="font-semibold text-navy">{summary.seasonId}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-navy-soft">Source</dt><dd className="font-semibold text-navy">{summary.source}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-navy-soft">FREE riders</dt><dd className="font-semibold text-navy">{summary.freeCount}</dd></div>
               <div className="flex justify-between gap-3"><dt className="text-navy-soft">PREMIUM riders</dt><dd className="font-semibold text-navy">{summary.premiumCount}</dd></div>

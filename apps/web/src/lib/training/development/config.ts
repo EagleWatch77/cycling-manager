@@ -57,8 +57,10 @@ export interface DevelopmentConfig {
   techWeeklyMax: number;
   /** G = clamp(1 + wTr x (Trainability-50)/50 + wPr x (Professionalism-50)/50, gMin, gMax). Potential is NOT a multiplier. */
   wTrainability: number; wProfessionalism: number; gMin: number; gMax: number;
-  /** Potential = soft long-term cap: capBase + capSlope x 100 x (Potential/100)^capExp  (candidate B: 80 + 125 x (P/100)^2) */
+  /** Potential = soft long-term cap: capBase + capSlope x 100 x (Potential/100)^capExp  (working model S1: 80 + 150 x (P/100)^2; was 80 + 125 x ... in candidate B) */
   capBase: number; capSlope: number; capExp: number;
+  /** youth floor of the PHYSICAL room factor (working model O5): `youthRoomFloor` up to age `youthFloorFullUntil`, then linearly to 0 at age `youthFloorZeroAt` */
+  youthRoomFloor: number; youthFloorFullUntil: number; youthFloorZeroAt: number;
   /** logistic soft cap: room = 1/(1+exp((a-(cap-gap-softOffset))/softWidth)) */
   softOffset: number; softWidth: number;
   /** distance of the soft cap below the Potential cap: plan/strong attribute 0, shape-weak, other; Univerzál */
@@ -89,7 +91,9 @@ export const DEV_CONFIG: DevelopmentConfig = {
   modeCapacity: { basic: 0.75, full: 1 },
   techWeeklyMax: 4,
   wTrainability: 0.30, wProfessionalism: 0.15, gMin: 0.6, gMax: 1.5,
-  capBase: 80, capSlope: 1.25, capExp: 2,
+  // working model S1 (owner 2026-11-19, not final): cap 80 + 150 x (Pot/100)^2; O5: youth floor 0.30 up to age 21, linearly to 0 at age 26
+  capBase: 80, capSlope: 1.5, capExp: 2,
+  youthRoomFloor: 0.30, youthFloorFullUntil: 21, youthFloorZeroAt: 26,
   softOffset: 10, softWidth: 7,
   gapStrong: 0, gapWeak: 45, gapOther: 20, gapAllrounder: 10,
   aptPhysSpread: 30, techCapBase: 160, techCapSpread: 40,

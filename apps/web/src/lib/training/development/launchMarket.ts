@@ -1,13 +1,12 @@
 import { createHash } from 'node:crypto';
-import { POTENTIAL_MIN, POTENTIAL_MAX } from '@/lib/rider/config';
 import { INITIAL_MARKET_OVR, MARKET_GEN_CONFIG, generateMarketRider, type MarketRider } from './initialMarket';
 import { mulberry32 } from './aptitude';
 
 /**
  * Launch market (C-093): the first 100 free riders of the new market start. Uses the ONE official OVR (F4) via the existing
  * initial-market generator — only its configuration differs: attribute scale 1..200, Skúsenosti 1..20 (young riders), a bigger share
- * of the OVR difference carried by the physical block (the others sit low on the 1..200 scale), and the four hidden development traits
- * on the production 55..95 scale (so the stars, the soft cap and create_my_starter_rider bounds stay compatible).
+ * of the OVR difference carried by the physical block (the others sit low on the 1..200 scale), and Potential on the approved 1..100 band
+ * distribution (probabilistic; the other hidden traits keep the model's N(50;20) on 1..100, as the V2 training model reads them).
  * The F4 formula and existing riders are untouched.
  */
 export const LAUNCH_MARKET_COUNT = 100;
@@ -17,7 +16,7 @@ export const LAUNCH_MARKET_BATCH = 'launch-market-1';
 export const LAUNCH_MARKET_CONFIG = {
   ...MARKET_GEN_CONFIG,
   expMin: 1, expRange: 19.999, absorbExpShare: 0, absorbPhysShare: 0.7, maxPhysShift: 40, expFloor: 1, expCeiling: 20,
-  devRange: { min: POTENTIAL_MIN, max: POTENTIAL_MAX },
+  potentialBands: true,
 };
 
 /** Stable rider id (UUID shape) derived from batch + index, so re-running the seed never creates duplicates. */

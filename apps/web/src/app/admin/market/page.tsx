@@ -23,7 +23,7 @@ export default async function AdminMarketPage() {
 
   const [summary, riders] = await Promise.all([
     getMarketPoolSummary(season.seasonId),
-    getAdminMarketRiders(season.seasonId),
+    getAdminMarketRiders(), // the whole market, all seasons
   ]);
 
   return (

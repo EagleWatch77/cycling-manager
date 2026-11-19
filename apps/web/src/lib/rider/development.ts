@@ -1,3 +1,4 @@
+import { POTENTIAL_STAR_STARTS } from './config';
 /**
  * Development-attribute visual mapping — Potenciál / Trénovateľnosť /
  * Profesionalita / Regenerácia / Skúsenosti are deliberately never shown as
@@ -23,12 +24,11 @@ export function scoreToLevel(value: number, min: number, max: number): SegmentLe
 }
 
 /**
- * Potential's star rating. Kept as its own function — separate from
- * scoreToLevel — because potential is explicitly meant to read as an
- * imprecise, scouting-style estimate: a later pass could feed this a
- * fuzzed/uncertainty-adjusted value instead of the true score without
- * touching every other development attribute's mapping.
+ * Potential's star rating — follows the approved Potential bands (config.ts POTENTIAL_BANDS), NOT a linear split of a range:
+ * 1-39 =1, 40-59 =2, 60-74 =3, 75-87 =4, 88-100 =5. Mirrored by public.potential_to_stars() in SQL (one source of truth in two places,
+ * kept equal by the parity test). Kept separate from scoreToLevel so a later pass can feed it a scouting-fuzzed value.
  */
-export function potentialToStars(value: number, min: number, max: number): SegmentLevel {
-  return scoreToLevel(value, min, max);
+export function potentialStarsOf(value: number): SegmentLevel {
+  const stars = 1 + POTENTIAL_STAR_STARTS.filter((start) => value >= start).length;
+  return stars as SegmentLevel;
 }

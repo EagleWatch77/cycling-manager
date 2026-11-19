@@ -23,7 +23,7 @@ check('it concentrates on weak Potential: riders with Potential < 30 have far mo
 // 2. a full year (9 weeks x several seasons) for the affected riders: no decline, no NaN, no negative gain, bounded progress
 let nan = 0, decreased = 0, negGain = 0, bigProgress = 0, crawlTooFast = 0, checked = 0;
 for (const m of pool.filter((x) => x.hidden.potential < 30).slice(0, 300)) {
-  let r = asDev(m); const start = { ...r.attrs };
+  let r = { ...asDev(m), age: 27 }; const start = { ...r.attrs };
   for (let w = 0; w < 36; w++) {
     const o = weeklyTraining(r, { planId: r.shape, mode: w % 2 ? 'basic' : 'full' }, DEV_CONFIG); r = o.rider;
     for (const k of SKILL_ATTRIBUTES) { if (!Number.isFinite(r.attrs[k]) || !Number.isFinite(r.progress[k] ?? 0) || !Number.isFinite(o.rawProgress[k])) nan++; if (o.gains[k] < 0) negGain++; if ((r.progress[k] ?? 0) >= DEV_CONFIG.threshold || (r.progress[k] ?? 0) < 0) bigProgress++; }
@@ -35,12 +35,12 @@ for (const m of pool.filter((x) => x.hidden.potential < 30).slice(0, 300)) {
 check('weeks of training with ceilings below the start never produce NaN/Infinity', nan === 0, `${nan}`);
 check('training never lowers an attribute (only Vitality ageing can)', decreased === 0, `${decreased}`);
 check('no negative gain and accumulator progress stays within 0..threshold', negGain === 0 && bigProgress === 0, `${negGain} ${bigProgress}`);
-check('an attribute >= 30 points above its ceiling gains at most 1 point in 36 weeks (it simply has no room)', crawlTooFast === 0 && checked > 1000, `${crawlTooFast}/${checked}`);
+check('an attribute >= 30 points above its ceiling gains at most 1 point in 36 weeks (it simply has no room; riders aged 27, i.e. after the O5 youth floor)', crawlTooFast === 0 && checked > 1000, `${crawlTooFast}/${checked}`);
 
 // 3. exact behaviour of the room factor around the ceiling + extreme Potential
-const r0 = (potential: number): DevRider => ({ age: 18, shape: 1, attrs: Object.fromEntries(SKILL_ATTRIBUTES.map((k) => [k, 60])) as Record<SkillAttribute, number>, progress: {}, decline: {}, energy: 100, fatigue: 0, hidden: { potential, trainability: 50, professionalism: 50, recovery: 50, vitality: 50 } });
+const r0 = (potential: number): DevRider => ({ age: 27, shape: 1, attrs: Object.fromEntries(SKILL_ATTRIBUTES.map((k) => [k, 60])) as Record<SkillAttribute, number>, progress: {}, decline: {}, energy: 100, fatigue: 0, hidden: { potential, trainability: 50, professionalism: 50, recovery: 50, vitality: 50 } });
 const lowest = r0(1); const w = weeklyTraining(lowest, { planId: 1, mode: 'full' });
-check('Potential 1, weak-shape attribute (ceiling 35 vs value 60): finite, practically no growth (< 0.1 raw per week), no decline', Object.values(w.rawProgress).every(Number.isFinite) && w.rawProgress.climbing < 0.1 && w.gains.climbing === 0 && w.rider.attrs.climbing === 60);
+check('Potential 1, weak-shape attribute (ceiling 35 vs value 60), age 27 (no youth floor): finite, practically no growth (< 0.1 raw per week), no decline', Object.values(w.rawProgress).every(Number.isFinite) && w.rawProgress.climbing < 0.1 && w.gains.climbing === 0 && w.rider.attrs.climbing === 60);
 check('room is smooth: 0.5 exactly 10 points below the ceiling, 0.95+ far below, 0 at 200', Math.abs(roomPhys(90, 100) - 0.5) < 1e-9 && roomPhys(40, 100) > 0.95 && roomPhys(200, 400) === 0);
 check('technique ceiling below the start (rider with profile): no growth, no decline', (() => { const r = { ...r0(60), attrs: { ...r0(60).attrs, descending: 150 }, aptitude: { descending: -1, cornering: -1 } as Partial<Record<SkillAttribute, number>> }; const o = weeklyTraining(r, { planId: 0, mode: 'full' }); return techCapOf(r, 'descending') === 120 && o.gains.descending === 0 && o.rider.attrs.descending === 150 && o.rawProgress.descending < 0.5; })());
 check('decline stays a separate mechanism: a rider with all attributes above their ceilings loses points only through seasonStart (Vitality), never through training', decreased === 0);

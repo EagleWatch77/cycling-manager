@@ -1,0 +1,11 @@
+Trh štart: radar 1–200, trvalý trh, skryté hodnoty, 100 nových jazdcov, model S1+O5
+
+- Radar a Skúsenosti na škále 1–200
+- Trvalý Trh naprieč sezónami (admin vidí všetko, reset chráni vrátených/rezervovaných/vlastnených)
+- Skryté hodnoty trhu zatvorené (migrácie A/B + rollback), hviezdičky podľa pásiem Potenciálu
+- Generátor a seed 100 jazdcov (OVR 69–75, vek 17–20, Skúsenosti 1–20)
+- Pracovný model rozvoja S1+O5 v TypeScripte aj SQL, testy zhody
+- Skripty na kontrolu/zálohu/zmazanie 45 starých jazdcov, testy a dokumentácia
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019qejd9dvHcnWTcKdHgKijQ

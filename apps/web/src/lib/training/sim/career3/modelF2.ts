@@ -114,6 +114,10 @@ export interface CfgF2 {
   expK: number; tactK: number; capNonPerf: number; ms: boolean; decline: boolean; up: number[]; down: number[]; rhoStage: number;
   capExp: number; plans: Plan[]; gapMode: 'shape' | 'plan'; univGap: number; univPlan: 'std' | 'even'; tours4From: number; recMap: 'narrow' | 'wide';
   forceHidden?: Partial<Record<'po' | 'tr' | 'pr' | 'rec' | 'vit', number>>;
+  /** EXPERIMENT (low-Potential options): replaces the cap curve by a function of Potential, and scales the plan/shape gaps by a function of Potential (1 = unchanged) */
+  capFn?: (po: number) => number; gapScale?: (po: number) => number;
+  /** EXPERIMENT: the physical room factor never falls below this value for a rider of the given age (young riders keep some room beyond the soft cap) */
+  youthRoomFloor?: (age: number) => number;
 }
 export const DEF2: CfgF2 = {
   plan: 'fixed', forcePlan: -1, mode: 'advisor', advMin: 60, split: 0.8, splitPolicy: 'fixed', tours: 3, univDyn: false, budget: 'shared', energy: 'prod', accBug: false, effTable: 'prod',
@@ -171,7 +175,7 @@ export function runCareerF2(pop: readonly Rider3[], cfg: CfgF2): ResF2 {
     for (let ri = 0; ri < n; ri++) {
       const p = pop[ri], base = ri * NATTR, arch = p.arch;
       const po = hid[ri * 5], tr = hid[ri * 5 + 1], pr = hid[ri * 5 + 2], rec = hid[ri * 5 + 3], vit = hid[ri * 5 + 4];
-      const G = gMod2(cfg, tr, pr, po), al = ageFactor(age), alT = (1 + al) / 2, rm = recMod2(rec, cfg.recMap) * cfg.recFac, loadMul = 1.15 - 0.3 * vit / 100, cap0 = cfg.capBase + (cfg.capExp === 1 ? cfg.capSlope * po : cfg.capSlope * 100 * Math.pow(po / 100, cfg.capExp));
+      const G = gMod2(cfg, tr, pr, po), al = ageFactor(age), alT = (1 + al) / 2, rm = recMod2(rec, cfg.recMap) * cfg.recFac, loadMul = 1.15 - 0.3 * vit / 100, cap0 = cfg.capFn ? cfg.capFn(po) : cfg.capBase + (cfg.capExp === 1 ? cfg.capSlope * po : cfg.capSlope * 100 * Math.pow(po / 100, cfg.capExp)), gs = cfg.gapScale ? cfg.gapScale(po) : 1;
       En[ri] = Math.min(100, En[ri] + cfg.offE); Fa[ri] = Math.max(0, Fa[ri] - cfg.offE); Fat1[ri] *= cfg.offSeason;
       if (cfg.decline) {
         const onset = 29 + Math.floor((vit - 1) / 25);
@@ -223,7 +227,7 @@ export function runCareerF2(pop: readonly Rider3[], cfg: CfgF2): ResF2 {
         }
         let pl = planIdx;
         if (cfg.forcePlan < 0 && cfg.plan === 'random') pl = Math.floor(hu(ri, s * 20 + w, 13, seed) * 7);
-        else if (cfg.forcePlan < 0 && cfg.plan === 'adaptive') { let best = arch, bs = -1; for (const c of [arch, ...cfg.plans[arch].neigh]) { const pp = cfg.plans[c].phys; const sc = roomE(cfg.capMode, A[base + pp[0]], cap0 - gapF(cfg, arch, pp[0])) + 0.5 * roomE(cfg.capMode, A[base + pp[1]], cap0 - gapF(cfg, arch, pp[1])) + (c === arch ? 0.25 : 0); if (sc > bs) { bs = sc; best = c; } } pl = best; }
+        else if (cfg.forcePlan < 0 && cfg.plan === 'adaptive') { let best = arch, bs = -1; for (const c of [arch, ...cfg.plans[arch].neigh]) { const pp = cfg.plans[c].phys; const sc = roomE(cfg.capMode, A[base + pp[0]], cap0 - gs * gapF(cfg, arch, pp[0])) + 0.5 * roomE(cfg.capMode, A[base + pp[1]], cap0 - gs * gapF(cfg, arch, pp[1])) + (c === arch ? 0.25 : 0); if (sc > bs) { bs = sc; best = c; } } pl = best; }
         const plan = cfg.plans[pl], phys = physOf(cfg, pl, A, base);
         const a = basic ? 0.75 : 1.0;
         let sp = cfg.split; if (cfg.splitPolicy === 'youngTech') sp = age <= 22 ? 0.75 : 0.85; else if (cfg.splitPolicy === 'youngPerf') sp = age <= 22 ? 0.85 : 0.75;
@@ -232,7 +236,7 @@ export function runCareerF2(pop: readonly Rider3[], cfg: CfgF2): ResF2 {
         const shP = cfg.budget === 'shared' ? sp : 1, shT = cfg.budget === 'shared' ? 1 - sp : 1;
         for (const j of PERF_IDX) {
           const rank = phys.indexOf(j); const coef = pl === 6 && cfg.univPlan === 'even' ? EVEN : rank >= 0 ? cfg.coefP[rank] : cfg.gen;
-          const pts = coef * cfg.cPhys * a * shP * eff * G * al * roomE(cfg.capMode, A[base + j], cap0 - gapF(cfg, arch, j));
+          const pts = coef * cfg.cPhys * a * shP * eff * G * al * Math.max(roomE(cfg.capMode, A[base + j], cap0 - gs * gapF(cfg, arch, j)), cfg.youthRoomFloor ? cfg.youthRoomFloor(age) : 0);
           credit(ri, j, TH * pts, 200);
         }
         for (let r = 0; r < 2; r++) { const kk = plan.tech[r]; credit(ri, kk, TH * cfg.coefT[r] * cfg.cTech * a * shT * eff * G * alT * roomT(A[base + kk]), cfg.capNonPerf, 4); }

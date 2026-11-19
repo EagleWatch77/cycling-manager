@@ -48,7 +48,7 @@ check('seven plans exactly as approved in F4', PLANS.length === 7
   && PLANS[4].phys.join() === 'flat,endurance,hills' && PLANS[4].tech.join() === 'roughSurface,wetHandling'
   && PLANS[5].phys.join() === 'endurance,flat,acceleration' && PLANS[5].tech.join() === 'descending,bikeHandling'
   && PLANS[6].phys.join() === 'endurance,hills,flat' && PLANS[6].tech.join() === 'packRiding,bikeHandling');
-check('cap formula = candidate B: 80 + 125 x (Pot/100)^2', near(softCap(100), 205) && near(softCap(50), 111.25) && near(softCap(0), 80));
+check('cap formula = working model S1: 80 + 150 x (Pot/100)^2', near(softCap(100), 230) && near(softCap(50), 117.5) && near(softCap(0), 80));
 
 // ---- 1. exact increments of performance and technique ----
 {
@@ -64,7 +64,7 @@ check('cap formula = candidate B: 80 + 125 x (Pot/100)^2', near(softCap(100), 20
   check('main attribute #1 share = 58 % x 1.15 / 2.85', near(sh.climbing, 0.58 * 1.15 / 2.85, 1e-12));
   const expectTech = 93.72 * sh.descending * 1 * 1 * ((1 + 1.2) / 2) * Math.max(0.1, Math.min(1, (200 - 100) / 60));
   check('technical raw progress = budget x share x eff x G x (1+alpha)/2 x roomT', near(o.rawProgress.descending, expectTech, 1e-6), `${o.rawProgress.descending} vs ${expectTech}`);
-  check('other performance attribute shares 14 % / 4 = 3.5 % of the budget', near(sh.sprint, 0.035, 1e-12) && near(o.rawProgress.sprint / (93.72 * 0.035 * 1.2 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7))), 1, 1e-6));
+  check('other performance attribute shares 14 % / 4 = 3.5 % of the budget', near(sh.sprint, 0.035, 1e-12) && near(o.rawProgress.sprint / (93.72 * 0.035 * 1.2 * Math.max(1 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7)), 0.30)), 1, 1e-6)); // age 20: O5 youth floor 0.30 applies above the ceiling
   check('plan technique 2nd attribute uses 0.45 / 0.85 of the first', near(o.rawProgress.cornering / o.rawProgress.descending, 0.45 / 0.85, 1e-6));
   check('non-plan technique attributes get a SMALL progress (10 % / 4 each)', near(sh.wetHandling, 0.025, 1e-12) && (o.rawProgress.wetHandling ?? 0) > 0 && (o.rawProgress.wetHandling ?? 0) < o.rawProgress.cornering * 0.5);
   check('tactics and experience are not touched by training', (o.rawProgress.experience ?? 0) === 0 && (o.rawProgress.positioning ?? 0) === 0);
@@ -85,8 +85,8 @@ check('cap formula = candidate B: 80 + 125 x (Pot/100)^2', near(softCap(100), 20
 
 // ---- 3. Potential: soft cap only, weak vs high ----
 {
-  const strong = run(mk({ age: 20, hidden: { potential: 95 } }), 0, 'basic', 400);
-  const weak = run(mk({ age: 20, hidden: { potential: 15 } }), 0, 'basic', 400);
+  const strong = run(mk({ age: 27, hidden: { potential: 95 } }), 0, 'basic', 400);
+  const weak = run(mk({ age: 27, hidden: { potential: 15 } }), 0, 'basic', 400); // age 27: past the O5 youth floor
   check('weak Potential stagnates far below strong Potential', weak.attrs.climbing < 130 && strong.attrs.climbing > 170, `${weak.attrs.climbing} ${strong.attrs.climbing}`);
   check('Potential is not a growth multiplier at low levels (same first-week raw)', near(weeklyTraining(mk({ hidden: { potential: 15 } }), { planId: 0, mode: 'full' }, plain).rawProgress.descending, weeklyTraining(mk({ hidden: { potential: 95 } }), { planId: 0, mode: 'full' }, plain).rawProgress.descending, 1e-9));
   check('no hard OVR limit: high Potential reaches the 190+ zone on the planned attribute', strong.attrs.climbing >= 190, `${strong.attrs.climbing}`);

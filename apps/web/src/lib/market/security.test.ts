@@ -69,5 +69,17 @@ const adminSrc = fs.readFileSync(path.join(__dirname, 'repository.ts'), 'utf8');
 check("admin repository reads full rows only through the admin_market_riders() function (no select('*') on the table)", /rpc\('admin_market_riders'/.test(adminSrc) && !/select\(\s*'\*'/.test(adminSrc));
 check('admin summary does not select hidden columns directly from the table', !/\.select\('tier, status, generated_at, source'\)/.test(adminSrc));
 
+// 6. Permanent market (approved 2026-11-19): availability does not depend on the current season; season_id stays as history only.
+check('player market query has no season filter (market is permanent across seasons)', !/season_id|seasonId/.test(codeOnly), 'season filter found');
+check('MarketQuery has no seasonId', !/interface MarketQuery \{[^}]*seasonId/.test(src));
+check('still filtered by tier and status = available', /eq\('tier', tier\)/.test(src) && /eq\('status', 'available'\)/.test(src));
+const adminCode = adminSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+check('admin summary reads the WHOLE market (all seasons)', /getMarketPoolSummary[\s\S]*?p_season_id:\s*null/.test(adminCode));
+check('admin list reads the whole market when no season is given', /getAdminMarketRiders\(seasonId\?: string\)/.test(adminCode) && /p_season_id:\s*seasonId\s*\?\?\s*null/.test(adminCode));
+const genFn = adminCode.match(/export async function generateMarketPool[\s\S]*?const buildRow/)?.[0] ?? '';
+check('"already active" guard counts available riders of ALL seasons', genFn.length > 0 && !/eq\('season_id'/.test(genFn));
+const resetFn = adminCode.match(/export async function resetAvailableMarketPool[\s\S]*?\n\}/)?.[0] ?? '';
+check('reset stays limited to one season, available and never-acquired rows', /eq\('season_id', seasonId\)/.test(resetFn) && /eq\('status', 'available'\)/.test(resetFn) && /is\('acquired_rider_id', null\)/.test(resetFn));
+
 console.log(`\n  ${pass}/${pass + fail} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

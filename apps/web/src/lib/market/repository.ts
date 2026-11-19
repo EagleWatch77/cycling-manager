@@ -59,6 +59,8 @@ export interface MarketPoolSummary {
   freeCount: number;
   premiumCount: number;
   acquiredCount: number;
+  /** available riders generated in `seasonId` — exactly what the season-scoped reset would delete */
+  availableInSeason: number;
   generatedAt: string | null;
   source: MarketGenerationSource | null;
 }
@@ -67,23 +69,25 @@ export interface MarketPoolSummary {
 export async function getMarketPoolSummary(seasonId: string): Promise<MarketPoolSummary> {
   const supabase = await createClient();
   // Hidden/admin columns are not selectable by a session since 20261119_02 — the admin reads through the checked function.
-  const { data: raw, error } = await supabase.rpc('admin_market_riders', { p_season_id: seasonId });
+  // The market is permanent across seasons: the summary covers ALL seasons (season_id is history only).
+  const { data: raw, error } = await supabase.rpc('admin_market_riders', { p_season_id: null });
   const data = (raw ?? []) as Record<string, unknown>[];
 
   if (error || data.length === 0) {
-    return { seasonId, active: false, freeCount: 0, premiumCount: 0, acquiredCount: 0, generatedAt: null, source: null };
+    return { seasonId, active: false, freeCount: 0, premiumCount: 0, acquiredCount: 0, availableInSeason: 0, generatedAt: null, source: null };
   }
 
   const available = data.filter((r) => r.status === 'available');
   const freeCount = available.filter((r) => r.tier === 'free').length;
   const premiumCount = available.filter((r) => r.tier === 'premium').length;
   const acquiredCount = data.filter((r) => r.status === 'acquired').length;
+  const availableInSeason = available.filter((r) => r.season_id === seasonId).length;
   const generatedAt = available.length > 0
     ? available.reduce((latest, r) => ((r.generated_at as string) > latest ? (r.generated_at as string) : latest), available[0].generated_at as string)
     : null;
   const source = (available[0]?.source as MarketGenerationSource | undefined) ?? null;
 
-  return { seasonId, active: available.length > 0, freeCount, premiumCount, acquiredCount, generatedAt, source };
+  return { seasonId, active: available.length > 0, freeCount, premiumCount, acquiredCount, availableInSeason, generatedAt, source };
 }
 
 export type GenerateMarketPoolResult =
@@ -117,8 +121,7 @@ export async function generateMarketPool(input: {
   const { count, error: countError } = await supabase
     .from('market_riders')
     .select('id', { count: 'exact', head: true })
-    .eq('season_id', input.seasonId)
-    .eq('status', 'available');
+    .eq('status', 'available'); // all seasons: the market is permanent, an available rider of an earlier season counts
   if (countError) return { ok: false, reason: 'error' };
   if ((count ?? 0) > 0) return { ok: false, reason: 'already-active' };
 
@@ -177,10 +180,10 @@ export async function resetAvailableMarketPool(seasonId: string): Promise<{ ok: 
   return { ok: true, deleted: data?.length ?? 0 };
 }
 
-/** Admin-only raw list (all tiers/statuses) — for the admin Market Tools panel. */
-export async function getAdminMarketRiders(seasonId: string): Promise<MarketRiderRow[]> {
+/** Admin-only raw list (all tiers/statuses, all seasons unless one is given) — for the admin Market Tools panel. */
+export async function getAdminMarketRiders(seasonId?: string): Promise<MarketRiderRow[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('admin_market_riders', { p_season_id: seasonId });
+  const { data, error } = await supabase.rpc('admin_market_riders', { p_season_id: seasonId ?? null }); // no season = the whole market
 
   if (error || !data) return [];
   return (data as Record<string, unknown>[]).map(fromRow);

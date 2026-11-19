@@ -37,8 +37,18 @@ export function techCapOf(r: Pick<DevRider, 'aptitude'>, attr: SkillAttribute, c
   return t === undefined ? Infinity : cfg.techCapBase + cfg.techCapSpread * t;
 }
 
-export const roomPhys = (a: number, cap: number, cfg: DevelopmentConfig = DEV_CONFIG) =>
-  a >= cfg.maxAttribute ? 0 : 1 / (1 + Math.exp((a - (cap - cfg.softOffset)) / cfg.softWidth));
+/** Youth floor of the physical room factor (O5): constant up to `youthFloorFullUntil`, then linear to 0 at `youthFloorZeroAt`. Mirrors public.dev_phys_room() in SQL. */
+export const youthRoomFloor = (age: number, cfg: DevelopmentConfig = DEV_CONFIG) =>
+  age <= cfg.youthFloorFullUntil ? cfg.youthRoomFloor
+    : age >= cfg.youthFloorZeroAt ? 0
+      : cfg.youthRoomFloor * (cfg.youthFloorZeroAt - age) / (cfg.youthFloorZeroAt - cfg.youthFloorFullUntil);
+
+/** Physical room: the normal soft-cap value, but never below the youth floor when an age is given; the hard maximum always wins (room 0). */
+export const roomPhys = (a: number, cap: number, cfg: DevelopmentConfig = DEV_CONFIG, age?: number) => {
+  if (a >= cfg.maxAttribute) return 0;
+  const normal = 1 / (1 + Math.exp((a - (cap - cfg.softOffset)) / cfg.softWidth));
+  return age === undefined ? normal : Math.max(normal, youthRoomFloor(age, cfg));
+};
 export const roomTech = (a: number, cfg: DevelopmentConfig = DEV_CONFIG, cap = Infinity) => {
   const lin = Math.max(cfg.roomTechMin, Math.min(1, (cfg.maxAttribute - a) / cfg.roomTechSpan));
   return Number.isFinite(cap) ? (a >= cfg.maxAttribute ? 0 : lin * (1 / (1 + Math.exp((a - (cap - cfg.softOffset)) / cfg.softWidth)))) : lin;
@@ -98,7 +108,7 @@ export function weeklyTraining(rider: DevRider, setting: WeeklySetting | null, c
   const share = progressShares(setting.planId, cfg);
   const budget = cfg.weeklyBudget * a;                       // ONE budget for the whole week, whatever the plan
   for (const j of PHYSICAL) {
-    const room = roomPhys(attrs[j], effectiveCap(rider, j, cfg), cfg);
+    const room = roomPhys(attrs[j], effectiveCap(rider, j, cfg), cfg, rider.age);
     const raw = budget * share[j] * eff * G * al * room * (ctx.facilityMultiplier ?? 1);
     rawProgress[j] = raw;
     const r = accumulate(progress[j] ?? 0, raw, cfg.threshold, cfg.maxAttribute, attrs[j]);

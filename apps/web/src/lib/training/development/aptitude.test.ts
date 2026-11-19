@@ -53,7 +53,8 @@ check('same type, age and Potential: different attribute ceilings', JSON.stringi
 check('aptitude moves a ceiling by at most +-30 points', PERFORMANCE_FOCUS.every((k, i) => Math.abs(capsA[i] - effectiveCap({ ...a, aptitude: undefined }, k)) <= 30 + 1e-9));
 check('Potential keeps its meaning: higher Potential -> higher ceilings for the same profile', PERFORMANCE_FOCUS.every((k) => effectiveCap(mk(3, 0, 90), k) > effectiveCap(mk(3, 0, 30), k)));
 check('the average physical ceiling is unchanged by aptitude (the plan of Potential stays)', Math.abs(PERFORMANCE_FOCUS.reduce((x, k) => x + effectiveCap(a, k) - effectiveCap({ ...a, aptitude: undefined }, k), 0) / 7) < 3);
-let hi = mk(5, 0, 95), lo = mk(5, 0, 95);
+// Potential 60 (cap 134 under S1) and age 27: the ceilings differ by aptitude and neither hits the hard 200 nor the O5 youth floor (that is tested in youthRoom.test.ts)
+let hi = { ...mk(5, 0, 60), age: 27 }, lo = { ...mk(5, 0, 60), age: 27 };
 hi = { ...hi, aptitude: { ...hi.aptitude!, climbing: 1, descending: -1 } }; lo = { ...lo, aptitude: { ...lo.aptitude!, climbing: -1, descending: 1 } };
 const run = (r: DevRider, w: number) => { let x = r; for (let i = 0; i < w; i++) x = weeklyTraining(x, { planId: 0, mode: 'full' }, DEV_CONFIG).rider; return x; };
 const rh = run(hi, 300), rl = run(lo, 300);

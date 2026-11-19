@@ -54,7 +54,6 @@ export interface MarketRiderDetail extends MarketRiderView {
 export type MarketSort = 'name' | 'age' | 'country' | 'archetype' | 'potential';
 
 export interface MarketQuery {
-  seasonId: string;
   tier: MarketTier;
   page: number;
   /** Premium-only filters — silently ignored for a 'free' query (see getMarketPage). */
@@ -120,6 +119,8 @@ const SORT_COLUMN: Record<MarketSort, string> = {
  * smuggle filters into a 'free' query would just get the plain paginated
  * list, never an error that hints at what filtering would have done.
  */
+// The market is permanent across seasons (owner decision 2026-11-19): every 'available' rider is listed whatever season_id he was
+// generated in. season_id stays on the row as history only.
 export async function getMarketPage(query: MarketQuery): Promise<MarketPageResult> {
   const supabase = await createClient();
 
@@ -138,7 +139,6 @@ export async function getMarketPage(query: MarketQuery): Promise<MarketPageResul
   let builder = supabase
     .from('market_riders')
     .select(MARKET_PUBLIC_COLUMNS, { count: 'exact' })
-    .eq('season_id', query.seasonId)
     .eq('tier', tier)
     .eq('status', 'available');
 

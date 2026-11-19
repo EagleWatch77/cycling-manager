@@ -1,5 +1,4 @@
-import { potentialToStars, type SegmentLevel } from '@/lib/rider/development';
-import { POTENTIAL_MIN, POTENTIAL_MAX } from '@/lib/rider/config';
+import { potentialStarsOf, type SegmentLevel } from '@/lib/rider/development';
 import { SCOUTING_ESTIMATE_WINDOW, type FacilityLevel } from './config';
 
 /** Deterministic FNV-1a hash — no Math.random, stable across renders/reloads (same idea as lib/rider/avatarPool.ts's resolveAvatarSrc). */
@@ -28,8 +27,7 @@ export function estimatePotentialStars(riderId: string, truePotential: number, s
   // hashSeed is unsigned 32-bit; fold to a signed offset in [-window, +window].
   const unit = (hashSeed(riderId) % 2001) / 1000 - 1; // deterministic value in [-1, 1]
   const perturbed = truePotential + unit * window;
-  const clamped = Math.max(POTENTIAL_MIN, Math.min(POTENTIAL_MAX, perturbed));
-  return potentialToStars(clamped, POTENTIAL_MIN, POTENTIAL_MAX);
+  return potentialStarsOf(Math.max(1, Math.min(100, perturbed)));
 }
 
 const ACCURACY_LABEL_KEY: Record<FacilityLevel, string> = {

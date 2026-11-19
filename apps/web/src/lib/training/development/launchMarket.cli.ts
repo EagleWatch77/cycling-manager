@@ -19,7 +19,7 @@ console.log(`-- Launch market: ${LAUNCH_MARKET_COUNT} new free riders (batch ${L
 -- Idempotent: fixed ids + ON CONFLICT DO NOTHING, so a second run adds nothing. Existing riders are never touched.
 -- The real OVR (F4, rider_overall_rating) is computed by the database from the stored attributes - it is never written.
 -- The whole DO block is one transaction: if the count or the OVR range is wrong, everything is rolled back.
--- Hidden values (potential, trainability, professionalism, recovery) are on the production 55..95 scale.
+-- Potential follows the approved bands on 1..100 (35/45/14/4.5/1.2/0.3 %, probabilistic - no forced count per band); the other hidden traits are N(50;20) on 1..100.
 do $seed$
 declare
   v_season text := public.season_id_at(now());
@@ -50,9 +50,9 @@ ${rows.join(',\n')}
      and (public.rider_overall_rating(attributes) not between 69 and 75
           or age not between 17 and 20
           or (attributes ->> 'experience')::int not between 1 and 20
-          or potential not between 55 and 95);
+          or potential not between 1 and 100);
   if v_bad <> 0 then
-    raise exception 'launch market: % riders outside OVR 69..75 / age 17..20 / Experience 1..20 / potential 55..95', v_bad;
+    raise exception 'launch market: % riders outside OVR 69..75 / age 17..20 / Experience 1..20 / potential 1..100', v_bad;
   end if;
 
   raise notice 'launch market OK: % riders in % (newly added: %)', v_after, v_season, v_after - v_before;

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { getServerDictionary } from '@/i18n/server';
 import { getMyRider } from '@/lib/rider/repository';
-import { getCurrentSeasonInfo } from '@/lib/calendar/season';
 import { getMarketPage, type MarketSort } from '@/lib/market/playerRepository';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import { COUNTRIES } from '@/lib/rider/shared';
@@ -73,9 +72,7 @@ export default async function TransfersPage({
   const sortRaw = one(sp.sort);
   const sort: MarketSort = SORTS.includes(sortRaw as MarketSort) ? (sortRaw as MarketSort) : 'name';
 
-  const season = getCurrentSeasonInfo();
   const result = await getMarketPage({
-    seasonId: season.seasonId,
     tier: activeTab,
     page,
     search: activeTab === 'premium' ? search : undefined,

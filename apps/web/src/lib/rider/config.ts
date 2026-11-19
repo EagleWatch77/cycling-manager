@@ -103,6 +103,18 @@ export const AGE_MIN = 18;
 export const AGE_MAX = 22;
 
 /** Hidden, persisted, no race effect yet. */
+/**
+ * Approved Potential distribution on the 1..100 scale (owner, 2026-11-19): probabilities, not quotas. Rare talent need not appear
+ * among any given 100 riders. Potential stars follow these bands (the two top bands share the 5th star): 1-39 =1, 40-59 =2,
+ * 60-74 =3, 75-87 =4, 88-100 =5. The V2 training model reads Potential on this 1..100 scale directly (soft cap 80 + 125 x (Pot/100)^2).
+ */
+export const POTENTIAL_BANDS = [
+  { min: 1, max: 39, share: 35 }, { min: 40, max: 59, share: 45 }, { min: 60, max: 74, share: 14 },
+  { min: 75, max: 87, share: 4.5 }, { min: 88, max: 94, share: 1.2 }, { min: 95, max: 100, share: 0.3 },
+] as const;
+/** First Potential value of the 2nd..5th star (mirrored by public.potential_to_stars() in SQL). */
+export const POTENTIAL_STAR_STARTS = [40, 60, 75, 88] as const;
+
 export const POTENTIAL_MIN = 55;
 export const POTENTIAL_MAX = 95;
 export const TRAINABILITY_MIN = 55;

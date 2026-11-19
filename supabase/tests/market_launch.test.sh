@@ -64,13 +64,16 @@ echo "== player can read exactly the public columns (free tier only; RLS still w
 eq "free player sees 3 free available riders" "$(as $PL "select count(*) from public.market_riders where status='available' and season_id='season-2';")" "3"
 eq "premium rider stays hidden from a free player (RLS policy unchanged)" "$(as $PL "select count(*) from public.market_riders where tier='premium';")" "0"
 eq "premium player sees premium rider" "$(as $PREM "select count(*) from public.market_riders where tier='premium';")" "1"
-eq "public columns + stars are selectable" "$(as $PL "select first_name||':'||potential_stars||':'||(attributes->>'experience') from public.market_riders where surname='Free' order by potential_stars, id limit 1;")" "A:1:130"
-eq "stars: potential 55 -> 1, 75 -> 3, 95 -> 5" "$(as $PL "select string_agg(potential_stars::text, ',' order by potential_stars) from public.market_riders where tier='free';")" "1,3,5"
+eq "public columns + stars are selectable" "$(as $PL "select first_name||':'||potential_stars||':'||(attributes->>'experience') from public.market_riders where surname='Free' order by potential_stars, id limit 1;")" "A:2:130"
+eq "stars: potential 55 -> 2, 75 -> 4, 95 -> 5" "$(as $PL "select string_agg(potential_stars::text, ',' order by potential_stars) from public.market_riders where tier='free';")" "2,4,5"
 eq "anon reads nothing" "$(asanon "select count(*) from public.market_riders;" | tail -1 | cut -c1-60)" "ERROR:  permission denied for table market_riders"
-echo "== stars equal the TypeScript formula for every potential 1..100"
-SQLSTARS=$(q "select string_agg(greatest(1, least(5, ceil((p - 55) / 40.0 * 5)::int))::text, '' order by p) from generate_series(1,100) p")
-TSSTARS=$(node -e "let s='';for(let p=1;p<=100;p++){const pct=(p-55)/40;s+=Math.max(1,Math.min(5,Math.ceil(pct*5)))}console.log(s)")
-eq "SQL star bucket == scoreToLevel(p,55,95) for p = 1..100" "$SQLSTARS" "$TSSTARS"
+echo "== stars equal the TypeScript formula for every potential 1..100 (bands)"
+SQLSTARS=$(q "select string_agg(public.potential_to_stars(p)::text, '' order by p) from generate_series(1,100) p")
+TSSTARS=$(node -e "const st=[40,60,75,88];let s='';for(let p=1;p<=100;p++){s+=1+st.filter(x=>p>=x).length}console.log(s)")
+eq "SQL potential_to_stars == potentialStarsOf for p = 1..100" "$SQLSTARS" "$TSSTARS"
+eq "generated column equals the function" "$(q "select count(*) from public.market_riders where potential_stars <> public.potential_to_stars(potential)")" "0"
+RIDPL=$(q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values ('$(q "insert into auth.users default values returning id" | head -1)','S','R','Slovakia','SK',20,'$ATT','$COND','$COND','climber',45,50,50,50) returning player_id" | head -1)
+eq "my_rider_estimates uses the same bands (potential 45 -> 2 stars)" "$(as $RIDPL "select potential_stars from public.my_rider_estimates();")" "2"
 echo "== admin"
 eq "admin_market_riders as admin returns all 4 rows incl. hidden columns" "$(as $ADM "select count(*) from public.admin_market_riders('season-2') where potential is not null;")" "4"
 has "admin_market_riders refuses a normal player" "$(as $PL "select * from public.admin_market_riders('season-2');")" "not_admin"
@@ -90,9 +93,9 @@ OUT=$(psqlc t -f "$SEED"); has "seed runs and reports OK" "$OUT" "launch market 
 eq "exactly 100 new riders added" "$(q "select count(*) from public.market_riders")" "$((BEFORE+100))"
 eq "database OVR (F4) of every seeded rider is 69..75" "$(q "select min(public.rider_overall_rating(attributes))||'-'||max(public.rider_overall_rating(attributes)) from public.market_riders where generator_version='initial-market-1.0'" | awk -F- '{print ($1>=69 && $2<=75) ? "ok" : "bad"}')" "ok"
 eq "all seeded riders are free + available, age 17..20, Skúsenosti 1..20" "$(q "select count(*) from public.market_riders where generator_version='initial-market-1.0' and tier='free' and status='available' and age between 17 and 20 and (attributes->>'experience')::int between 1 and 20")" "100"
-eq "seeded hidden traits are on the 55..95 scale" "$(q "select count(*) from public.market_riders where generator_version='initial-market-1.0' and potential between 55 and 95 and trainability between 55 and 95 and professionalism between 55 and 95 and recovery between 55 and 95")" "100"
+eq "seeded hidden traits are on the 1..100 scale" "$(q "select count(*) from public.market_riders where generator_version='initial-market-1.0' and potential between 1 and 100 and trainability between 1 and 100 and professionalism between 1 and 100 and recovery between 1 and 100")" "100"
 eq "state coefficients filled by the trigger" "$(q "select count(*) from public.market_riders where generator_version='initial-market-1.0' and energy_efficiency is not null and fitness_peak is not null")" "100"
-eq "all five star levels occur among the seeded riders (as a player sees them)" "$(as $PL "select count(distinct potential_stars) from public.market_riders where status='available' and first_name <> 'A' and surname <> 'Free'")" "5"
+eq "seeded potential is on 1..100 and mostly low/medium (probabilistic bands: >= 70 % of the 100 below 60)" "$(q "select (count(*) filter (where potential < 60) >= 70)::text from public.market_riders where generator_version='initial-market-1.0'")" "true"
 eq "a player sees the new riders in the current season" "$(as $PL "select count(*) from public.market_riders where season_id = public.season_id_at(now()) and tier='free' and (attributes->>'experience')::int <= 20 and age <= 20 and first_name not in ('A','B','C')")" "100"
 OUT2=$(psqlc t -f "$SEED"); has "second run is accepted (idempotent)" "$OUT2" "newly added: 0"
 eq "second run adds nothing" "$(q "select count(*) from public.market_riders")" "$((BEFORE+100))"
@@ -100,4 +103,21 @@ eq "existing test riders A/B/C/D untouched" "$(q "select count(*) from public.ma
 echo "== rollback file"
 psqlc t -f "$RB" >/dev/null; has "rollback restores select of hidden columns for a player" "$(as $PL "select count(potential) from public.market_riders where tier='free';")" "^[0-9]"
 psqlc t -f "$B" >/dev/null; has "part B closes it again" "$(as $PL "select potential from public.market_riders;")" "permission denied"
+echo "== permanent market: riders of earlier seasons stay visible and purchasable"
+q "insert into public.market_riders (season_id,tier,status,first_name,surname,country_name,country_iso2,age,attributes,condition,inferred_archetype,potential,trainability,professionalism,recovery,source) values
+ ('season-1','free','available','Old','SeasonOne','Slovakia','SK',19,'$ATT','$COND','climber',45,40,40,40,'admin'),
+ ('season-1','premium','available','Old','PremiumOne','Slovakia','SK',19,'$ATT','$COND','climber',70,40,40,40,'admin'),
+ ('season-9','free','available','Future','SeasonNine','Slovakia','SK',19,'$ATT','$COND','climber',45,40,40,40,'admin')" >/dev/null
+eq "a free player sees free riders of ANY season (season-1 and season-9 too)" "$(as $PL "select count(*) from public.market_riders where surname in ('SeasonOne','SeasonNine') and status='available';")" "2"
+eq "premium rider of an earlier season stays hidden from a free player (tier rule unchanged)" "$(as $PL "select count(*) from public.market_riders where surname='PremiumOne';")" "0"
+eq "premium player sees the earlier-season premium rider" "$(as $PREM "select count(*) from public.market_riders where surname='PremiumOne';")" "1"
+eq "season_id is kept as history on the row" "$(as $PL "select season_id from public.market_riders where surname='SeasonOne';")" "season-1"
+PL2=$(mk); q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values ('$PL2','Moj','Druhy','Slovakia','SK',20,'$ATT','$COND','$COND','climber',70,50,50,50)" >/dev/null
+OLDID=$(q "select id from public.market_riders where surname='SeasonOne'")
+has "a rider generated in an earlier season can be reserved (purchase flow is season-independent)" "$(as $PL2 "select status from public.reserve_market_rider('$OLDID');")" "pending"
+eq "...and then he is reserved, not deleted or relabelled" "$(q "select status||':'||season_id from public.market_riders where id='$OLDID'")" "reserved:season-1"
+eq "admin_market_riders() without a season returns the WHOLE market" "$(as $ADM "select count(distinct season_id) >= 3 from public.admin_market_riders();")" "t"
+eq "admin_market_riders('season-1') still filters one season" "$(as $ADM "select count(*) from public.admin_market_riders('season-1') where season_id <> 'season-1';")" "0"
+has "a normal player still cannot call it without a season" "$(as $PL "select * from public.admin_market_riders();")" "not_admin"
+eq "a season-9 row keeps its season_id (history is never rewritten by the market)" "$(q "select count(*) from public.market_riders where surname='SeasonNine' and season_id='season-9'")" "1"
 echo; echo "$pass passed, $fail failed"
