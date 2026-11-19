@@ -1,8 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { generateStarterRider } from '@/lib/rider/generate';
 import type { SkillAttribute } from '@/lib/rider/config';
-import { MARKET_FREE_POOL_SIZE, MARKET_PREMIUM_POOL_SIZE } from './config';
+import { countResettable } from './resetCount';
 
 export type MarketTier = 'free' | 'premium';
 export type MarketRiderStatus = 'available' | 'reserved' | 'acquired';
@@ -59,8 +58,8 @@ export interface MarketPoolSummary {
   freeCount: number;
   premiumCount: number;
   acquiredCount: number;
-  /** available riders generated in `seasonId` — exactly what the season-scoped reset would delete */
-  availableInSeason: number;
+  /** EXACTLY what the reset can delete in `seasonId`: available, never owned (acquired_rider_id null). Returned riders with a history are not counted. */
+  resettableInSeason: number;
   generatedAt: string | null;
   source: MarketGenerationSource | null;
 }
@@ -74,88 +73,37 @@ export async function getMarketPoolSummary(seasonId: string): Promise<MarketPool
   const data = (raw ?? []) as Record<string, unknown>[];
 
   if (error || data.length === 0) {
-    return { seasonId, active: false, freeCount: 0, premiumCount: 0, acquiredCount: 0, availableInSeason: 0, generatedAt: null, source: null };
+    return { seasonId, active: false, freeCount: 0, premiumCount: 0, acquiredCount: 0, resettableInSeason: 0, generatedAt: null, source: null };
   }
 
   const available = data.filter((r) => r.status === 'available');
   const freeCount = available.filter((r) => r.tier === 'free').length;
   const premiumCount = available.filter((r) => r.tier === 'premium').length;
   const acquiredCount = data.filter((r) => r.status === 'acquired').length;
-  const availableInSeason = available.filter((r) => r.season_id === seasonId).length;
+  const resettableInSeason = countResettable(data, seasonId);
   const generatedAt = available.length > 0
     ? available.reduce((latest, r) => ((r.generated_at as string) > latest ? (r.generated_at as string) : latest), available[0].generated_at as string)
     : null;
   const source = (available[0]?.source as MarketGenerationSource | undefined) ?? null;
 
-  return { seasonId, active: available.length > 0, freeCount, premiumCount, acquiredCount, availableInSeason, generatedAt, source };
+  return { seasonId, active: available.length > 0, freeCount, premiumCount, acquiredCount, resettableInSeason, generatedAt, source };
 }
 
 export type GenerateMarketPoolResult =
   | { ok: true; freeCreated: number; premiumCreated: number }
-  | { ok: false; reason: 'already-active' | 'error' };
+  | { ok: false; reason: 'already-active' | 'error' | 'generator-disabled' };
 
 /**
- * The one and only market-pool generation path — reuses the exact starter
- * rider generator (same shape-based attribute distribution as a player's own
- * starter rider; no separate "market quality" formula invented for V1, see
- * the chat report). Designed to be called from two places without ever
- * duplicating this logic:
- *   A) the admin "Vygenerovať market pool teraz" action (source: 'admin')
- *   B) a future Week 6 season-tick job (source: 'week6') — that job does not
- *      exist yet (no season-tick system exists at all, per the prior
- *      architecture audit); when it's built, it should call this function
- *      directly rather than reimplementing pool creation.
- *
- * Idempotent on the "available" pool, not on the table as a whole: a season
- * with only acquired/history rows (e.g. right after a reset) is treated as
- * having no active pool, so generation can run again. A season that still
- * has any available rider blocks a second batch outright — the caller must
- * reset first (see resetAvailableMarketPool below).
+ * DISABLED (owner decision 2026-11-19). The old admin generator built riders with generateStarterRider() (about OVR 130), which no longer fits the
+ * approved market start (OVR 69–75, ages 17–20, Potential bands). To make an accidental click or a future job harmless, this function does NOTHING:
+ * it reads nothing, writes nothing and always returns 'generator-disabled'. A new generator (and any automatic week-6 generation) needs its own
+ * approval; the 100 launch riders come from supabase/seeds/20261119_launch_market_100.sql (run by the owner by hand).
  */
-export async function generateMarketPool(input: {
+export async function generateMarketPool(_input: {
   seasonId: string;
   source: MarketGenerationSource;
 }): Promise<GenerateMarketPoolResult> {
-  const supabase = await createClient();
-
-  const { count, error: countError } = await supabase
-    .from('market_riders')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'available'); // all seasons: the market is permanent, an available rider of an earlier season counts
-  if (countError) return { ok: false, reason: 'error' };
-  if ((count ?? 0) > 0) return { ok: false, reason: 'already-active' };
-
-  const buildRow = (tier: MarketTier) => {
-    const rider = generateStarterRider(Math.random);
-    return {
-      season_id: input.seasonId,
-      tier,
-      status: 'available' as const,
-      first_name: rider.firstName,
-      surname: rider.surname,
-      country_name: rider.countryName,
-      country_iso2: rider.countryIso2,
-      age: rider.age,
-      attributes: rider.attributes,
-      condition: rider.condition,
-      inferred_archetype: rider.inferredArchetype,
-      potential: rider.potential,
-      trainability: rider.trainability,
-      professionalism: rider.professionalism,
-      recovery: rider.recovery,
-      generator_version: rider.generatorVersion,
-      source: input.source,
-    };
-  };
-
-  const rows = [
-    ...Array.from({ length: MARKET_FREE_POOL_SIZE }, () => buildRow('free')),
-    ...Array.from({ length: MARKET_PREMIUM_POOL_SIZE }, () => buildRow('premium')),
-  ];
-
-  const { error } = await supabase.from('market_riders').insert(rows);
-  if (error) return { ok: false, reason: 'error' };
-  return { ok: true, freeCreated: MARKET_FREE_POOL_SIZE, premiumCreated: MARKET_PREMIUM_POOL_SIZE };
+  return { ok: false, reason: 'generator-disabled' };
 }
 
 /**

@@ -115,6 +115,12 @@ export const POTENTIAL_BANDS = [
 /** First Potential value of the 2nd..5th star (mirrored by public.potential_to_stars() in SQL). */
 export const POTENTIAL_STAR_STARTS = [40, 60, 75, 88] as const;
 
+/**
+ * LEGACY range 55–95 of the OLD Potential scale (starter riders, AI fillers, legacy training model V1 and its SQL mirror development_room_factor()).
+ * The real Potential is 1–100 (bands POTENTIAL_BANDS above; used by the development model V2, the market generator and the stars).
+ * Do NOT use these two constants for anything new. Changing them changes starter-rider generation, create_my_starter_rider() validation (SQL: 55..95)
+ * and the V1 training maths, so it belongs to a separate, approved task (see docs/snippets/DECISIONS_C-087_C-094_append.md, C-097).
+ */
 export const POTENTIAL_MIN = 55;
 export const POTENTIAL_MAX = 95;
 export const TRAINABILITY_MIN = 55;

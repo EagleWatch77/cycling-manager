@@ -76,8 +76,15 @@ check('still filtered by tier and status = available', /eq\('tier', tier\)/.test
 const adminCode = adminSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 check('admin summary reads the WHOLE market (all seasons)', /getMarketPoolSummary[\s\S]*?p_season_id:\s*null/.test(adminCode));
 check('admin list reads the whole market when no season is given', /getAdminMarketRiders\(seasonId\?: string\)/.test(adminCode) && /p_season_id:\s*seasonId\s*\?\?\s*null/.test(adminCode));
-const genFn = adminCode.match(/export async function generateMarketPool[\s\S]*?const buildRow/)?.[0] ?? '';
-check('"already active" guard counts available riders of ALL seasons', genFn.length > 0 && !/eq\('season_id'/.test(genFn));
+// 7. The old admin generator (generateStarterRider ~ OVR 130) is switched off until a new generator is approved separately.
+const genFn = adminCode.match(/export async function generateMarketPool[\s\S]*?\n\}\n/)?.[0] ?? '';
+check('generateMarketPool still exists but is disabled (returns generator-disabled)', genFn.length > 0 && /generator-disabled/.test(genFn));
+check('the old starter generator is not imported or called in the market repository', !/generateStarterRider/.test(adminCode));
+check('generateMarketPool performs no database write and no database read', !/\.insert\(|\.from\(|createClient\(/.test(genFn));
+check('no market code path inserts generated riders any more', !/\.insert\(/.test(adminCode));
+const panel = fs.readFileSync(path.join(__dirname, '../../components/admin/MarketToolsPanel.tsx'), 'utf8');
+check('the generate button is permanently disabled in the admin panel', /onClick=\{handleGenerate\}[^>]*disabled(?!=)/.test(panel) || /disabled=\{true\}/.test(panel) || /MARKET_ADMIN_GENERATION_ENABLED/.test(panel));
+check('reset confirm shows the exact resettable count and the button is disabled at 0', /resettableInSeason/.test(panel) && /resettableInSeason === 0/.test(panel) && !/availableInSeason/.test(panel + adminSrc));
 const resetFn = adminCode.match(/export async function resetAvailableMarketPool[\s\S]*?\n\}/)?.[0] ?? '';
 check('reset stays limited to one season, available and never-acquired rows', /eq\('season_id', seasonId\)/.test(resetFn) && /eq\('status', 'available'\)/.test(resetFn) && /is\('acquired_rider_id', null\)/.test(resetFn));
 

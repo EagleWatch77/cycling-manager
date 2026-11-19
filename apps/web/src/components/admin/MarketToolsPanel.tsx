@@ -23,6 +23,8 @@ export function MarketToolsPanel({ seasonId, initialSummary }: { seasonId: strin
       const result = await generateMarketPoolAction(seasonId);
       if (result.ok) {
         router.refresh();
+      } else if (result.reason === 'generator-disabled') {
+        setError('Staré administrátorské generovanie je vypnuté, kým sa neschváli nový generátor.');
       } else if (result.reason === 'already-active') {
         setError('Market pool pre túto sezónu už existuje. Najprv ho resetni, ak chceš vygenerovať nový.');
       } else {
@@ -32,9 +34,10 @@ export function MarketToolsPanel({ seasonId, initialSummary }: { seasonId: strin
   }
 
   function handleReset() {
+    if (summary.resettableInSeason === 0) return;
     if (!window.confirm(
-      `Naozaj zmazať ${summary.availableInSeason} dostupných (nepodpísaných) market riderov vygenerovaných v ${seasonId} (jazdci z iných sezón ostanú)? ` +
-      'Podpísaní/získaní rideri zostanú netknutí. Túto akciu nemožno vrátiť späť.',
+      `Naozaj zmazať ${summary.resettableInSeason} nikdy nevlastnených dostupných market riderov so season_id ${seasonId}? ` +
+      'Vrátení jazdci s históriou, rezervovaní, vlastnení a jazdci z iných sezón ostanú netknutí. Túto akciu nemožno vrátiť späť.',
     )) return;
 
     setError(null);
@@ -76,13 +79,13 @@ export function MarketToolsPanel({ seasonId, initialSummary }: { seasonId: strin
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={handleGenerate} disabled={pending || summary.active} aria-busy={pending}
+        <button type="button" onClick={handleGenerate} disabled aria-busy={pending} title="Staré generovanie je vypnuté, kým sa neschváli nový generátor"
           className="rounded-lg bg-teal px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-teal-dark disabled:cursor-not-allowed disabled:opacity-50">
-          {pending ? 'Pracujem…' : 'Vygenerovať market pool teraz'}
+          Generovanie vypnuté (čaká na nový generátor)
         </button>
-        <button type="button" onClick={handleReset} disabled={pending || (summary.freeCount + summary.premiumCount === 0)} aria-busy={pending}
+        <button type="button" onClick={handleReset} disabled={pending || summary.resettableInSeason === 0} aria-busy={pending}
           className="rounded-lg border border-danger bg-card px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/5 disabled:cursor-not-allowed disabled:opacity-50">
-          ⚠ Resetovať testovací market
+          ⚠ Resetovať testovací market ({summary.resettableInSeason})
         </button>
       </div>
     </div>
