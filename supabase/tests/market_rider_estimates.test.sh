@@ -54,17 +54,45 @@ f1=00000000-0000-0000-0000-0000000000a1; f2=00000000-0000-0000-0000-0000000000a2
 g1=00000000-0000-0000-0000-0000000000c1; m1=00000000-0000-0000-0000-0000000000d1
 est() { as "$1" "select potential_stars||','||trainability_level||','||professionalism_level||','||recovery_level||','||vitality_level from public.market_rider_estimates('$2');"; }
 
-# level mapping on the band edges (potential 88->5, trainability 1->1, professionalism 20->1, recovery 21->2, vitality 100->5)
-eq "free rider, edge values: stars 5, levels 1,1,2,5" "$(est $C $f1)" "5,1,1,2,5"
-eq "free rider, upper edges: potential 39->1, 41->3, 60->3, 61->4, 80->4" "$(est $C $f2)" "1,3,3,4,4"
+# Potential = approved bands, NO noise (88->5, 39->1); the other four carry a stable +-10 noise: compare with the true value's band, allowing +-10 points
+eq "free rider: potential stars exact (88 -> 5)" "$(est $C $f1 | cut -d, -f1)" "5"
+eq "free rider: potential stars exact (39 -> 1)" "$(est $C $f2 | cut -d, -f1)" "1"
 eq "free player gets NO row for a premium rider" "$(est $C $p1)" ""
-eq "premium player gets the premium rider (75->4, 50->3)" "$(est $B $p1)" "4,3,3,3,3"
+eq "premium player gets the premium rider (potential 75 -> 4 stars)" "$(est $B $p1 | cut -d, -f1)" "4"
 eq "a reserved (not available) rider of someone else: no row" "$(est $C $g1)" ""
-eq "the acquiring player still sees his own rider (premium tier, reserved)" "$(est $A $m1)" "3,5,5,5,5"
+eq "the acquiring player still sees his own rider (premium tier, reserved)" "$(est $A $m1 | cut -d, -f1)" "3"
 eq "another player cannot see that rider" "$(est $C $m1)" ""
 eq "unknown id: no row, no error" "$(est $C 00000000-0000-0000-0000-0000000000ff)" ""
 eq "anonymous cannot execute it" "$(asanon "select count(*) from public.market_rider_estimates('$f1');" | grep -ci 'permission denied')" "1"
 eq "no login (auth.uid() null) returns nothing" "$(printf "set role authenticated;\nselect count(*) from public.market_rider_estimates('$f1');\n" | psqlc t)" "0"
+
+# --- noise: stable, bounded, not zero, salt secret ---
+r1=$(est $C $f2); r2=$(est $C $f2); r3=$(est $C $f2)
+eq "the same rider gives the same answer on every call (stable, not random per request)" "$r1/$r2" "$r1/$r3"
+q "insert into public.market_riders select gen_random_uuid(), 'free','available','N','N','{}', 50, v, v, v, v, null from generate_series(1,100) v, generate_series(1,20) k;" >/dev/null
+printf "select set_config('request.jwt.claim.sub','$C',false);\\ncreate table public._chk as select m.id, m.trainability tv, e.trainability_level tl, e.professionalism_level pl, e.recovery_level rl, e.vitality_level vl from public.market_riders m, lateral public.market_rider_estimates(m.id) e where m.first_name='N';\\n" | psqlc t >/dev/null
+eq "2000 test riders measured" "$(q "select count(*) from public._chk")" "2000"
+eq "every shown level is within +-10 points of the true value (level of v-10 <= shown <= level of v+10), all four values" \
+   "$(q "select count(*) from public._chk where tl < public.market_score_to_level(greatest(1,tv-10)) or tl > public.market_score_to_level(least(100,tv+10)) or pl < public.market_score_to_level(greatest(1,tv-10)) or pl > public.market_score_to_level(least(100,tv+10)) or rl < public.market_score_to_level(greatest(1,tv-10)) or rl > public.market_score_to_level(least(100,tv+10)) or vl < public.market_score_to_level(greatest(1,tv-10)) or vl > public.market_score_to_level(least(100,tv+10))")" "0"
+shifted=$(q "select count(*) from public._chk where tl <> public.market_score_to_level(tv)")
+[ "$shifted" -gt 100 ] && ok "the noise really moves levels near the band edges ($shifted of 2000 shifted)" || bad "noise has no effect" "$shifted"
+eq "values 10 and 100 (whole noise window inside one band after clamping) never change level" "$(q "select count(*) from public._chk where tv in (10,100) and tl <> public.market_score_to_level(tv)")" "0"
+eq "the four attributes do not all get the same noise (independent per attribute)" "$(q "select (count(*) > 100)::int from public._chk where tl <> vl or tl <> rl or tl <> pl")" "1"
+eq "extremes stay inside 1..5" "$(q "select count(*) from public._chk where least(tl,pl,rl,vl) < 1 or greatest(tl,pl,rl,vl) > 5")" "0"
+q "drop table public._chk" >/dev/null
+
+# --- the salt ---
+eq "salt exists, generated in the database (>= 64 hex chars)" "$(q "select (length(salt) >= 64)::int from private.market_estimate_secret")" "1"
+salt=$(q "select salt from private.market_estimate_secret")
+eq "the salt appears nowhere in the migration file" "$(grep -c "$salt" "$ROOT/migrations/20261119_06_market_rider_estimates.sql")" "0"
+eq "the salt appears nowhere in the repository sources" "$(grep -rl "$salt" "$ROOT/.." --include=*.sql --include=*.ts --include=*.tsx --include=*.md --include=*.sh 2>/dev/null | grep -v node_modules | wc -l)" "0"
+psqlc t -v ON_ERROR_STOP=1 -f "$ROOT/migrations/20261119_06_market_rider_estimates.sql" >/dev/null
+eq "re-running the migration does NOT replace the salt (estimates stay stable)" "$(q "select salt from private.market_estimate_secret")" "$salt"
+eq "players cannot read the salt table" "$(as $C "select salt from private.market_estimate_secret;" | grep -ci 'permission denied')" "1"
+eq "players cannot even use the private schema" "$(as $C "select 1 from private.market_estimate_secret;" | grep -ci 'permission denied')" "1"
+eq "anonymous cannot read the salt table" "$(asanon "select salt from private.market_estimate_secret;" | grep -ci 'permission denied')" "1"
+eq "players cannot call the noise helper directly" "$(as $C "select public.market_noisy_level(50, '$f1', 'vitality');" | grep -ci 'permission denied')" "1"
+eq "salt table has exactly one row" "$(q "select count(*) from private.market_estimate_secret")" "1"
 
 # the function returns only 5 small integers 1..5 - no hidden raw value anywhere in its result
 cols=$(psqlc t -c "select pg_get_function_result('public.market_rider_estimates(uuid)'::regprocedure)")

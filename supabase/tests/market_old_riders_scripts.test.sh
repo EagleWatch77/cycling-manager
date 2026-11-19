@@ -32,7 +32,7 @@ echo "database ready (all migrations + hidden-columns draft)"
 ATT=$(python3 -c "
 import json;ks='climbing hills flat sprint timeTrial endurance acceleration positioning attackTiming reaction energyManagement breakawaySkill descending bikeHandling cornering packRiding roughSurface wetHandling experience'.split();print(json.dumps({k:130 for k in ks}))")
 ATTN=$(python3 -c "
-import json;ks='climbing hills flat sprint timeTrial endurance acceleration positioning attackTiming reaction energyManagement breakawaySkill descending bikeHandling cornering packRiding roughSurface wetHandling'.split();d={k:75 for k in ks};d['experience']=10;print(json.dumps(d))")
+import json;ks='climbing hills flat sprint timeTrial endurance acceleration positioning attackTiming reaction energyManagement breakawaySkill descending bikeHandling cornering packRiding roughSurface wetHandling'.split();d={k:80 for k in ks};d['experience']=10;print(json.dumps(d))")
 COND='{"energy":100,"fatigue":0,"form":75,"fitness":70,"morale":75}'
 ins(){ # version tier status n
  q "insert into public.market_riders (season_id,tier,status,first_name,surname,country_name,country_iso2,age,attributes,condition,inferred_archetype,potential,trainability,professionalism,recovery,generator_version,source) select 'season-2','$2','$3','$5'||g,'X','Slovakia','SK',19,'$6','$COND','climber',70,60,60,60,'$1','admin' from generate_series(1,$4) g" >/dev/null; }
@@ -62,6 +62,24 @@ sed "s/SEM_VLOZ_KONTROLNY_SUCET_Z_KROKU_01/$SUM/" $DIR/02tmpl.sql > $DIR/real.sq
 has "a 46th candidate appeared -> aborted (count)" "$(psqlc -f $DIR/real.sql)" "nájdených 46"
 eq "...still nothing deleted" "$(q "select count(*) from public.market_riders where generator_version='starter-v1'")" "49"
 q "update public.market_riders set generator_version='initial-market-1.0' where first_name='new1'" >/dev/null
+echo "== 02 guard: the 45 are deleted ONLY if the 100 new riders exist and are valid (owner 2026-11-19)"
+q "update public.market_riders set status='reserved' where first_name='new2'" >/dev/null
+has "only 99 new riders available -> aborted" "$(psqlc -f $DIR/real.sql)" "treba presne 100"
+eq "...nothing deleted (starter-v1 still 48), backup empty" "$(q "select count(*) from public.market_riders where generator_version='starter-v1'")/$(q "select count(*) from public.market_riders_backup_20261119")" "48/0"
+q "update public.market_riders set status='available' where first_name='new2'" >/dev/null
+q "update public.market_riders set attributes = jsonb_set(attributes, '{climbing}', '200') where first_name='new3'" >/dev/null
+has "one new rider with OVR outside 69..75 -> aborted" "$(psqlc -f $DIR/real.sql)" "porušuje pravidlá"
+q "update public.market_riders set attributes = jsonb_set(attributes, '{climbing}', '80') where first_name='new3'" >/dev/null
+q "update public.market_riders set age = 25 where first_name='new4'" >/dev/null
+has "one new rider with age outside 17..20 -> aborted" "$(psqlc -f $DIR/real.sql)" "porušuje pravidlá"
+q "update public.market_riders set age = 19 where first_name='new4'" >/dev/null
+q "update public.market_riders set potential = 0 where first_name='new5'" >/dev/null
+has "one new rider with Potential outside 1..100 -> aborted" "$(psqlc -f $DIR/real.sql)" "porušuje pravidlá"
+q "update public.market_riders set potential = 70 where first_name='new5'" >/dev/null
+q "update public.market_riders set attributes = jsonb_set(attributes, '{experience}', '30') where first_name='new6'" >/dev/null
+has "one new rider with Experience outside 1..20 -> aborted" "$(psqlc -f $DIR/real.sql)" "porušuje pravidlá"
+q "update public.market_riders set attributes = jsonb_set(attributes, '{experience}', '10') where first_name='new6'" >/dev/null
+eq "after every aborted run: nothing deleted, backup empty" "$(q "select count(*) from public.market_riders where generator_version='starter-v1'")/$(q "select count(*) from public.market_riders_backup_20261119")" "48/0"
 echo "== 02 real run"
 has "02 succeeds" "$(psqlc -f $DIR/real.sql)" "HOTOVO: zálohovaných 45 a zmazaných 45"
 eq "the 45 are gone" "$(q "select count(*) from public.market_riders where generator_version='starter-v1' and status='available'")" "0"

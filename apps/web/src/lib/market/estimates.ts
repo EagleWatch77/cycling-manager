@@ -1,15 +1,14 @@
-import { scoreToLevel, type SegmentLevel } from '@/lib/rider/development';
-import { DISPLAY_SCALE } from '@/lib/rider/config';
+import type { SegmentLevel } from '@/lib/rider/development';
 
 /**
- * Coarse 1-5 read-outs of a MARKET rider's development values (Rozvoj in the market detail). Pure, no I/O, no server-only import (unit-tested).
+ * Coarse 1-5 read-outs of a MARKET rider's hidden development values (Rozvoj in the market detail). Pure, no I/O, no server-only import (unit-tested).
  *
- * What a player may see about a free rider: a level 1..5 per value, never a number, never an interval. The hidden values (Potential, Trainability,
- * Professionalism, Recovery, Vitality) are read INSIDE the database by public.market_rider_estimates() (migration 20261119_06, prepared, not run)
- * which returns only the levels; this file never sees a hidden number. Experience is a public attribute, so the app buckets it itself.
- *
- * Bands (WORKING, owner decision O-029): Potential = the approved bands (potential_to_stars). Trainability/Professionalism/Recovery/Vitality = equal
- * fifths of the 1-100 hidden scale. Experience = equal fifths of the 1-200 attribute scale (existing scoreToLevel with DISPLAY_SCALE).
+ * What a player may see about a free rider: a level 1..5 per hidden value, never a number, never an interval. Rules (owner, option A, 2026-11-19):
+ *   - Potential: the approved bands (public star column), no noise.
+ *   - Trainability / Professionalism / Recovery / Vitality: a stable noise of +-10 points on the true 1-100 value, then equal fifths. The noise and the
+ *     secret salt exist ONLY inside the database (public.market_rider_estimates(), migration 20261119_06, prepared, not run); this file never sees a hidden
+ *     number nor the salt, it only receives the five levels.
+ *   - Experience is a public attribute: shown as the exact number (no estimate).
  */
 export interface MarketEstimateLevels {
   potential: SegmentLevel | null;
@@ -17,20 +16,17 @@ export interface MarketEstimateLevels {
   professionalism: SegmentLevel | null;
   recovery: SegmentLevel | null;
   vitality: SegmentLevel | null;
-  experience: SegmentLevel;
+  /** Public attribute, shown exactly. */
+  experience: number;
 }
 
-export const MARKET_ESTIMATE_KEYS = ['potential', 'trainability', 'professionalism', 'recovery', 'vitality', 'experience'] as const;
+/** The five hidden values shown as rough 1-5 dashes, in display order (Skúsenosti follows as an exact number). */
+export const MARKET_ESTIMATE_KEYS = ['potential', 'trainability', 'professionalism', 'recovery', 'vitality'] as const;
 export type MarketEstimateKey = (typeof MARKET_ESTIMATE_KEYS)[number];
 
-/** TypeScript twin of public.market_score_to_level(): equal fifths of 1..100 (1-20 = 1 ... 81-100 = 5). */
+/** TypeScript twin of public.market_score_to_level(): equal fifths of 1..100 (1-20 = 1 ... 81-100 = 5). The +-10 noise is applied in the database only. */
 export function marketScoreToLevel(value: number): SegmentLevel {
   return Math.max(1, Math.min(5, Math.ceil(value / 20))) as SegmentLevel;
-}
-
-/** Experience is a public 1-200 attribute: bucketed here, never shown as a number in the market detail or radar. */
-export function experienceLevelOf(value: number): SegmentLevel {
-  return scoreToLevel(value, DISPLAY_SCALE.min, DISPLAY_SCALE.max);
 }
 
 /** A database level only counts when it is a whole number 1..5; anything else (missing, null, garbage) is "no estimate", never a guess. */
@@ -47,6 +43,6 @@ export function toMarketEstimateLevels(row: Record<string, unknown> | null | und
     professionalism: asLevel(row?.professionalism_level),
     recovery: asLevel(row?.recovery_level),
     vitality: asLevel(row?.vitality_level),
-    experience: experienceLevelOf(experience),
+    experience,
   };
 }
