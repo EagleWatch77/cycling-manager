@@ -1,7 +1,11 @@
 # Návod na ručné nasadenie — štart Trhu (krok za krokom, pomaly)
 
 Pravidlá: po každom kroku sa zastav, pusti **kontrolu 00** a pokračuj, až keď povie, že môžeš. SQL spúšťaj v Supabase → SQL Editor. Nič z tohto sa nespúšťa samo.
-**Pred krokom 1 urob zálohu** (Supabase → Database → Backups alebo ručný dump).
+**Pred krokom 1 urob zálohu.** Náš produkčný Supabase projekt je na FREE pláne: nemá automatické zálohy ani tlačidlo „Restore“ (záložka Database → Backups tam nie je). Záloha sa robí ručne cez `pg_dump` podľa samostatného balíka **zaloha-supabase-windows** (návod `NAVOD_zaloha_Windows.md`; skripty a zálohy sú **mimo projektu**, nikdy nie v repozitári, v GitHub Desktop ani v ZIP-e s projektom). Pokračuj až keď:
+1. `02_over_zalohu` hlási **„ZÁLOHA DATABÁZY JE ÚPLNÁ A OVERENÁ“** (nie „ČIASTOČNÁ“ ani „NEPLATNÁ“) a
+2. (odporúčané) `03_skusobna_obnova` hlási **ZHODU**, a
+3. záloha je skopírovaná aj na druhé miesto (USB disk / osobný cloud).
+Záloha neobsahuje súbory zo Storage, Vault tajomstvá, Edge Functions ani secrets – tie si zálohuj zvlášť (pozri návod zálohy). Heslo ani connection string nikdy nepíš do chatu ani do súborov projektu.
 
 ## Kontrola 00 (pusti ju pred krokom 1 a po každom kroku)
 Súbor: `supabase/diagnostics/market_launch/00_predeploy_kontrola_LEN_CITANIE.sql` (iba číta, nič nemení). Výsledok je rozdelený na **fázy**. Pri každej fáze je riadok **VERDIKT FÁZY**:
@@ -37,7 +41,7 @@ Ak vidíš akýkoľvek **CHYBA** alebo inú kombináciu, **zastav sa**. Stav „
 | 4 | Spusti `…_04_dev_cap_s1_youth_floor_o5.sql` (pracovný model S1+O5) | tréning používa nový strop a mladícky floor od najbližšie spracovaného týždňa. Uložené dáta sa nemenia | Kontrola 00: F3 = SPLNENÉ; stránka tréningu sa otvorí a plán sa dá uložiť |
 | 5 | Spusti `supabase/seeds/20261119_launch_market_100.sql` | vloží presne 100 nových voľných jazdcov (správa „launch market OK: 100 riders“) | Kontrola 00: F4 = SPLNENÉ; Trh ukazuje nových jazdcov (OVR 69–75, vek 17–20) |
 | 6 | Spusti `…/market_launch/01_stare_trhove_kontrola.sql` | iba číta | očakávaný počet 45, kontrolný súčet f8830b1336a1a3a025dccac1619b5d13 |
-| 7 | **Naposledy:** `…/02_stare_trhove_zaloha_a_zmazanie.sql` | zálohuje a potom zmaže presne 45 starých `starter-v1` jazdcov v jednej transakcii; pri nezhode sa zastaví | Kontrola 00: F5 = SPLNENÉ **a riadok „záloha starých jazdcov“ hlási „presne 45 správnych jazdcov (kontrolný súčet sedí)“**; všetko SPLNENÉ |
+| 7 | **Naposledy:** `…/02_stare_trhove_zaloha_a_zmazanie.sql` | zálohuje a potom zmaže presne 45 starých `starter-v1` jazdcov v jednej transakcii; **zmaže len ak je v Trhu už presne 100 nových jazdcov, ktorí spĺňajú pravidlá (OVR 69–75, vek 17–20, Experience 1–20, Potenciál 1–100)**; pri akejkoľvek nezhode sa zastaví a nič nezmaže | Kontrola 00: F5 = SPLNENÉ **a riadok „záloha starých jazdcov“ hlási „presne 45 správnych jazdcov (kontrolný súčet sedí)“**; všetko SPLNENÉ |
 
 Poznámky: kroky 2 a 4 patria k sebe (kód a SQL musia mať ten istý model) — krok 4 urob hneď po kroku 3. Existujúci jazdci a ich história sa žiadnym krokom nemenia. S1+O5 je len pracovné vyváženie.
 
@@ -61,3 +65,6 @@ F5 je SPLNENÉ len ak sú starí jazdci preč **a zároveň** existuje záloha `
 
 ## Archivovaná migrácia ligových divízií
 Starý koncept `20261114_league_divisions.sql` (funkcia s parametrom sezóny od klienta) už nie je v `supabase/migrations/`, je archivovaný v `supabase/diagnostics/superseded_migrations/` a nesmie sa spúšťať. Platí `20261114_02_league_divisions.sql`.
+
+## Zoradenie Trhu (kód, bez zásahu do databázy)
+Po nasadení kódu (krok 2) je predvolené zoradenie Trhu: **OVR F4 zostupne (75 → 69)**, jazdci s rovnakým OVR sú premiešaní stabilným kľúčom z ID (nie abecedne ani podľa krajiny; po obnovení stránky a pri stránkovaní sa nemení). Zoradenie platí pre celý Trh pred rozdelením na stránky. Žiadna migrácia nie je potrebná. Kontrola po seede: otvor Trh, na 1. strane musia byť OVR 75, na poslednej (5.) OVR 69.

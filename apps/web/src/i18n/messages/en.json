@@ -350,6 +350,7 @@
   "market.allCountries": "All countries",
   "market.allArchetypes": "All specialties",
   "market.anyPotential": "Any",
+  "market.sortOverall": "Overall OVR (best first)",
   "market.sortName": "Name",
   "market.sortAge": "Age",
   "market.sortCountry": "Country",

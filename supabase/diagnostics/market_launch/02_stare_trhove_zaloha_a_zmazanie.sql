@@ -1,6 +1,7 @@
 -- 02_stare_trhove_zaloha_a_zmazanie.sql
 -- NEspúšťaj, kým si nespustil 01 a neoveril, že pocet = 45 a zoznam sedí.
 -- Postup: 1) do dvoch riadkov nižšie vlož hodnoty z kroku 01/B (pocet a kontrolny_sucet), 2) spusti CELÝ súbor naraz.
+-- Poistka: zmaže sa LEN ak je v Trhu presne 100 nových jazdcov, ktorí spĺňajú pravidlá (inak chyba a nič sa nezmení).
 -- Všetko je jedna transakcia: ak čokoľvek nesedí (iný počet, iný súčet, zostalo niečo nezmazané), VÝJDE CHYBA A NIČ SA NEZMENÍ.
 
 -- 1. záloha (tabuľka je pred hráčmi uzamknutá, hráči ju cez API nevidia)
@@ -14,7 +15,7 @@ do $$
 declare
   v_expected_count constant int  := 45;
   v_expected_md5   constant text := 'f8830b1336a1a3a025dccac1619b5d13';   -- <<< uprav
-  v_cols text; v_count int; v_md5 text; v_backed int; v_deleted int;
+  v_cols text; v_count int; v_md5 text; v_backed int; v_deleted int; v_new int; v_new_bad int;
 begin
   create temp table _cand on commit drop as
     select m.id from public.market_riders m
@@ -25,6 +26,19 @@ begin
   select count(*), md5(string_agg(id::text, ',' order by id)) into v_count, v_md5 from _cand;
   if v_count <> v_expected_count then raise exception 'ZASTAVENÉ: nájdených % jazdcov, očakávaných %. Nič sa nezmazalo.', v_count, v_expected_count; end if;
   if v_md5 is distinct from v_expected_md5 then raise exception 'ZASTAVENÉ: kontrolný súčet nesedí (%). Zoznam sa zmenil od kroku 01. Nič sa nezmazalo.', v_md5; end if;
+
+  -- POISTKA: starých 45 sa zmaže LEN ak sú už v Trhu nových 100 (seed prebehol) a všetci spĺňajú schválené pravidlá.
+  -- Ak nie, VÝJDE CHYBA A NIČ SA NEZMAŽE (Trh by inak ostal prázdny alebo s chybnými jazdcami).
+  select count(*) into v_new from public.market_riders
+   where generator_version = 'initial-market-1.0' and tier = 'free' and status = 'available';
+  if v_new <> 100 then raise exception 'ZASTAVENÉ: v Trhu je % nových jazdcov (initial-market-1.0), treba presne 100. Najprv spusti seed. Nič sa nezmazalo.', v_new; end if;
+  select count(*) into v_new_bad from public.market_riders
+   where generator_version = 'initial-market-1.0' and tier = 'free' and status = 'available'
+     and (public.rider_overall_rating(attributes) not between 69 and 75
+          or age not between 17 and 20
+          or (attributes ->> 'experience')::int not between 1 and 20
+          or potential not between 1 and 100);
+  if v_new_bad <> 0 then raise exception 'ZASTAVENÉ: % nových jazdcov porušuje pravidlá (OVR 69–75, vek 17–20, Experience 1–20, Potenciál 1–100). Nič sa nezmazalo.', v_new_bad; end if;
 
   -- stĺpce, ktoré existujú v oboch tabuľkách (odolné voči neskoršiemu pridaniu stĺpca do trhu)
   select string_agg(quote_ident(a.attname), ',' order by a.attnum) into v_cols

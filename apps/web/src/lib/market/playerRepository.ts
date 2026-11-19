@@ -5,6 +5,7 @@ import type { SkillAttribute } from '@/lib/rider/config';
 import { overallRating } from '@/lib/rider/score';
 import { isPremiumEntitled } from '@/lib/premium/entitlement';
 import type { MarketTier } from './repository';
+import { sortByOverall } from './marketSort';
 
 export const MARKET_PAGE_SIZE = 20;
 
@@ -51,7 +52,8 @@ export interface MarketRiderDetail extends MarketRiderView {
   attributes: Record<SkillAttribute, number>;
 }
 
-export type MarketSort = 'name' | 'age' | 'country' | 'archetype' | 'potential';
+/** 'overall' = OVR F4 descending with a stable mix of equal OVR (the default, see marketSort.ts); the others are the Premium filter-bar sorts. */
+export type MarketSort = 'overall' | 'name' | 'age' | 'country' | 'archetype' | 'potential';
 
 export interface MarketQuery {
   tier: MarketTier;
@@ -94,7 +96,7 @@ function toView(row: Record<string, unknown>): MarketRiderView {
   };
 }
 
-const SORT_COLUMN: Record<MarketSort, string> = {
+const SORT_COLUMN: Record<Exclude<MarketSort, 'overall'>, string> = {
   name: 'first_name',
   age: 'age',
   country: 'country_name',
@@ -136,33 +138,54 @@ export async function getMarketPage(query: MarketQuery): Promise<MarketPageResul
 
   const isPremiumQuery = tier === 'premium';
 
-  let builder = supabase
-    .from('market_riders')
-    .select(MARKET_PUBLIC_COLUMNS, { count: 'exact' })
-    .eq('tier', tier)
-    .eq('status', 'available');
+  // One filtered query, rebuilt for every read (a Supabase builder is single-use).
+  const buildQuery = () => {
+    let b = supabase
+      .from('market_riders')
+      .select(MARKET_PUBLIC_COLUMNS, { count: 'exact' })
+      .eq('tier', tier)
+      .eq('status', 'available');
 
-  if (isPremiumQuery) {
-    if (query.search?.trim()) {
-      const term = query.search.trim().replace(/[%,]/g, '');
-      builder = builder.or(`first_name.ilike.%${term}%,surname.ilike.%${term}%`);
+    if (isPremiumQuery) {
+      if (query.search?.trim()) {
+        const term = query.search.trim().replace(/[%,]/g, '');
+        b = b.or(`first_name.ilike.%${term}%,surname.ilike.%${term}%`);
+      }
+      if (query.country) b = b.eq('country_name', query.country);
+      if (query.archetype) b = b.eq('inferred_archetype', query.archetype);
+      if (query.ageMin != null) b = b.gte('age', query.ageMin);
+      if (query.ageMax != null) b = b.lte('age', query.ageMax);
+      if (query.potentialStars) b = b.eq('potential_stars', query.potentialStars);
     }
-    if (query.country) builder = builder.eq('country_name', query.country);
-    if (query.archetype) builder = builder.eq('inferred_archetype', query.archetype);
-    if (query.ageMin != null) builder = builder.gte('age', query.ageMin);
-    if (query.ageMax != null) builder = builder.lte('age', query.ageMax);
-    if (query.potentialStars) builder = builder.eq('potential_stars', query.potentialStars);
-  }
-
-  const sortColumn = SORT_COLUMN[(isPremiumQuery && query.sort) || 'name'];
-  builder = builder.order(sortColumn, { ascending: true }).order('id', { ascending: true });
+    return b;
+  };
 
   const page = Math.max(1, query.page);
   const from = (page - 1) * MARKET_PAGE_SIZE;
   const to = from + MARKET_PAGE_SIZE - 1;
-  builder = builder.range(from, to);
 
-  const { data, count, error } = await builder;
+  // Default order (free tab always; Premium unless another sort is picked): OVR F4 descending over the WHOLE market, equal OVR mixed
+  // by a stable id-derived key. OVR is computed from the public attributes, so it cannot be ordered by the database directly - the
+  // whole (filtered) list is read, sorted here and only then cut into pages. PostgREST returns at most 1000 rows per request, so the
+  // read is chunked (ordered by id so the chunks never overlap or skip). The market is a few hundred riders at most.
+  if (!isPremiumQuery || !query.sort || query.sort === 'overall') {
+    const CHUNK = 1000;
+    const all: MarketRiderView[] = [];
+    for (let offset = 0; ; offset += CHUNK) {
+      const { data, error } = await buildQuery().order('id', { ascending: true }).range(offset, offset + CHUNK - 1);
+      if (error || !data) return { riders: [], total: 0, page, pageSize: MARKET_PAGE_SIZE };
+      all.push(...data.map(toView));
+      if (data.length < CHUNK) break;
+    }
+    const sorted = sortByOverall(all);
+    return { riders: sorted.slice(from, to + 1), total: sorted.length, page, pageSize: MARKET_PAGE_SIZE };
+  }
+
+  const sortColumn = SORT_COLUMN[query.sort];
+  const { data, count, error } = await buildQuery()
+    .order(sortColumn, { ascending: true })
+    .order('id', { ascending: true })
+    .range(from, to);
   if (error || !data) return { riders: [], total: 0, page, pageSize: MARKET_PAGE_SIZE };
 
   return { riders: data.map(toView), total: count ?? 0, page, pageSize: MARKET_PAGE_SIZE };

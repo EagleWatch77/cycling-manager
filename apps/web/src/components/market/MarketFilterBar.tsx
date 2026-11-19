@@ -75,6 +75,7 @@ export function MarketFilterBar({
           <span className="mb-1 block text-2xs font-semibold text-navy-muted">{t('market.filterSort')}</span>
           <select name="sort" defaultValue={sort}
             className="rounded-lg border border-line bg-card px-2 py-1.5 text-sm text-navy">
+            <option value="overall">{t('market.sortOverall')}</option>
             <option value="name">{t('market.sortName')}</option>
             <option value="age">{t('market.sortAge')}</option>
             <option value="country">{t('market.sortCountry')}</option>

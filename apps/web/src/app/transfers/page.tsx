@@ -11,7 +11,7 @@ import { MarketTable } from '@/components/market/MarketTable';
 import { MarketPagination } from '@/components/market/MarketPagination';
 import { MarketFilterBar } from '@/components/market/MarketFilterBar';
 
-const SORTS: readonly MarketSort[] = ['name', 'age', 'country', 'archetype', 'potential'];
+const SORTS: readonly MarketSort[] = ['overall', 'name', 'age', 'country', 'archetype', 'potential'];
 
 /**
  * Trh jazdcov — read-only browsing only (see the chat report, item 28: no
@@ -70,7 +70,7 @@ export default async function TransfersPage({
   const potentialRaw = one(sp.potential);
   const potentialStars = ([1, 2, 3, 4, 5] as const).find((s) => String(s) === potentialRaw);
   const sortRaw = one(sp.sort);
-  const sort: MarketSort = SORTS.includes(sortRaw as MarketSort) ? (sortRaw as MarketSort) : 'name';
+  const sort: MarketSort = SORTS.includes(sortRaw as MarketSort) ? (sortRaw as MarketSort) : 'overall';
 
   const result = await getMarketPage({
     tier: activeTab,
