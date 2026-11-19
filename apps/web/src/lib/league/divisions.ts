@@ -2,7 +2,7 @@ import { LEAGUES, type LeagueId } from '../leagues';
 
 /**
  * Leagues & sub-leagues V1 — pure rules (no I/O), mirrored 1:1 by the SQL in
- * supabase/migrations/20261114_league_divisions.sql (allocate_league_division
+ * supabase/migrations/20261114_02_league_divisions.sql (allocate_league_division
  * / assign_my_league_division). The database is the authority (it enforces
  * capacity and Elite's single sub-league atomically); this module is the
  * single place the TypeScript side formats labels and the unit tests pin the

@@ -1,0 +1,118 @@
+diff -ruN a/apps/web/src/lib/training/development/config.ts b/apps/web/src/lib/training/development/config.ts
+--- a/apps/web/src/lib/training/development/config.ts	2026-11-19 15:46:54.338473491 +0100
++++ b/apps/web/src/lib/training/development/config.ts	2026-11-19 15:46:54.345328831 +0100
+@@ -92,8 +92,8 @@
+   techWeeklyMax: 4,
+   wTrainability: 0.30, wProfessionalism: 0.15, gMin: 0.6, gMax: 1.5,
+   // working model S1 (owner 2026-11-19, not final): cap 80 + 150 x (Pot/100)^2; O5: youth floor 0.30 up to age 21, linearly to 0 at age 26
+-  capBase: 80, capSlope: 1.5, capExp: 2,
+-  youthRoomFloor: 0.30, youthFloorFullUntil: 21, youthFloorZeroAt: 26,
++  capBase: 80, capSlope: 1.25, capExp: 2,
++  youthRoomFloor: 0, youthFloorFullUntil: 21, youthFloorZeroAt: 26,
+   softOffset: 10, softWidth: 7,
+   gapStrong: 0, gapWeak: 45, gapOther: 20, gapAllrounder: 10,
+   aptPhysSpread: 30, techCapBase: 160, techCapSpread: 40,
+diff -ruN a/apps/web/src/lib/training/development/development.test.ts b/apps/web/src/lib/training/development/development.test.ts
+--- a/apps/web/src/lib/training/development/development.test.ts	2026-11-19 15:46:54.338527152 +0100
++++ b/apps/web/src/lib/training/development/development.test.ts	2026-11-19 15:46:54.345392224 +0100
+@@ -48,7 +48,7 @@
+   && PLANS[4].phys.join() === 'flat,endurance,hills' && PLANS[4].tech.join() === 'roughSurface,wetHandling'
+   && PLANS[5].phys.join() === 'endurance,flat,acceleration' && PLANS[5].tech.join() === 'descending,bikeHandling'
+   && PLANS[6].phys.join() === 'endurance,hills,flat' && PLANS[6].tech.join() === 'packRiding,bikeHandling');
+-check('cap formula = working model S1: 80 + 150 x (Pot/100)^2', near(softCap(100), 230) && near(softCap(50), 117.5) && near(softCap(0), 80));
++check('cap formula = candidate B: 80 + 125 x (Pot/100)^2', near(softCap(100), 205) && near(softCap(50), 111.25) && near(softCap(0), 80));
+ 
+ // ---- 1. exact increments of performance and technique ----
+ {
+@@ -64,7 +64,7 @@
+   check('main attribute #1 share = 58 % x 1.15 / 2.85', near(sh.climbing, 0.58 * 1.15 / 2.85, 1e-12));
+   const expectTech = 93.72 * sh.descending * 1 * 1 * ((1 + 1.2) / 2) * Math.max(0.1, Math.min(1, (200 - 100) / 60));
+   check('technical raw progress = budget x share x eff x G x (1+alpha)/2 x roomT', near(o.rawProgress.descending, expectTech, 1e-6), `${o.rawProgress.descending} vs ${expectTech}`);
+-  check('other performance attribute shares 14 % / 4 = 3.5 % of the budget', near(sh.sprint, 0.035, 1e-12) && near(o.rawProgress.sprint / (93.72 * 0.035 * 1.2 * Math.max(1 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7)), 0.30)), 1, 1e-6)); // age 20: O5 youth floor 0.30 applies above the ceiling
++  check('other performance attribute shares 14 % / 4 = 3.5 % of the budget', near(sh.sprint, 0.035, 1e-12) && near(o.rawProgress.sprint / (93.72 * 0.035 * 1.2 / (1 + Math.exp((100 - (softCap(50) - 45 - 10)) / 7))), 1, 1e-6));
+   check('plan technique 2nd attribute uses 0.45 / 0.85 of the first', near(o.rawProgress.cornering / o.rawProgress.descending, 0.45 / 0.85, 1e-6));
+   check('non-plan technique attributes get a SMALL progress (10 % / 4 each)', near(sh.wetHandling, 0.025, 1e-12) && (o.rawProgress.wetHandling ?? 0) > 0 && (o.rawProgress.wetHandling ?? 0) < o.rawProgress.cornering * 0.5);
+   check('tactics and experience are not touched by training', (o.rawProgress.experience ?? 0) === 0 && (o.rawProgress.positioning ?? 0) === 0);
+diff -ruN a/apps/web/src/lib/training/development/softcap200.test.ts b/apps/web/src/lib/training/development/softcap200.test.ts
+--- a/apps/web/src/lib/training/development/softcap200.test.ts	2026-11-19 15:46:54.338441191 +0100
++++ b/apps/web/src/lib/training/development/softcap200.test.ts	2026-11-19 15:46:54.345315412 +0100
+@@ -15,7 +15,7 @@
+ const CAND: DevelopmentConfig = { ...DEV_CONFIG }; // = S1 + O5 (the working model)
+ 
+ const capsAt = [20, 50, 75, 90, 95, 100].map((p) => Math.round(softCap(p, CAND))).join();
+-check('candidate cap values: Pot 20/50/75/90/95/100 = 86/118/164/202/215/230 (before the hard maximum)', capsAt === '86,118,164,202,215,230', capsAt);
++check('cap values (S1+O5 OFF, slope 1.25): Pot 20/50/75/90/95/100 = 85/111/150/181/193/205 (before the hard maximum)', capsAt === '85,111,150,181,193,205', capsAt);
+ check('hard maximum is 200', DEV_CONFIG.maxAttribute === 200);
+ 
+ // 1. strongest possible rider: Potential 100, best aptitude, top trainability/professionalism, attributes start just below 200, 600 weeks of full training
+diff -ruN a/apps/web/src/lib/training/development/youthRoom.test.ts b/apps/web/src/lib/training/development/youthRoom.test.ts
+--- a/apps/web/src/lib/training/development/youthRoom.test.ts	2026-11-19 15:46:54.338727670 +0100
++++ b/apps/web/src/lib/training/development/youthRoom.test.ts	2026-11-19 15:46:54.345529745 +0100
+@@ -1,55 +1,16 @@
+ /**
+- * Working model S1 + O5 (owner 2026-11-19): cap 80 + 150 x (Pot/100)^2, plus a youth floor of the physical room factor:
+- * 0.30 up to age 21, falling linearly to 0 at age 26; a rider with naturally more room uses the normal value; hard maximum 200.
+- * Run: npx tsx --tsconfig tsconfig.json src/lib/training/development/youthRoom.test.ts
++ * S1 + O5 is switched OFF (rollback of the working model: capSlope 1.25, youthRoomFloor 0). Run: npx tsx --tsconfig tsconfig.json src/lib/training/development/youthRoom.test.ts
++ * This file replaces the S1+O5 version while the working model is rolled back; the S1+O5 version is restored by reverting the patch (docs/S1O5_rollback_postup.md).
+  */
+-import { PERFORMANCE_FOCUS } from '../config';
+-import { SKILL_ATTRIBUTES, type SkillAttribute } from '@/lib/rider/config';
+-import { DEV_CONFIG, type DevRider } from './config';
+-import { roomPhys, softCap, weeklyTraining, youthRoomFloor } from './core';
+-
++import { DEV_CONFIG } from './config';
++import { roomPhys, softCap, youthRoomFloor } from './core';
+ let pass = 0, fail = 0;
+ const check = (n: string, c: boolean, d = '') => { if (c) { pass++; console.log(`  PASS  ${n}`); } else { fail++; console.log(`  FAIL  ${n}  ${d}`); } };
+-const near = (a: number, b: number, e = 1e-9) => Math.abs(a - b) <= e;
+-
+-// S1
+-check('S1: cap slope 1.5, base 80, exponent 2', DEV_CONFIG.capBase === 80 && DEV_CONFIG.capSlope === 1.5 && DEV_CONFIG.capExp === 2);
+-const caps = [20, 50, 75, 90, 95, 100].map((p) => Math.round(softCap(p))).join();
+-check('S1 cap at Pot 20/50/75/90/95/100 = 86/118/164/202/215/230 (hard max 200 applies separately)', caps === '86,118,164,202,215,230', caps);
+-check('hard maximum stays 200', DEV_CONFIG.maxAttribute === 200);
+-
+-// O5 floor values and the boundaries 21 / 26
+-const f = (age: number) => youthRoomFloor(age);
+-check('floor is 0.30 for ages up to and including 21', [15, 17, 20, 21].every((a) => near(f(a), 0.30)));
+-check('floor falls linearly: 22 = 0.24, 23 = 0.18, 24 = 0.12, 25 = 0.06', near(f(22), 0.24) && near(f(23), 0.18) && near(f(24), 0.12) && near(f(25), 0.06), [22, 23, 24, 25].map(f).join());
+-check('floor is 0 from age 26 on (26, 27, 40)', f(26) === 0 && f(27) === 0 && f(40) === 0);
+-check('floor is continuous and never increases with age', Array.from({ length: 30 }, (_, i) => 15 + i).every((a, i, arr) => i === 0 || f(a) <= f(arr[i - 1]) + 1e-12));
+-check('floor is never negative and never above 0.30', Array.from({ length: 60 }, (_, i) => f(10 + i)).every((v) => v >= 0 && v <= 0.30 + 1e-12));
+-
+-// roomPhys with age
+-const cap = 90; // a low individual ceiling
+-check('above the soft cap a young rider still has room 0.30 (age 17..21)', [17, 21].every((age) => near(roomPhys(150, cap, DEV_CONFIG, age), 0.30)));
+-check('the floor shrinks with age above the cap: 23 -> 0.18, 25 -> 0.06', near(roomPhys(150, cap, DEV_CONFIG, 23), 0.18) && near(roomPhys(150, cap, DEV_CONFIG, 25), 0.06));
+-check('age 26+ above the cap: only the (tiny) normal soft-cap value, no floor', roomPhys(150, cap, DEV_CONFIG, 26) < 1e-3 && roomPhys(150, cap, DEV_CONFIG, 30) < 1e-3);
+-const normal = roomPhys(50, 150, DEV_CONFIG);
+-check('a rider with naturally more room uses his normal value (not the floor)', normal > 0.99 && near(roomPhys(50, 150, DEV_CONFIG, 19), normal));
+-const lo = roomPhys(cap - 20, cap, DEV_CONFIG), loY = roomPhys(cap - 20, cap, DEV_CONFIG, 19), hiN = roomPhys(cap + 4, cap, DEV_CONFIG), hiY = roomPhys(cap + 4, cap, DEV_CONFIG, 19);
+-check('exactly max(normal, floor): normal wins where it is larger than 0.30 (below the cap), the floor where it is smaller (above)', near(loY, lo) && lo > 0.30 && hiN < 0.30 && near(hiY, 0.30));
+-check('regression: without an age the old behaviour is unchanged', near(roomPhys(100, 120, DEV_CONFIG), 1 / (1 + Math.exp((100 - (120 - DEV_CONFIG.softOffset)) / DEV_CONFIG.softWidth))));
+-check('hard maximum: room is 0 at 200 whatever the age (floor does not override it)', roomPhys(200, 90, DEV_CONFIG, 17) === 0 && roomPhys(201, 90, DEV_CONFIG, 17) === 0 && roomPhys(199, 90, DEV_CONFIG, 17) === 0.30);
+-
+-// weeklyTraining end to end
+-const mk = (age: number, pot: number, start: number): DevRider => ({ age, shape: 0, attrs: Object.fromEntries(SKILL_ATTRIBUTES.map((k) => [k, start])) as Record<SkillAttribute, number>, progress: {}, decline: {}, energy: 100, fatigue: 0,
+-  hidden: { potential: pot, trainability: 80, professionalism: 80, recovery: 80, vitality: 50 } as DevRider['hidden'], aptitude: Object.fromEntries(SKILL_ATTRIBUTES.map((k) => [k, 0])) as DevRider['aptitude'] });
+-const train = (r0: DevRider, weeks: number): DevRider => { let r = r0; for (let w = 0; w < weeks; w++) r = weeklyTraining({ ...r, energy: 100, fatigue: 0, age: r0.age }, { planId: 0, mode: 'full' }, DEV_CONFIG).rider; return r; };
+-const sumPerf = (r: DevRider) => PERFORMANCE_FOCUS.reduce((s, k) => s + r.attrs[k], 0);
+-const young = train(mk(19, 20, 100), 20), old = train(mk(27, 20, 100), 20), start = sumPerf(mk(19, 20, 100));
+-check('low-Potential young rider starting ABOVE his ceiling still grows (Pot 20, age 19, 20 weeks)', sumPerf(young) - start > 20, `${sumPerf(young) - start}`);
+-check('the same rider at age 27 does not (no room beyond the soft cap)', sumPerf(old) - start <= 3, `${sumPerf(old) - start}`);
+-check('training never lowers an attribute', PERFORMANCE_FOCUS.every((k) => young.attrs[k] >= 100 && old.attrs[k] >= 100));
+-const top = train(mk(20, 20, 190), 400);
+-check('hard maximum 200: no attribute ever above 200 even with the floor (400 weeks)', SKILL_ATTRIBUTES.every((k) => top.attrs[k] <= 200) && PERFORMANCE_FOCUS.some((k) => top.attrs[k] === 200));
+-const hi = train(mk(20, 100, 150), 600);
+-check('Potential 100 (cap 230): still stops at exactly 200', SKILL_ATTRIBUTES.every((k) => hi.attrs[k] <= 200) && PERFORMANCE_FOCUS.some((k) => hi.attrs[k] === 200));
+-console.log(`\n${pass} passed, ${fail} failed`);
+-if (fail) process.exit(1);
++check('capSlope is back to 1.25 (cap 80 + 125 x (Pot/100)^2)', DEV_CONFIG.capSlope === 1.25 && DEV_CONFIG.capBase === 80 && DEV_CONFIG.capExp === 2);
++check('cap values Pot 20/50/75/90/95/100 = 85/111/150/181/193/205', [20, 50, 75, 90, 95, 100].map((p) => Math.round(softCap(p))).join() === '85,111,150,181,193,205');
++check('youthRoomFloor is back to 0 (no youth floor)', DEV_CONFIG.youthRoomFloor === 0);
++check('the floor is 0 at every age', [15, 17, 21, 23, 25, 26, 40].every((a) => youthRoomFloor(a) === 0));
++check('room with an age equals the room without an age (no floor)', [17, 21, 23, 30].every((age) => roomPhys(150, 90, DEV_CONFIG, age) === roomPhys(150, 90, DEV_CONFIG) && roomPhys(80, 120, DEV_CONFIG, age) === roomPhys(80, 120, DEV_CONFIG)));
++check('above the ceiling a young rider has practically no room again (< 0.001)', roomPhys(150, 90, DEV_CONFIG, 19) < 0.001);
++check('hard maximum stays 200 (room 0 at 200 and above)', DEV_CONFIG.maxAttribute === 200 && roomPhys(200, 90, DEV_CONFIG, 17) === 0 && roomPhys(201, 300, DEV_CONFIG, 17) === 0);
++console.log(`\n${pass} passed, ${fail} failed`); if (fail) process.exit(1);

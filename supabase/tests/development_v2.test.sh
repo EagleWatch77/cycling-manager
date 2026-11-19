@@ -78,6 +78,8 @@ echo "== migrations 03 + 04 (final state): the shared budget 58/18/14/10 % repla
 psqlc t -f "$ROOT/migrations/20261117_03_rider_state_model.sql" >"$DIR/m3.out" 2>&1 && ok "migration 03 applies" || { bad "migration 03" "$(tail -3 "$DIR/m3.out")"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261117_04_training_plans_calendar.sql" >"$DIR/m4.out" 2>&1 && ok "migration 04 applies" || { bad "migration 04" "$(tail -3 "$DIR/m4.out")"; exit 1; }
 
+S1O5=${S1O5:-on}   # on = S1+O5 installed (default); off = never installed; rolledback = installed, then ROLLBACK_S1O5_rozvoj.sql (docs/S1O5_rollback_postup.md). off/rolledback: old SQL function, TypeScript reverted (capSlope 1.25 / youthRoomFloor 0)
+if [ "$S1O5" = on ]; then
 echo "== migration 20261119_04 (S1 + O5 working model): cap slope 1.5 + youth floor, same function, TypeScript parity"
 psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >"$DIR/m19.out" 2>&1 && ok "S1+O5 migration applies" || { bad "S1+O5 migration" "$(tail -3 "$DIR/m19.out")"; exit 1; }
 psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >/dev/null 2>&1 && ok "S1+O5 migration is idempotent" || bad "S1+O5 second run" ""
@@ -96,6 +98,14 @@ eq "age 23: floor 0.18 (linear 21 -> 26)" "$(q "select round(public.dev_phys_roo
 eq "hard maximum: room 0 at 200 even for age 17" "$(q "select public.dev_phys_room(200, 90, 17)")" "0"
 eq "players cannot call the internal room function" "$(as $A "select public.dev_phys_room(1,1,1);" | grep -c 'permission denied')" "1"
 psqlc t -c "drop table public.room_grid" >/dev/null
+
+else
+  if [ "$S1O5" = rolledback ]; then
+    psqlc t -f "$ROOT/migrations/20261119_04_dev_cap_s1_youth_floor_o5.sql" >/dev/null 2>&1 && psqlc t -f "$ROOT/diagnostics/market_launch/manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql" >/dev/null 2>&1 && ok "S1+O5 applied and then rolled back" || bad "apply + rollback" ""
+  fi
+  echo "== S1+O5 OFF: SQL keeps the old function (cap 1.25, no floor); the TypeScript reference must be the reverted one"
+  eq "SQL function is the old one" "$(q "select (prosrc like '%c_cap_slope constant float8 := 1.25%')::text||':'||(prosrc not like '%dev_phys_room%')::text from pg_proc where oid='public.apply_development_plan_v2(uuid)'::regprocedure")" "true:true"
+fi
 
 echo "== a week WITHOUT a plan changes nothing"
 BEFORE=$(q "select attributes::text||condition::text from public.riders where id='$RD'")

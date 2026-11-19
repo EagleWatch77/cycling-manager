@@ -37,7 +37,7 @@ Ak vidíš akýkoľvek **CHYBA** alebo inú kombináciu, **zastav sa**. Stav „
 | 4 | Spusti `…_04_dev_cap_s1_youth_floor_o5.sql` (pracovný model S1+O5) | tréning používa nový strop a mladícky floor od najbližšie spracovaného týždňa. Uložené dáta sa nemenia | Kontrola 00: F3 = SPLNENÉ; stránka tréningu sa otvorí a plán sa dá uložiť |
 | 5 | Spusti `supabase/seeds/20261119_launch_market_100.sql` | vloží presne 100 nových voľných jazdcov (správa „launch market OK: 100 riders“) | Kontrola 00: F4 = SPLNENÉ; Trh ukazuje nových jazdcov (OVR 69–75, vek 17–20) |
 | 6 | Spusti `…/market_launch/01_stare_trhove_kontrola.sql` | iba číta | očakávaný počet 45, kontrolný súčet f8830b1336a1a3a025dccac1619b5d13 |
-| 7 | **Naposledy:** `…/02_stare_trhove_zaloha_a_zmazanie.sql` | zálohuje a potom zmaže presne 45 starých `starter-v1` jazdcov v jednej transakcii; pri nezhode sa zastaví | Kontrola 00: F5 = SPLNENÉ, všetko SPLNENÉ |
+| 7 | **Naposledy:** `…/02_stare_trhove_zaloha_a_zmazanie.sql` | zálohuje a potom zmaže presne 45 starých `starter-v1` jazdcov v jednej transakcii; pri nezhode sa zastaví | Kontrola 00: F5 = SPLNENÉ **a riadok „záloha starých jazdcov“ hlási „presne 45 správnych jazdcov (kontrolný súčet sedí)“**; všetko SPLNENÉ |
 
 Poznámky: kroky 2 a 4 patria k sebe (kód a SQL musia mať ten istý model) — krok 4 urob hneď po kroku 3. Existujúci jazdci a ich história sa žiadnym krokom nemenia. S1+O5 je len pracovné vyváženie.
 
@@ -48,10 +48,16 @@ Poznámky: kroky 2 a 4 patria k sebe (kód a SQL musia mať ten istý model) —
 2. **Po kroku 3 `/transfers` hlási chybu „permission denied“ alebo nefunguje** — najčastejšia príčina je **starý kód vo Verceli** (build nie je zelený alebo sa nenasadil). **Nerob rollback.** Hráči pritom nič skryté nevidia, len je Trh dočasne nedostupný. Oprav/nasaď správny build (krok 2) a over `/transfers`.
 3. **Nie som si istý stavom (napr. kontrola 00 hlási CHYBA vo fáze 2, alebo sa niečo správa čudne)** — pusti **bezpečný núdzový skript** `manual_rollbacks/SAFE_B_nudzove_zatvorenie_trhu.sql`. Úplne zatvorí tabuľku trhu pre hráčov (verejné aj skryté stĺpce), takže **nič neuniká**. Nákup (`reserve_market_rider`) a admin čítanie fungujú ďalej. Trh je pre hráčov dočasne prázdny/nedostupný. Potom oprav kód, nasaď ho, znova spusti migráciu B a pusti kontrolu 00 (F2 musí byť SPLNENÉ).
 4. **`manual_rollbacks/ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` je NEBEZPEČNÝ**: vráti hráčom čítanie skrytého Potenciálu, Trainability, Professionalism a Recovery všetkých jazdcov na trhu. Má poistku — bez ručnej úpravy v súbore sa nevykoná. **Nepoužívaj ho pri chybe.** Len ak by som ti ja alebo ty výslovne rozhodli, že dočasne treba skryté hodnoty odhaliť.
-5. **Problém so S1+O5 (krok 4)** — `manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql` (malý, jedna funkcia, nemení dáta; už získané body ostanú) a vráť commit s kódom, aby TypeScript sedel so SQL.
+5. **Problém so S1+O5 (krok 4)** — **nevracaj commit** (obsahuje aj bezpečnostné opravy Trhu). Postup, ktorý vráti iba tréningový model, je v `docs/S1O5_rollback_postup.md`: (1) spusti `manual_rollbacks/ROLLBACK_S1O5_rozvoj.sql`, (2) skopíruj 4 pripravené súbory z `manual_rollbacks/S1O5_navrat_subory/` (`capSlope` 1,5→1,25, `youthRoomFloor` 0,30→0), (3) pusti kontrolu 00. Migrácie A/B, Trh a radar sa nemenia.
 6. **Problém po kroku 5 (seed)** — jazdci sú obyčajné voľné riadky; nič nerob, pošli mi výsledok kontroly 00. **Po kroku 7** sa starí obnovia skriptom `03_obnovenie_zo_zalohy_AK_TREBA.sql`.
 
 Po každom probléme pusti kontrolu 00 a pošli mi výsledok.
 
 ## Čo sa v admin časti zmenilo
 Tlačidlo „Vygenerovať market pool“ je trvalo neaktívne (staré generovanie je vypnuté, kým neschválime nový generátor). Tlačidlo resetu je aktívne len ak je v sezóne čo bezpečne zmazať a ukazuje presný počet; vrátených, rezervovaných a vlastnených jazdcov nikdy nemaže. Nových 100 jazdcov sa počíta ako „nikdy nevlastnení“, kým ich niekto nekúpi.
+
+## Fáza 5 kontroly sa nedá oklamať
+F5 je SPLNENÉ len ak sú starí jazdci preč **a zároveň** existuje záloha `market_riders_backup_20261119` s presne 45 jazdcami zo starého generátora a správnym kontrolným súčtom. Ak starí jazdci zmizli bez platnej zálohy (chýba, má iný počet, iných jazdcov alebo sú zálohovaní jazdci opäť na trhu), výsledok je **CHYBA** — nič ďalej nemaž a pošli mi výsledok.
+
+## Archivovaná migrácia ligových divízií
+Starý koncept `20261114_league_divisions.sql` (funkcia s parametrom sezóny od klienta) už nie je v `supabase/migrations/`, je archivovaný v `supabase/diagnostics/superseded_migrations/` a nesmie sa spúšťať. Platí `20261114_02_league_divisions.sql`.

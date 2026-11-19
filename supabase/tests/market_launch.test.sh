@@ -27,7 +27,7 @@ alter default privileges in schema public grant all on functions to anon, authen
 SQL
 psqlc postgres -c "create database t" >/dev/null; psqlc t -f "$DIR/stub.sql" >/dev/null
 psqlc t -f "$BASE" >/dev/null 2>&1 || { echo base failed; exit 1; }
-for m in $(ls $ROOT/migrations/2026*_*.sql | grep -v "20261114_league_divisions.sql\|20261119_" | sort); do
+for m in $(ls $ROOT/migrations/2026*_*.sql | grep -v "20261119_" | sort); do
   psqlc t -f "$m" >/dev/null 2>&1 || { echo "migration $m failed"; psqlc t -f "$m" | tail -3; exit 1; }
 done
 echo "migrations 2026* applied"
@@ -102,7 +102,7 @@ eq "second run adds nothing" "$(q "select count(*) from public.market_riders")" 
 eq "existing test riders A/B/C/D untouched" "$(q "select count(*) from public.market_riders where surname in ('Free','Prem')")" "4"
 echo "== manual rollbacks are NOT migrations and the dangerous one is guarded"
 eq "no rollback/undo file is inside supabase/migrations (nothing can run it automatically)" "$(ls "$ROOT/migrations" | grep -ci 'rollback\|undo\|revert')" "0"
-eq "the manual rollbacks live in manual_rollbacks/" "$(ls "$MR" | tr '\n' ' ')" "ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql ROLLBACK_S1O5_rozvoj.sql SAFE_B_nudzove_zatvorenie_trhu.sql "
+eq "the manual rollbacks live in manual_rollbacks/ (3 SQL scripts, the S1+O5 TypeScript patch and its prepared files)" "$(ls "$MR" | tr '\n' ' ')" "ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql ROLLBACK_S1O5_rozvoj.sql S1O5_navrat_subory S1O5_typescript_navrat.patch SAFE_B_nudzove_zatvorenie_trhu.sql "
 has "UNEDITED dangerous rollback refuses to run" "$(psqlc t -f "$RB" 2>&1)" "ZASTAVEN"
 has "...and changed nothing: hidden columns still closed after B" "$(as $PL "select potential from public.market_riders;")" "permission denied"
 echo "== safe emergency procedure for a problem with B: closes the Trh completely, leaks nothing, purchase + admin keep working"

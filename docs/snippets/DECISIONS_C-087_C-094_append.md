@@ -67,3 +67,8 @@ Used by (all verified by grep):
 - `supabase/migrations/` obsahuje len migrácie, ktoré sa majú aplikovať. Manuálne rollbacky sú v `supabase/diagnostics/market_launch/manual_rollbacks/` (`SAFE_B_nudzove_zatvorenie_trhu.sql`, `ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` s poistkou, `ROLLBACK_S1O5_rozvoj.sql`). Test `predeploy_check.test.sh` a `market_launch.test.sh` strážia, že v migráciách nie je rollback súbor.
 - Pri probléme s B sa skryté hodnoty neodomykajú: najprv oprava kódu/buildu, pri neistote `SAFE_B…` (úplné zatvorenie), potom B znova. Odomknutie je len vedomé rozhodnutie majiteľa (ručná úprava poistky).
 - `00_predeploy_kontrola_LEN_CITANIE.sql` rozlišuje fázy 0–5 (pripravenosť, A, kód+B, S1+O5, 100 jazdcov, čistenie 45) so stavmi SPLNENÉ/ČAKÁ/CHYBA a riadkom ĎALŠÍ KROK.
+
+## C-100 — Tri opravy z kontroly ZIP v3 (2026-11-19)
+- Stará migrácia ligových divízií `20261114_league_divisions.sql` (zoraďovala sa abecedne PO `_02`/`_03`, takže automatické spustenie by vrátilo `assign_my_league_division(text)` so sezónou od klienta) je archivovaná v `supabase/diagnostics/superseded_migrations/`; test `migrations_active_set.test.sh` aplikuje celý priečinok migrácií a overí, že funkcia s parametrom neexistuje.
+- Rollback S1+O5 vráti len `capSlope` 1,5→1,25 a `youthRoomFloor` 0,30→0 (4 súbory + SQL funkcia), nikdy celý commit: `docs/S1O5_rollback_postup.md`, test `s1o5_revert_procedure.test.sh`.
+- Kontrola 00, fáza 5: po čistení vyžaduje zálohu presne 45 správnych jazdcov (počet, generátor, kontrolný súčet), inak CHYBA.

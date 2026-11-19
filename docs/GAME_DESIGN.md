@@ -83,7 +83,7 @@ Tabuľky v `supabase/schema.sql` (14): league_divisions, league_memberships (pod
 ## 10. Ligy a podligy V1 `[SCHVÁLENÉ 2026-11-14]`
 - Päť líg: Rookie, Amateur, Continental, Pro, Elite. Podliga má max. 50 hráčov; označenie `Rookie 1.1`, `Rookie 1.2`, ... Podligy v lige sú rovnocenné, číslo nevyjadruje silu. Elite má najviac jednu podligu Elite 1.1. Ostatné podligy vznikajú podľa potreby, žiadne prázdne vopred.
 - Nový hráč začína v Rookie, v podlige s najnižším číslom, ktorá má voľné miesto; ak sú všetky plné, vznikne nová. Vstupuje do aktuálnej globálnej sezóny a týždňa. Do Tour, ktorá už začala, sa nemôže prihlásiť, pripravuje sa na ďalšiu.
-- Technicky: tabuľky `league_divisions` a `league_memberships`, zaradenie funkciou `assign_my_league_division` (lenivo cez `AppShell`), kapacita chránená v databáze. Migrácia musí byť nasadená. `[KÓD]` `supabase/migrations/20261114_league_divisions.sql`
+- Technicky: tabuľky `league_divisions` a `league_memberships`, zaradenie funkciou `assign_my_league_division` (lenivo cez `AppShell`), kapacita chránená v databáze. Migrácia musí byť nasadená. `[KÓD]` `supabase/migrations/20261114_02_league_divisions.sql`
 - Rebríčky → karta „Moja podliga“: len členovia, bez bodov a poradia (bodovanie neexistuje).
 - Bezpečnosť: liga, podliga a sezóna vstupu sú len pod serverovou kontrolou (hráč ich nemôže meniť ani podvrhnúť); `league_memberships` je hlavný zdroj, `profiles.league` je synchronizovaná kópia. Hráč môže meniť len meno a jazyk. `[KÓD]` migrácie 01–03
 - Zatiaľ neriešime: postupy/zostupy, neaktivitu a vyraďovanie, bodovanie a rovnosť bodov. `[CHÝBA]`

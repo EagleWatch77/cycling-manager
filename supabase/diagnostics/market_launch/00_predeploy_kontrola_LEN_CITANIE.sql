@@ -7,6 +7,10 @@
 -- Stav „kód nasadený“ sa z databázy zistiť nedá: po nasadení kódu skontroluj ručne zelený build vo Verceli a že fungujú /transfers a /admin/market.
 -- Je to jeden SELECT bez zápisu; chýbajúce objekty nevyhodia chybu, len sa ukážu v riadku.
 with
+cfg as (
+  -- kontrolný súčet zoznamu 45 starých jazdcov (z kroku 01; rovnaký ako v 02_stare_trhove_zaloha_a_zmazanie.sql). Záloha po čistení musí mať presne tento súčet.
+  select 'f8830b1336a1a3a025dccac1619b5d13'::text as expected_md5, 45 as expected_count
+),
 probe as (
   -- skúšobný jazdec: perf 140/130/120/110/100/90/80, najlepšia taktika 100, najlepšia technika 60, Skúsenosti 50 => F4 = 102
   select $a${"climbing":140,"hills":130,"flat":120,"sprint":110,"timeTrial":100,"endurance":90,"acceleration":80,"positioning":100,"attackTiming":10,"reaction":10,"energyManagement":10,"breakawaySkill":10,"descending":60,"bikeHandling":10,"cornering":10,"packRiding":10,"wetHandling":10,"roughSurface":10,"experience":50}$a$ as attrs
@@ -32,7 +36,16 @@ probe as (
     to_regprocedure('public.dev_phys_room(double precision,double precision,integer)') is not null                  as room_fn,
     to_regprocedure('public.rider_overall_rating(jsonb)') is not null                                                as ovr_fn,
     (select count(*) from public.market_riders where generator_version = 'initial-market-1.0')                      as seed_n,
-    (select count(*) from public.market_riders where generator_version = 'starter-v1' and status = 'available' and acquired_rider_id is null) as old_free_n
+    (select count(*) from public.market_riders where generator_version = 'starter-v1' and status = 'available' and acquired_rider_id is null) as old_free_n,
+    to_regclass('public.market_riders_backup_20261119') is not null                                                  as bak_exists,
+    case when to_regclass('public.market_riders_backup_20261119') is null then null
+         else (xpath('/row/v/text()', query_to_xml('select count(*)::text as v from public.market_riders_backup_20261119', false, true, '')))[1]::text::int end as bak_n,
+    case when to_regclass('public.market_riders_backup_20261119') is null then null
+         else (xpath('/row/v/text()', query_to_xml($q$select count(*)::text as v from public.market_riders_backup_20261119 where generator_version is distinct from 'starter-v1'$q$, false, true, '')))[1]::text::int end as bak_wrong,
+    case when to_regclass('public.market_riders_backup_20261119') is null then null
+         else (xpath('/row/v/text()', query_to_xml('select coalesce(md5(string_agg(id::text, $s$,$s$ order by id)), $s$-$s$) as v from public.market_riders_backup_20261119', false, true, '')))[1]::text end as bak_md5,
+    case when to_regclass('public.market_riders_backup_20261119') is null then null
+         else (xpath('/row/v/text()', query_to_xml('select count(*)::text as v from public.market_riders_backup_20261119 b where exists (select 1 from public.market_riders m where m.id = b.id)', false, true, '')))[1]::text::int end as bak_still_on_market
 ), r(ord, fz, kind, name, status, detail) as (
   -- ================= FÁZA 0: pripravenosť databázy (musí byť OK ešte pred krokom 1) =================
   select 0 + row_number() over (order by sig), 0, 'state', 'funkcia ' || sig,
@@ -125,15 +138,35 @@ probe as (
   -- ================= FÁZA 5: čistenie 45 starých (kroky 6–7) =================
   union all
   select 501, 5, 'state', 'starí voľní jazdci generátora starter-v1 (bez väzby)',
-         case when (select old_free_n from s) = 45 then 'ČAKÁ' when (select old_free_n from s) = 0 then 'OK' else 'CHYBA' end,
+         case when (select old_free_n from s) = (select expected_count from cfg) then 'ČAKÁ' when (select old_free_n from s) = 0 then 'OK' else 'CHYBA' end,
          (select old_free_n from s)::text || ' (pred čistením očakávané presne 45, po čistení 0)'
   union all
-  select 502, 5, 'guard', 'poradie: starých nemazať skôr, než sú nasadení noví', case when (select old_free_n from s) = 0 and (select seed_n from s) < 100 and (select count(*) from public.market_riders where generator_version = 'starter-v1') = 0 and to_regclass('public.market_riders_backup_20261119') is not null then 'CHYBA' else 'OK' end,
-         'čistenie bez seedu by nechalo prázdny Trh'
+  select 502, 5, 'state', 'záloha starých jazdcov: presne 45 správnych jazdcov (tabuľka market_riders_backup_20261119)',
+         case
+           when (select old_free_n from s) = (select expected_count from cfg) then   -- čistenie ešte nebolo: zálohy ešte byť nemusí
+                case when not (select bak_exists from s) or (select bak_n from s) = 0 then 'ČAKÁ' else 'CHYBA' end
+           when (select old_free_n from s) = 0 then   -- čistenie prebehlo: záloha MUSÍ existovať a byť správna
+                case when (select bak_exists from s) and (select bak_n from s) = (select expected_count from cfg) and (select bak_wrong from s) = 0
+                          and (select bak_md5 from s) = (select expected_md5 from cfg) then 'OK' else 'CHYBA' end
+           else 'CHYBA' end,
+         case
+           when (select old_free_n from s) = (select expected_count from cfg) then
+                case when not (select bak_exists from s) or (select bak_n from s) = 0 then 'záloha ešte nie je (vznikne v kroku 7) – v poriadku'
+                     else 'ZÁLOHA UŽ EXISTUJE (' || (select bak_n from s) || ' riadkov), ale starí jazdci ešte sú – nedokončené čistenie, STOP' end
+           when (select old_free_n from s) = 0 then
+                case when not (select bak_exists from s) then 'STARÍ JAZDCI ZMIZLI, ALE ZÁLOHA NEEXISTUJE – STOP, nič nemaž ďalej, pošli mi výsledok'
+                     when (select bak_n from s) <> (select expected_count from cfg) then 'záloha má ' || (select bak_n from s) || ' riadkov, očakávaných 45 – STOP'
+                     when (select bak_wrong from s) <> 0 then 'v zálohe je ' || (select bak_wrong from s) || ' jazdcov, ktorí nie sú zo starého generátora starter-v1 – STOP'
+                     when (select bak_md5 from s) <> (select expected_md5 from cfg) then 'záloha obsahuje iných jazdcov ako zoznam z kroku 01 (kontrolný súčet nesedí) – STOP'
+                     else 'záloha: presne 45 správnych jazdcov (kontrolný súčet sedí)' end
+           else 'počet starých voľných jazdcov nie je 45 ani 0 – STOP' end
   union all
-  select 503, 5, 'info', 'záloha starých jazdcov (tabuľka market_riders_backup_20261119)', 'INFO',
-         case when to_regclass('public.market_riders_backup_20261119') is null then 'neexistuje (kým sa nespustí krok 7)'
-              else (xpath('/row/v/text()', query_to_xml('select count(*)::text as v from public.market_riders_backup_20261119', false, true, '')))[1]::text || ' riadkov (po kroku 7 očakávané 45)' end
+  select 503, 5, 'guard', 'záloha: zálohovaní jazdci už nie sú na trhu', 
+         case when (select bak_exists from s) and (select old_free_n from s) = 0 and (select bak_still_on_market from s) > 0 then 'CHYBA' else 'OK' end,
+         'po čistení nesmie byť na trhu nikto zo zálohy (zistené: ' || coalesce((select bak_still_on_market from s)::text, '–') || ')'
+  union all
+  select 504, 5, 'guard', 'poradie: starých nemazať skôr, než sú nasadení noví', case when (select old_free_n from s) = 0 and (select seed_n from s) < 100 and (select count(*) from public.market_riders where generator_version = 'starter-v1') = 0 and (select bak_exists from s) then 'CHYBA' else 'OK' end,
+         'čistenie bez seedu by nechalo prázdny Trh'
 ), v as (   -- verdikt každej fázy
   select fz,
          case when count(*) filter (where status = 'CHYBA') > 0 then 'CHYBA'

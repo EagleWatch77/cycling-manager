@@ -4,7 +4,7 @@
 -- (soft cap slope 1.25, no youth floor). It changes no stored data (riders, attributes, progress, plans stay as they are) and is idempotent.
 -- Attributes already gained under S1+O5 are kept (training never lowers an attribute); only the FUTURE weekly steps follow the old model again.
 -- After it, the TypeScript model (DEV_CONFIG capSlope 1.5 + youthRoomFloor 0.30 in apps/web/src/lib/training/development/config.ts) must be returned too
--- (capSlope 1.25, youthRoomFloor 0) by reverting the code commit, so that screen estimates and SQL stay the same.
+-- (capSlope 1.25, youthRoomFloor 0) with the 4 prepared files (docs/S1O5_rollback_postup.md) — NEVER by reverting the whole commit (it also holds the Trh security fixes).
 -- Tested: supabase/tests/dev_s1o5_rollback.test.sh (function body after the rollback is byte-identical to the one before S1+O5).
 
 create or replace function public.apply_development_plan_v2(p_plan_id uuid)

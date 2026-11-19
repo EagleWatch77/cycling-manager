@@ -102,3 +102,5 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_lau
 **Pravidlo: v tomto priečinku sú LEN migrácie, ktoré chceme skutočne aplikovať.** Rollbacky a núdzové skripty sú zámerne mimo (aby ich nič nespustilo automaticky) v
 `../diagnostics/market_launch/manual_rollbacks/`: `SAFE_B_nudzove_zatvorenie_trhu.sql` (odporúčaný postup pri probléme s B, nič neodhalí),
 `ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` (NEBEZPEČNÉ, má poistku), `ROLLBACK_S1O5_rozvoj.sql`. Čísla 03 a 05 sú preto v číslovaní vynechané. Test `predeploy_check.test.sh` stráži, že v tomto priečinku nie je súbor s rollbackom.
+
+**Archivovaná (nahradená) migrácia:** starý koncept `20261114_league_divisions.sql` (funkcia `assign_my_league_division(text)`, kde sezónu zadával klient) bol presunutý do `../diagnostics/superseded_migrations/20261114_league_divisions_SUPERSEDED.sql` a NESMIE sa spúšťať. Pri abecednom spustení všetkých súborov by sa totiž vykonal PO `_02`/`_03` a vrátil by nebezpečnú funkciu. Stráži to `supabase/tests/migrations_active_set.test.sh`.

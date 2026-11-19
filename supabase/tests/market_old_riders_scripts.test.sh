@@ -26,7 +26,7 @@ alter default privileges in schema public grant all on functions to anon, authen
 SQL
 psql -h "$DIR" -p $PORT -U postgres -d postgres -qtA -c "create database t" >/dev/null; psqlc -f "$DIR/stub.sql" >/dev/null
 psqlc -f "$BASE" >/dev/null 2>&1 || { echo base failed; exit 1; }
-for m in $(ls $ROOT/migrations/2026*_*.sql | grep -v "20261114_league_divisions.sql\|20261119_" | sort); do psqlc -f "$m" >/dev/null 2>&1 || { echo "migration $m failed"; exit 1; }; done
+for m in $(ls $ROOT/migrations/2026*_*.sql | grep -v "20261119_" | sort); do psqlc -f "$m" >/dev/null 2>&1 || { echo "migration $m failed"; exit 1; }; done
 psqlc -f $ROOT/migrations/20261119_01_market_hidden_columns_A.sql >/dev/null && psqlc -f $ROOT/migrations/20261119_02_market_hidden_columns_B.sql >/dev/null || { echo draft failed; exit 1; }
 echo "database ready (all migrations + hidden-columns draft)"
 ATT=$(python3 -c "
@@ -65,6 +65,8 @@ q "update public.market_riders set generator_version='initial-market-1.0' where 
 echo "== 02 real run"
 has "02 succeeds" "$(psqlc -f $DIR/real.sql)" "HOTOVO: zálohovaných 45 a zmazaných 45"
 eq "the 45 are gone" "$(q "select count(*) from public.market_riders where generator_version='starter-v1' and status='available'")" "0"
+sed "s/f8830b1336a1a3a025dccac1619b5d13/$SUM/" "$ROOT/diagnostics/market_launch/00_predeploy_kontrola_LEN_CITANIE.sql" > $DIR/chk00.sql
+has "check 00 confirms the REAL backup made by script 02: exactly 45 correct riders (end-to-end)" "$(psql -h "$DIR" -p $PORT -U postgres -d t -qAt -F'|' -f $DIR/chk00.sql 2>&1 | grep 'záloha starých jazdcov')" "presne 45 správnych jazdcov (kontrolný súčet sedí)"
 eq "backup holds exactly the 45" "$(q "select count(*) from public.market_riders_backup_20261119")" "45"
 eq "reserved + acquired starter-v1 rows untouched (3)" "$(q "select count(*) from public.market_riders where generator_version='starter-v1'")" "3"
 eq "the new 100 untouched" "$(q "select count(*) from public.market_riders where generator_version='initial-market-1.0'")" "100"
