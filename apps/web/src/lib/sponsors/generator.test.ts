@@ -15,14 +15,15 @@ const nc = (s: string) => s.replace(/--.*$/gm, '');
 const sql = rd('supabase/migrations/20261122_03_sponsor_offer_generator.sql'); const code = nc(sql);
 const page = rd('apps/web/src/app/sponsors/page.tsx'); const repo = rd('apps/web/src/lib/sponsors/repository.ts'); const cards = rd('apps/web/src/components/sponsors/SponsorCards.tsx');
 
-check('rules: at most 3 main offers, 21 days', MAX_OFFERS.main === 3 && OFFER_VALID_DAYS === 21);
+check('rules: at most 3 main + 3 secondary offers (6), 21 days', MAX_OFFERS.main === 3 && MAX_OFFERS.secondary === 3 && MAX_OFFERS.total === 6 && OFFER_VALID_DAYS === 21);
 // the generator is server-side SQL, called from the server component, never from the browser
 check('repository calls ensure_my_sponsor_offers on the server before reading', /rpc\('ensure_my_sponsor_offers'\)/.test(repo) && repo.indexOf("ensure_my_sponsor_offers") < repo.indexOf("from('sponsor_offers')"));
 check('repository is server-only', /import 'server-only'/.test(repo));
 check('a missing function (migration not run) is quiet, a generator error never breaks the page', /'42883'/.test(repo) && /console\.error\(`\[sponsors\] generator failed/.test(repo));
-check('market lists main offers only (query + page filter)', /\.eq\('kind', 'main'\)\.eq\('status', 'open'\)/.test(repo) && /filter\(\(o\) => o\.kind === 'main'\)/.test(page));
-check('counter is x / 3 main offers', /MAX_OFFERS\.main/.test(page) && !/MAX_OFFERS\.total/.test(page));
-check('no catalogue on the page, no type filter, no secondary market', !/SponsorCatalog|getMainSponsorCatalog|sp\.filter|type=/.test(page));
+check('market reads both kinds of own open offers; page filters by ?type (all / main / secondary)', !/\.eq\('kind', 'main'\)\.eq\('status', 'open'\)/.test(repo) && /\.eq\('status', 'open'\)/.test(repo) && /type === 'all' \|\| o\.kind === type/.test(page));
+check('counter is x / 6 offers (unfiltered count)', /allOffers\.length[^`]*MAX_OFFERS\.total/.test(page));
+check('active-secondary counter uses the league limit', /activeByKind\.secondary\} \/ \$\{limits\.secondary/.test(page));
+check('no catalogue listing on the page, filter present', !/SponsorCatalog|getMainSponsorCatalog/.test(page) && /sp\.filter\./.test(page));
 check('no client-side generator code (page and cards are server components)', !/'use client'/.test(page) && !/ensure_my_sponsor_offers|sponsor_generate/.test(cards));
 check('card shows the expiry date and the remaining time', /sp\.field\.expiresOn/.test(cards) && /sp\.expiresIn/.test(cards));
 check('no money is rendered except through moneyText ("Zatiaľ neurčené")', /moneyText\(o\.weeklyIncomeCents/.test(cards));

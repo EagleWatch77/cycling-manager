@@ -9,7 +9,7 @@ import { createElement } from 'react';
 import { getDictionary } from '@/i18n/config';
 import { ContractCard, OfferCard } from './SponsorCards';
 import { demoContracts as dc, demoOffers as dofr } from '@/lib/sponsors/demo';
-import { APPROVED_MAIN_SPONSORS } from '@/lib/sponsors/catalog';
+import { APPROVED_MAIN_SPONSORS, APPROVED_SECONDARY_SPONSORS } from '@/lib/sponsors/catalog';
 import type { SponsorOffer } from '@/lib/sponsors/rules';
 
 let pass = 0, fail = 0;
@@ -19,7 +19,7 @@ const now = new Date('2026-11-22T10:00:00Z');
 const none = { main: 0, secondary: 0 };
 const sec = (n: number) => t('sp.demo.secondaryName', { n });
 const demoContracts = (d: Date) => dc(d, APPROVED_MAIN_SPONSORS, sec);
-const demoOffers = (d: Date) => dofr(d, APPROVED_MAIN_SPONSORS);
+const demoOffers = (d: Date) => dofr(d, APPROVED_MAIN_SPONSORS, APPROVED_SECONDARY_SPONSORS);
 
 const contract = renderToStaticMarkup(createElement(ContractCard, { c: demoContracts(now)[0], now, locale: 'sk', t }));
 check('contract: company name, type badge and DEMO badge', contract.includes('Veltaro Cycling') && contract.includes('>Hlavný sponzor<') && contract.includes('>DEMO<'));
@@ -46,9 +46,11 @@ check('elite has a free second main slot (no note)', !offerHtml(o1, { main: 1, s
 const paid: SponsorOffer = { ...real, weeklyIncomeCents: 100_000, goals: [{ type: 'finishTour', bonusCents: 10_000 }, { type: 'winStage', bonusCents: 20_000 }] };
 check('if money exists it is formatted, never shown as "Zatiaľ neurčené"', !offerHtml(paid).includes('Zatiaľ neurčené') && /1\s?000/.test(offerHtml(paid)));
 check('even with money Prijať stays locked while the economy switch is off', /<button[^>]*disabled[^>]*>Prijať/.test(offerHtml(paid)));
-check('demo market = exactly 3 main offers (no secondary), 1 main + 1 secondary contract', demoOffers(now).length === 3 && demoOffers(now).every((o) => o.kind === 'main') && demoContracts(now).length === 2);
+check('demo market = 3 main + 3 secondary offers (5 weeks), 1 main + 1 secondary contract', demoOffers(now).filter((o) => o.kind === 'main').length === 3 && demoOffers(now).filter((o) => o.kind === 'secondary').length === 3 && demoOffers(now).filter((o) => o.kind === 'secondary').every((o) => o.durationWeeks === 5) && demoContracts(now).length === 2);
+const hs = offerHtml(demoOffers(now).find((o) => o.kind === 'secondary')!);
+check('secondary offer card: type, 5 weeks, expiry, remaining time, both goals, income and bonuses undetermined, Detail, locked Prijať', hs.includes('Vedľajší') && hs.includes('5 týž.') && hs.includes('Ponuka platí do') && hs.includes('Základný cieľ') && hs.includes('Náročnejší cieľ') && hs.includes('Zatiaľ neurčené') && hs.includes('>Detail<') && /<button[^>]*disabled[^>]*>Prijať/.test(hs));
 check('every demo offer has two different goals, easier before harder', demoOffers(now).every((o) => o.goals[0].type !== o.goals[1].type));
-check('demo offers use three different catalogue companies', new Set(demoOffers(now).map((o) => o.companyName)).size === 3 && demoOffers(now).every((o) => APPROVED_MAIN_SPONSORS.includes(o.companyName)));
+check('demo offers use six different catalogue companies (main from the main list, secondary from the secondary list)', new Set(demoOffers(now).map((o) => o.companyName)).size === 6 && demoOffers(now).every((o) => (o.kind === 'main' ? APPROVED_MAIN_SPONSORS : APPROVED_SECONDARY_SPONSORS).includes(o.companyName)));
 check('expiry date is the real expires_at (offer created + 21 days stays visible)', h.includes(new Date(o1.expiresAt).getFullYear().toString()));
 check('demo carries no money at all', [...demoOffers(now), ...demoContracts(now)].every((x) => x.weeklyIncomeCents === null && x.goals.every((g) => g.bonusCents === null)));
 check('all demo items are flagged isDemo', [...demoOffers(now), ...demoContracts(now)].every((x) => x.isDemo));

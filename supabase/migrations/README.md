@@ -124,4 +124,6 @@ All five sponsor files run in ONE transaction each (`begin; … commit;`): a fai
 
 Read-only pre-deploy check: `supabase/diagnostics/sponsors_predeploy_check.sql` (one SELECT; run it before and after the migrations). Step-by-step list: `docs/PREDNASADZOVACI_ZOZNAM_SPONZORI.md`.
 
+| `20261122_06_sponsor_secondary.sql` | **Run AFTER `_05`** (already in production; do NOT re-run `_01`–`_05`). Adds the 50 secondary sponsors (30 + 50 = 80), the per-kind generator (3 main + 3 secondary per player), `sponsor_reachable_tours_min` (5-week contracts vs the real calendar), `secondary_fill_week_key` (one-time first secondary fill for existing players) and `sponsor_generator_log`. One transaction, idempotent, changes no existing offer/contract, deletes nothing. **NOT RUN in production.** |
+
 Order for Sponzori: backup -> diagnostics -> `20261122_01` -> `_02` -> `_03` -> `_04` -> `_05` -> diagnostics (code may be deployed before or after; without the migrations the page shows empty states).

@@ -35,15 +35,15 @@ export async function getMySponsorData(now: Date = new Date()): Promise<SponsorD
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return EMPTY;
 
-  // Server-side generator: fills THIS player's market up to 3 main offers (first visit / new weekly update period; otherwise a no-op).
-  // Missing function (migration 20261122_03 not run) is quiet; the offers simply stay empty. Never throws.
+  // Server-side generator: fills THIS player's market up to 3 main + 3 secondary offers (first visit / new weekly update period; otherwise a no-op).
+  // Missing function (migration 20261122_03/_06 not run) is quiet; the offers simply stay empty. Never throws.
   const gen = await supabase.rpc('ensure_my_sponsor_offers');
   if (gen.error && !['42883', 'PGRST202', '42P01', 'PGRST205'].includes(gen.error.code ?? '')) console.error(`[sponsors] generator failed: code=${gen.error.code} message=${gen.error.message}`);
 
   const cols = 'id, company_id, kind, duration_weeks, weekly_income_cents, goal1_type, goal1_bonus_cents, goal2_type, goal2_bonus_cents';
   const [offers, contracts, settings] = await Promise.all([
     supabase.from('sponsor_offers').select(`${cols}, expires_at, sponsor_companies(name)`)
-      .eq('kind', 'main').eq('status', 'open').gt('expires_at', now.toISOString()).order('expires_at', { ascending: true }),
+      .eq('status', 'open').gt('expires_at', now.toISOString()).order('expires_at', { ascending: true }),
     supabase.from('sponsor_contracts').select(`${cols}, signed_at, ends_at, sponsor_companies(name)`)
       .eq('status', 'active').order('signed_at', { ascending: false }),
     supabase.from('sponsor_settings').select('economy_enabled').maybeSingle(),

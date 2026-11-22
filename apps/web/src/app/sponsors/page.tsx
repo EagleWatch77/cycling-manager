@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { ContractCard, OfferCard } from '@/components/sponsors/SponsorCards';
 import { getMyLeague } from '@/lib/facilities/repository';
 import { getMySponsorData } from '@/lib/sponsors/repository';
-import { APPROVED_MAIN_SPONSORS } from '@/lib/sponsors/catalog';
+import { APPROVED_MAIN_SPONSORS, APPROVED_SECONDARY_SPONSORS } from '@/lib/sponsors/catalog';
 import { demoContracts, demoOffers } from '@/lib/sponsors/demo';
 import { MAX_OFFERS, SPONSOR_LIMITS, type SponsorKind } from '@/lib/sponsors/rules';
 
@@ -17,8 +17,8 @@ import { MAX_OFFERS, SPONSOR_LIMITS, type SponsorKind } from '@/lib/sponsors/rul
  * Sponzori. Real data comes from the player's own rows (row-level security); `?demo=1` swaps in clearly labelled sample cards so the
  * design can be checked. No amount is invented: money fields are "Zatiaľ neurčené" until the owner approves the sponsor economy,
  * and signing / early termination stay disabled (the database has no function for them yet — migration 20261122_01).
- * The market shows ONLY the player's own (max 3) main offers, picked by the server-side generator (migration 20261122_03); the 30-company
- * catalogue is generator input and is never listed. Tabs are plain links (no client JavaScript), so the page also works with JS off and on slow phones.
+ * The market shows ONLY the player's own offers (max 3 main + 3 secondary), picked by the server-side generator (migrations _03/_06); the 80-company
+ * catalogue is generator input and is never listed. Filter Všetky / Hlavní / Vedľajší = ?type=. Tabs are plain links (no client JavaScript), so the page also works with JS off and on slow phones.
  */
 export default async function SponsorsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { t, locale } = await getServerDictionary();
@@ -26,6 +26,7 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const tab = one(sp.tab) === 'market' ? 'market' : 'contracts';
   const demo = one(sp.demo) === '1';
+  const type = one(sp.type) === 'main' ? 'main' : one(sp.type) === 'secondary' ? 'secondary' : 'all';
 
   const now = new Date();
   const league = await getMyLeague();
@@ -34,7 +35,8 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const demoNames = APPROVED_MAIN_SPONSORS;
   const secondaryLabel = (n: number) => t('sp.demo.secondaryName', { n });
   const contracts = demo ? demoContracts(now, demoNames, secondaryLabel) : real.contracts;
-  const offers = (demo ? demoOffers(now, demoNames) : real.offers).filter((o) => o.kind === 'main');
+  const allOffers = demo ? demoOffers(now, demoNames, APPROVED_SECONDARY_SPONSORS) : real.offers;
+  const offers = allOffers.filter((o) => type === 'all' || o.kind === type);
 
   const activeByKind: Record<SponsorKind, number> = {
     main: contracts.filter((c) => c.kind === 'main').length,
@@ -42,9 +44,10 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   };
   const limits = SPONSOR_LIMITS[league];
 
-  const href = (over: { tab?: string; demo?: boolean }) => {
+  const href = (over: { tab?: string; demo?: boolean; type?: string }) => {
     const q = new URLSearchParams();
     const tb = over.tab ?? tab; if (tb !== 'contracts') q.set('tab', tb);
+    const ty = over.type ?? type; if (ty !== 'all') q.set('type', ty);
     if (over.demo ?? demo) q.set('demo', '1');
     const s = q.toString();
     return s ? `/sponsors?${s}` : '/sponsors';
@@ -63,7 +66,7 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <SummaryCard icon={<Icon name="crown" className="h-4.5 w-4.5" />} label={t('sp.slots.main')} value={`${activeByKind.main} / ${limits.main}`} />
           <SummaryCard icon={<Icon name="staff" className="h-4.5 w-4.5" />} label={t('sp.slots.secondary')} value={`${activeByKind.secondary} / ${limits.secondary}`} />
-          <SummaryCard icon={<Icon name="cart" className="h-4.5 w-4.5" />} label={t('sp.slots.offers')} value={`${offers.length} / ${MAX_OFFERS.main}`} />
+          <SummaryCard icon={<Icon name="cart" className="h-4.5 w-4.5" />} label={t('sp.slots.offers')} value={`${allOffers.length} / ${MAX_OFFERS.total}`} />
         </div>
 
         <nav className="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line px-1" aria-label={t('nav.sponsors')}>
@@ -81,6 +84,14 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
           )
         ) : (
           <>
+            <nav className="flex flex-wrap gap-1.5" aria-label={t('sp.filter.label')}>
+              {(['all', 'main', 'secondary'] as const).map((f) => (
+                <Link key={f} href={href({ tab: 'market', type: f })} aria-current={type === f ? 'true' : undefined}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${type === f ? 'border-teal bg-teal/10 text-teal-dark' : 'border-line text-navy-muted hover:text-navy'}`}>
+                  {t(`sp.filter.${f}`)}
+                </Link>
+              ))}
+            </nav>
             <p className="px-1 text-xs text-navy-muted">{t('sp.market.note')}</p>
             {offers.length === 0 ? (
               <Card><EmptyState icon="cart" text={t('sp.empty.market')} /></Card>

@@ -22,7 +22,15 @@ q as (select
   exists (select 1 from information_schema.columns where table_schema='public' and table_name='sponsor_companies' and column_name='catalog_no') as has_catalog_no,
   exists (select 1 from pg_trigger where tgname='sponsor_offers_company_guard_trg' and not tgisinternal) as has_t4,
   exists (select 1 from pg_trigger where tgname='sponsor_offers_company_guard_upd_trg' and not tgisinternal) as has_t5,
-  to_regclass('public.profiles') is not null as has_profiles
+  to_regclass('public.profiles') is not null as has_profiles,
+  to_regprocedure('public.sponsor_reachable_tours_min(timestamptz, integer)') is not null as has_t6
+),
+-- migration _06: secondary catalogue and per-player counts (read-only; only evaluated when _06 is in place)
+sec as (select
+  (xpath('/row/v/text()', query_to_xml(case when (select has_t6 from q) then $$select (select count(*) from public.sponsor_companies where kind='secondary' and catalog_no between 1 and 50 and active)::text || '+' || (select count(*) from public.sponsor_companies where kind='main' and catalog_no between 1 and 30 and active)::text as v$$ else $$select 'n/a'::text as v$$ end, false, true, '')))[1]::text as cat,
+  (xpath('/row/v/text()', query_to_xml(case when (select has_t6 from q) then $$select count(*)::text as v from (select player_id from public.sponsor_offers where status='open' and kind='secondary' group by player_id having count(*) > 3) z$$ else $$select 'n/a'::text as v$$ end, false, true, '')))[1]::text as over3,
+  (xpath('/row/v/text()', query_to_xml(case when (select has_t6 from q) then $$select count(*)::text as v from public.sponsor_player_state where secondary_fill_week_key is null$$ else $$select 'n/a'::text as v$$ end, false, true, '')))[1]::text as no_sec,
+  (xpath('/row/v/text()', query_to_xml(case when (select has_t6 from q) then $$select coalesce(string_agg(kind || ':' || reason || '=' || n, ', '), '') as v from (select kind, reason, count(*) n from public.sponsor_generator_log group by 1, 2) z$$ else $$select ''::text as v$$ end, false, true, '')))[1]::text as logs
 ),
 -- scalar helper: runs a read-only SELECT given as text, only when its guard is true
 st as (select coalesce(
@@ -108,6 +116,10 @@ checks(ord, name, status, detail) as (
   union all select 42, 'Migrácia _03 (generátor)', case when (select has_state from q) then 'OK' else 'INFO' end, case when (select has_state from q) then 'použitá' else 'ešte nebežala' end
   union all select 43, 'Migrácia _04 (opravy, kalendár)', case when (select has_reach_fn from q) and (select has_t4 from q) then 'OK' else 'INFO' end, case when (select has_reach_fn from q) then 'použitá' else 'ešte nebežala' end
   union all select 44, 'Migrácia _05 (stráže pri UPDATE)', case when (select has_t5 from q) then 'OK' else 'INFO' end, case when (select has_t5 from q) then 'použitá' else 'ešte nebežala' end
+  union all select 45, 'Migrácia _06 (50 vedľajších sponzorov, generátor 3+3)', case when (select has_t6 from q) and (select cat from sec) = '50+30' then 'OK' when (select has_t6 from q) then 'FAIL' else 'INFO' end, case when (select has_t6 from q) then 'vedľajších+hlavných firiem: ' || (select cat from sec) || ' (čaká sa 50+30)' else 'ešte nebežala' end
+  union all select 55, 'Hráč s viac než 3 otvorenými vedľajšími ponukami', case when (select over3 from sec) in ('0','n/a') then 'OK' else 'FAIL' end, 'počet=' || (select over3 from sec)
+  union all select 56, 'Hráči, ktorým ešte nebolo doplnených prvých 6 ponúk (vedľajší kľúč chýba)', 'INFO', (select no_sec from sec) || ' — doplnia sa pri prvej návšteve /sponsors'
+  union all select 57, 'Záznamy generátora o príčine, prečo ponuka nevznikla', 'INFO', coalesce(nullif((select logs from sec), ''), 'žiadne')
   union all select 50, 'Existujúce sponzorské údaje', 'INFO', 'ponuky=' || (select offers from cnt) || ', zmluvy=' || (select contracts from cnt) || ', hráčov(profiles)=' || (select profiles from cnt)
   union all select 51, 'Duplicita: otvorená ponuka + aktívna zmluva rovnakej firmy u hráča', case when (select dup_offer_contract from cnt) in ('0','n/a') then 'OK' else 'FAIL' end, 'počet=' || (select dup_offer_contract from cnt) || ' (po _04 pozri: select * from public.sponsor_duplicate_report();)'
   union all select 52, 'Duplicita: dve aktívne zmluvy rovnakej firmy u hráča', case when (select dup_contracts from cnt) in ('0','n/a') then 'OK' else 'FAIL' end, 'počet=' || (select dup_contracts from cnt) || ' (unikátny index sa pri duplicite nevytvorí; riešiš ručne, nič sa nemaže)'
@@ -115,7 +127,7 @@ checks(ord, name, status, detail) as (
   union all select 54, 'Hráči bez stavu generátora (dostanú ponuky pri prvej návšteve /sponsors)', 'INFO', (select no_state from cnt)
   union all select 60, 'Výsledky pretekov (race_results)', 'INFO', 'riadkov=' || (select results from cnt) || ' — kým je 0, forma hráča je vždy „základná“ (ciele sa neposúvajú podľa výsledkov)'
   union all select 70, 'Plánovač nedeľného updatu', 'WARN', 'NIE JE napojený. Ponuky sa dopĺňajú pri prvej návšteve /sponsors po nedeli 00:00 (Europe/Bratislava), nie automaticky pre všetkých naraz.'
-  union all select 80, 'Záloha databázy', 'WARN', 'z SQL sa nedá overiť. Pred _01…_05 spusti 02_over_zalohu.ps1 a počkaj na „ÚPLNÁ A OVERENÁ“.'
+  union all select 80, 'Záloha databázy', 'WARN', 'z SQL sa nedá overiť. Pred novou migráciou spusti 02_over_zalohu.ps1 a počkaj na „ÚPLNÁ A OVERENÁ“.'
 )
 select ord as "#", name as "kontrola", status as "stav", detail as "detail" from checks
 union all select 0, 'SÚHRN', case when exists (select 1 from checks where status = 'FAIL') then 'FAIL' when exists (select 1 from checks where status = 'WARN') then 'WARN' else 'OK' end,
