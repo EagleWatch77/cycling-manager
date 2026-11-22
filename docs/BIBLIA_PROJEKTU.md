@@ -174,7 +174,9 @@ Schválené názvy (v tomto poradí): 1 Veltaro Cycling, 2 Kadrin Wheels, 3 Aero
 
 **Oprava generátora (C-109):** migrácia `20261122_04`. Hráč nikdy nedostane ponuku od firmy, s ktorou má platnú ponuku alebo aktívnu zmluvu (hlavnú/vedľajšiu), ani od firmy poslednej podpísanej zmluvy; chráni to databáza (triggre + unikátny index + zámok na hráča), nielen generátor. Po odmietnutí sa náhrada nevytvára hneď. Ciele sa vyberajú podľa skutočného kalendára (`tour_schedule` + začiatok sezóny): ponúkne sa len cieľ, na ktorý je v zmluve garantovane dosť pretekových týždňov; bez kalendára sa nič negeneruje. Staré duplicity: `sponsor_duplicate_report()` / `sponsor_fix_duplicate_offers()` (štandardne suchý beh, nič sa nemaže). Testy: `supabase/tests/sponsors_fixes.test.sh` (61), `sponsors_generator.test.sh` (91; s `WITH_04=1` 93), `generator.test.ts` (42).
 
-**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `_02` → `_03` → `_04` (každá v jednej transakcii; `_03` po `_04` nespúšťať znova); kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
+**Finálna kontrola (C-110):** migrácia `20261122_05` uzatvára ochranu „jedna firma na hráča“ aj pre UPDATE (zmena firmy, hráča, stavu ponuky/zmluvy), s rovnakým zámkom na hráča ako INSERT. Migrácie `_01`–`_04` majú ORDER GUARD (starší súbor po novšom sa odmietne). Kalendár: SQL výpočet je overený voči TypeScript kalendáru spoločným fixture a pred nasadením ho kontroluje read-only skript `supabase/diagnostics/sponsors_predeploy_check.sql`. **Plánovač nedeľného updatu NIE JE napojený** — ponuky sa dopĺňajú pri prvej návšteve `/sponsors` po nedeli 00:00, nie automaticky pre všetkých. Postup nasadenia: `docs/PREDNASADZOVACI_ZOZNAM_SPONZORI.md`. Testy: `sponsors_fixes.test.sh` (113), `generator.test.ts` (53), `reach.test.ts` (9).
+
+**Poradie nasadenia Sponzorov:** záloha → diagnostika → `20261122_01` → `_02` → `_03` → `_04` → `_05` → diagnostika (každá v jednej transakcii; starší súbor po novšom sa odmietne); kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
 
 Poistky: hráč zo stránky nemôže nič zapisovať (iba čítať vlastné riadky a odmietnuť vlastnú ponuku); `sponsor_settings.economy_enabled` = false.
 
@@ -202,6 +204,7 @@ admin_users, bike_condition, league_divisions, league_memberships, league_rider_
 | 20261122_02 | Katalóg 30 hlavných sponzorov (spúšťať PO `_01`) | **NESPUSTENÁ, pripravená** |
 | 20261122_03 | Generátor ponúk a cieľov (spúšťať PO `_01` a `_02`) | **NESPUSTENÁ, pripravená** |
 | 20261122_04 | Oprava generátora: jedna firma na hráča, DB stráže, kalendár cieľov (PO `_01`–`_03`) | **NESPUSTENÁ, pripravená** |
+| 20261122_05 | Stráže pri UPDATE (PO `_01`–`_04`) | **NESPUSTENÁ, pripravená** |
 | seed 100 jazdcov | nový trh | **NEOVERENÉ** (Mirko nevedel povedať) |
 | zmazanie 45 starých | čistenie | **NESPUSTENÉ** |
 
@@ -235,6 +238,7 @@ Prostredie na vývoj: `web:build` v sandboxe padá na sťahovaní Google Fonts (
 | C-107 | Katalóg 30 hlavných sponzorov (zdroj generátora, verejne sa nezobrazuje od C-108) | `lib/sponsors/catalog.ts`, SQL `20261122_02` | áno (20 + 19 + 36); vzhľad overený snímkami (mobil/tablet/desktop) |
 | C-108 | Generátor osobných ponúk hlavných sponzorov a cieľov | SQL `20261122_03`, `lib/sponsors/repository.ts`, `app/sponsors/page.tsx` | áno (91 + 26 + 22); vzhľad overený snímkami (mobil/desktop) |
 | C-109 | Oprava generátora: duplicitná firma, súbežnosť, ciele podľa kalendára | SQL `20261122_04` | áno (61 + 93 + 42) |
+| C-110 | Finálna kontrola Sponzorov: UPDATE stráže, order guard, diagnostika kalendára, zoznam pred nasadením | SQL `20261122_05`, `supabase/diagnostics/sponsors_predeploy_check.sql`, `docs/PREDNASADZOVACI_ZOZNAM_SPONZORI.md` | áno (113 + 53 + 9) |
 | C-106 | Sponzori (bez peňazí) | `lib/sponsors/*`, `app/sponsors`, SQL `20261122_01` | áno (57 + 19 + 81); vzhľad overený snímkami v headless Chrome (mobil + desktop), nie v živej hre |
 | C-102 | zoradenie trhu podľa OVR | `lib/market/marketSort.ts` | áno |
 | C-103 | vzhľad trhu + detail | `components/market/*`, `transfers/[id]` | komponenty áno; vzhľad v prehliadači nie |

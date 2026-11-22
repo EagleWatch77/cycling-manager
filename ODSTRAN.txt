@@ -1,11 +1,23 @@
-Zmaž ručne (ak existujú):
-apps/web/src/components/EquipmentCard.tsx
-apps/web/src/components/BikeCard.test.ts
-apps/web/src/lib/races/recentResults.ts
-apps/web/src/components/sponsors/SponsorCatalog.tsx   (verejný katalóg 30 firiem sa už nezobrazuje)
-apps/web/src/components/sponsors/SponsorCatalog.test.tsx
+ODSTRAŇOVANIE SÚBOROV — nič sa nemaže automaticky. Všetko robíš ručne vo svojom repozitári (GitHub Desktop → zmaž súbor → commit).
 
-Zmaž ručne z priečinka supabase/migrations/ (nové kópie sú už mimo neho; tieto by sa omylom spustili pri automatickom behu migrácií):
-supabase/migrations/20261114_league_divisions.sql   (zastaraný koncept, archivovaný v supabase/diagnostics/superseded_migrations/)
-supabase/migrations/20261119_03_market_hidden_columns_ROLLBACK.sql   (nebezpečný rollback, kópia je v supabase/diagnostics/market_launch/manual_rollbacks/)
-supabase/migrations/20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql   (rollback S1+O5; postup je v docs/S1O5_rollback_postup.md)
+=== ČASŤ A — NEVYHNUTNÉ pre Sponzorov (zmaž pred nasadením, ak súbory existujú) ===
+Tieto dva súbory patria k starému verejnému katalógu 30 firiem. Nový kód ho už nepoužíva a ich test by zlyhal (preklady `sp.catalog.*` sú odstránené):
+apps/web/src/components/sponsors/SponsorCatalog.tsx
+apps/web/src/components/sponsors/SponsorCatalog.test.tsx
+(Ak ich v repozitári nemáš — pretože sa predošlý balík s katalógom nepushol — nie je čo mazať.)
+
+=== ČASŤ B — STARŠIE, NESÚVISIACE so Sponzormi (nepovinné upratovanie; Sponzorom nijako nebránia) ===
+Zostatky z predošlých úloh. Zmaž, ak existujú a chceš mať poriadok:
+apps/web/src/components/EquipmentCard.tsx
+apps/web/src/components/BikeCard.test.ts            (starý test; nový je BikeCard.test.tsx a je v ZIPe)
+apps/web/src/lib/races/recentResults.ts
+
+Z priečinka supabase/migrations/ (tieto by sa pri hromadnom spustení priečinka mohli spustiť omylom; nie sú súčasťou Sponzorov):
+supabase/migrations/20261114_league_divisions.sql                          (zastaraný koncept, archivovaný v supabase/diagnostics/superseded_migrations/)
+supabase/migrations/20261119_03_market_hidden_columns_ROLLBACK.sql        (nebezpečný rollback, kópia je v supabase/diagnostics/market_launch/manual_rollbacks/)
+supabase/migrations/20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql    (rollback S1+O5; postup je v docs/S1O5_rollback_postup.md)
+(Podľa tvojich predošlých správ si tieto súbory z priečinka migrácií už zmazal; ak sú tam znova, patria sem.)
+
+=== NEMAZAŤ ===
+supabase/migrations/20261114_02_league_divisions.sql   (aktívna migrácia; omylom zmazaná a vrátená — musí zostať)
+apps/web/src/components/BikeCard.test.tsx              (aktívny test, je v ZIPe)

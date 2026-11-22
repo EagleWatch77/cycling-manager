@@ -18,6 +18,14 @@
 -- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
 begin;
 
+-- ORDER GUARD: this file is OLDER than a migration that is already applied. Running it again would silently put an older version of shared
+-- functions back, so it refuses (nothing is changed). Run the sponsor migrations once, in order; only the NEWEST one may be repeated.
+do $order$ begin
+  if to_regclass('public.sponsor_player_state') is not null then
+    raise exception '20261122_02 must not be run again: a newer sponsor migration (_03 or later) is already applied. Nothing was changed.';
+  end if;
+end $order$;
+
 do $guard$ begin
   if to_regclass('public.sponsor_companies') is null or to_regclass('public.sponsor_offers') is null then
     raise exception 'Run 20261122_01_sponsors_foundation.sql first (sponsor tables are missing).';

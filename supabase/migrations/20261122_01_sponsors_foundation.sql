@@ -25,6 +25,14 @@
 -- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
 begin;
 
+-- ORDER GUARD: this file is OLDER than a migration that is already applied. Running it again would silently put an older version of shared
+-- functions back, so it refuses (nothing is changed). Run the sponsor migrations once, in order; only the NEWEST one may be repeated.
+do $order$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'sponsor_companies' and column_name = 'catalog_no') then
+    raise exception '20261122_01 must not be run again: a newer sponsor migration (_02 or later) is already applied. Nothing was changed.';
+  end if;
+end $order$;
+
 create or replace function public.sponsor_limit(p_league text, p_kind text)
 returns int language sql immutable as $$
   select case p_kind

@@ -22,6 +22,14 @@
 -- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
 begin;
 
+-- ORDER GUARD: this file is OLDER than a migration that is already applied. Running it again would silently put an older version of shared
+-- functions back, so it refuses (nothing is changed). Run the sponsor migrations once, in order; only the NEWEST one may be repeated.
+do $order$ begin
+  if to_regprocedure('public.sponsor_reachable_tours(timestamptz, integer)') is not null then
+    raise exception '20261122_03 must not be run again: _04 (or later) is already applied and would be overwritten by an older generator. Nothing was changed.';
+  end if;
+end $order$;
+
 do $guard$ begin
   if to_regclass('public.sponsor_companies') is null or to_regclass('public.sponsor_offers') is null
      or not exists (select 1 from information_schema.columns where table_schema='public' and table_name='sponsor_companies' and column_name='catalog_no') then

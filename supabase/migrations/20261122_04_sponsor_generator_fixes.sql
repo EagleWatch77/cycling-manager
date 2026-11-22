@@ -21,6 +21,14 @@
 -- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
 begin;
 
+-- ORDER GUARD: this file is OLDER than a migration that is already applied. Running it again would silently put an older version of shared
+-- functions back, so it refuses (nothing is changed). Run the sponsor migrations once, in order; only the NEWEST one may be repeated.
+do $order$ begin
+  if exists (select 1 from pg_trigger where tgname = 'sponsor_offers_company_guard_upd_trg' and not tgisinternal) then
+    raise exception '20261122_04 must not be run again: _05 is already applied. Nothing was changed.';
+  end if;
+end $order$;
+
 do $guard$ begin
   if to_regclass('public.sponsor_player_state') is null or to_regprocedure('public.sponsor_generate_offers_internal(uuid, timestamptz)') is null then
     raise exception 'Run 20261122_01, _02 and _03 first.';

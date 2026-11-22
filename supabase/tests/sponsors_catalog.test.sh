@@ -64,8 +64,8 @@ psqlc t -f "$M2" >/dev/null 2>&1 && ok "second run succeeds" || bad "second run"
 psqlc t -f "$M2" >/dev/null 2>&1 && ok "third run succeeds" || bad "third run" "$(psqlc t -f "$M2" | tail -3)"
 eq "still exactly 30 catalogue rows (+1 foreign)" "$(q "select count(*) from public.sponsor_companies")" "31"
 eq "no duplicate names" "$(q "select count(*) from (select lower(name) from public.sponsor_companies group by 1 having count(*)>1) x")" "0"
-eq "01 can be re-run after 02 too" "$(psqlc t -f "$M1" >/dev/null 2>&1 && echo ok)" "ok"
-eq "and 02 again after that" "$(psqlc t -f "$M2" >/dev/null 2>&1 && q "select count(*) from public.sponsor_companies where catalog_no is not null")" "30"
+has "01 after 02 is now REFUSED by its ORDER GUARD (it would put the older guard function back)" "$(psqlc t -f "$M1" 2>&1)" "must not be run again"
+eq "...and the refused 01 changed nothing: 02 still runs and the catalogue is intact" "$(psqlc t -f "$M2" >/dev/null 2>&1 && q "select count(*) from public.sponsor_companies where catalog_no is not null")" "30"
 
 echo "== 4. rules that must not change"
 C=($(q "select id from public.sponsor_companies where catalog_no is not null order by catalog_no"))

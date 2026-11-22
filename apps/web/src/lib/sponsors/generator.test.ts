@@ -45,7 +45,7 @@ check('"not twice in a row": last signed company excluded', /c\.id <> v_last/.te
 check('scheduler is documented as NOT configured', /SCHEDULER NOTE \(NOT CONFIGURED\)/.test(sql));
 // ---- migration 20261122_04 (generator fixes) and transaction safety of all four sponsor migrations
 const sql4 = rd('supabase/migrations/20261122_04_sponsor_generator_fixes.sql'); const code4 = nc(sql4);
-for (const f of ['01_sponsors_foundation', '02_sponsor_catalog_main_30', '03_sponsor_offer_generator', '04_sponsor_generator_fixes']) {
+for (const f of ['01_sponsors_foundation', '02_sponsor_catalog_main_30', '03_sponsor_offer_generator', '04_sponsor_generator_fixes', '05_sponsor_update_guards']) {
   const c = nc(rd(`supabase/migrations/20261122_${f}.sql`));
   check(`migration ${f}: one transaction (begin; ... commit;)`, /^begin;$/m.test(c) && /^commit;\s*$/m.test(c));
 }
@@ -61,4 +61,16 @@ check('04 unique active-contract index is created only when no duplicate exists'
 check('04 does not touch money, contracts data or payouts', !/insert into public\.sponsor_(contracts|payouts)/i.test(code4) && !/weekly_income_cents|goal1_bonus_cents|goal2_bonus_cents/.test(code4.replace(/sponsor_contracts \(player_id/g, '')));
 check('04 keeps 21-day validity and no replacement after rejection', /p_now \+ interval '21 days'/.test(code4) && !/reject_my_sponsor_offer/.test(code4));
 check('04 helpers are not callable by players', /revoke execute on function public\.sponsor_player_lock/.test(code4) && !/grant execute/i.test(code4));
+// ---- migration 20261122_05 (UPDATE guards), order guards, the read-only diagnostic script
+const sql5 = rd('supabase/migrations/20261122_05_sponsor_update_guards.sql'); const code5 = nc(sql5);
+check('05 refuses without 01-04', /Run 20261122_01, _02, _03 and _04 first/.test(sql5));
+check('05 guards UPDATE of offers (player/company/status) and of contracts (status)', /before update on public\.sponsor_offers/.test(code5) && /before update on public\.sponsor_contracts/.test(code5) && /old\.company_id is distinct from new\.company_id/.test(code5) && /old\.status is distinct from new\.status/.test(code5));
+check('05 reuses the SAME guard functions (one rule, one lock) and creates no data change', /sponsor_offer_company_guard\(\)/.test(code5) && /sponsor_contract_company_guard\(\)/.test(code5) && !/\b(insert|delete from|update public)\b/i.test(code5.replace(/before update on public/g, '')));
+for (const [f, what] of [['01_sponsors_foundation', 'newer'], ['02_sponsor_catalog_main_30', 'newer'], ['03_sponsor_offer_generator', 'older generator'], ['04_sponsor_generator_fixes', '_05']] as const)
+  check(`migration ${f}: ORDER GUARD refuses a re-run after a newer migration (${what})`, /ORDER GUARD/.test(rd(`supabase/migrations/20261122_${f}.sql`)) && /must not be run again/.test(rd(`supabase/migrations/20261122_${f}.sql`)));
+const allSql = ['01_sponsors_foundation', '02_sponsor_catalog_main_30', '03_sponsor_offer_generator', '04_sponsor_generator_fixes', '05_sponsor_update_guards'].map((f) => nc(rd(`supabase/migrations/20261122_${f}.sql`))).join('\n');
+check('none of the five migrations deletes or rewrites player data', !/\bdelete from\b|\btruncate\b|\bdrop table\b|\bdrop column\b/i.test(allSql));
+const diag = rd('supabase/diagnostics/sponsors_predeploy_check.sql'); const dcode = nc(diag);
+check('diagnostic script is ONE read-only SELECT (no write/DDL keyword, single statement)', !/\b(insert|update|delete|truncate|drop|alter|create|grant|revoke|vacuum|comment)\b/i.test(dcode.replace(/'[^']*'/g, "''").replace(/\$\$[\s\S]*?\$\$/g, '$$$$').replace(/"[^"]*"/g, '""')) && (dcode.match(/;/g) ?? []).length >= 1 && dcode.trim().endsWith(';') && /^\s*with\b/i.test(dcode.trim()));
+check('diagnostic script checks the calendar content, not only the table (weeks, version, season start, reach scan)', /tour_schedule/.test(diag) && /week_number/.test(diag) && /game_season_one_start/.test(diag) && /generate_series\(0, 51\)/.test(diag));
 console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
