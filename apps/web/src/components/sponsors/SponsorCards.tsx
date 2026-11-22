@@ -128,6 +128,20 @@ export function ContractCard({ c, now, locale, t }: { c: SponsorContract; now: D
   );
 }
 
+function DisabledSecondary({ children, reason }: { children: ReactNode; reason: string }) {
+  return (
+    <button type="button" disabled aria-disabled="true" title={reason}
+      className="inline-flex min-h-[2.5rem] w-full cursor-not-allowed items-center justify-center rounded-lg border border-line bg-card px-4 py-2 text-sm font-semibold text-navy opacity-50">
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Compact market card (redesign 2026-11-22): name, contract-length chip, BOTH goals visible, validity, Detail + Odmietnuť.
+ * The sponsor type is NOT repeated (the page section says it). Money, signing and its lock live inside Detail, so the card stays short.
+ * Signing remains blocked by signBlock() and by the database — only its place in the layout changed.
+ */
 export function OfferCard({ o, now, locale, t, league, activeByKind, lastSignedCompanyId, economyEnabled }: {
   o: SponsorOffer; now: Date; locale: Locale; t: T; league: LeagueId;
   activeByKind: Record<SponsorKind, number>; lastSignedCompanyId: string | null; economyEnabled: boolean;
@@ -140,37 +154,57 @@ export function OfferCard({ o, now, locale, t, league, activeByKind, lastSignedC
     : block === 'slots_full' ? t('sp.block.slots_full')
     : block === 'same_sponsor_twice' ? t('sp.block.same_sponsor')
     : block ? t('sp.block.other') : '';
+  const labels = [t('sp.goal.easy'), t('sp.goal.hard')];
   return (
-    <SectionCard icon="crown" tone="tint" title={<span className="truncate">{o.companyName}</span>} action={<Badges isDemo={o.isDemo} kind={o.kind} t={t} />}>
-      <div className="space-y-3 p-3.5">
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-          <Field label={t('sp.field.duration')}>{t('sp.weeks', { n: o.durationWeeks })}</Field>
-          <Field label={t('sp.field.expiresOn')}>{fullDate(new Date(o.expiresAt), locale)}</Field>
-          <div className="col-span-2"><Field label={t('sp.field.expires')}>{t('sp.expiresIn', { d: left.days, h: left.hours })}</Field></div>
-          <div className="col-span-2"><Field label={t('sp.field.income')}>
-            <span className={o.weeklyIncomeCents === null ? 'text-navy-muted' : ''}>{moneyText(o.weeklyIncomeCents, locale, t)}</span>
-          </Field></div>
-        </dl>
-        <Goals goals={o.goals} locale={locale} t={t} />
-        {full && <p className="rounded-lg bg-warn/10 px-3 py-2 text-xs text-warn">{t('sp.block.slots_full')}</p>}
-        <Detail t={t}>
-          <GoalNotes goals={o.goals} t={t} />
-          <p>{t('sp.detail.severance')}</p>
-          <p>{t('sp.detail.cross')}</p>
-        </Detail>
-        <div className="flex flex-wrap gap-2">
-          {o.isDemo ? (
-            <DisabledButton reason={t('sp.demo.badge')}>{t('sp.btn.reject')}</DisabledButton>
-          ) : (
-            <form action={rejectSponsorOfferAction}>
-              <input type="hidden" name="offerId" value={o.id} />
-              <PrimaryButton type="submit" variant="secondary">{t('sp.btn.reject')}</PrimaryButton>
-            </form>
-          )}
-          <DisabledButton reason={reason || t('sp.soon')}>{t('sp.btn.accept')}</DisabledButton>
-        </div>
-        <p className="text-2xs text-navy-muted">{reason || t('sp.soon')}</p>
+    <article className="flex flex-col gap-3 rounded-card border border-line bg-card p-3.5 shadow-card">
+      <header className="flex items-start justify-between gap-2">
+        <h3 className="min-w-0 break-words text-base font-bold leading-snug text-navy">{o.companyName}</h3>
+        <span className="flex shrink-0 flex-wrap justify-end gap-1">
+          {o.isDemo && <StatusBadge label={t('sp.demo.badge')} tone="warn" />}
+          <span className="whitespace-nowrap rounded-full bg-teal-rail px-2.5 py-0.5 text-xs font-semibold text-teal-dark">{t('sp.weeksLong', { n: o.durationWeeks })}</span>
+        </span>
+      </header>
+      <div className="space-y-2">
+        {o.goals.map((g, i) => (
+          <div key={g.type} className={`border-l-[3px] pl-2.5 ${i === 0 ? 'border-teal/40' : 'border-teal'}`}>
+            <p className="text-xs text-navy-soft">{labels[i]}</p>
+            <p className="text-sm font-semibold leading-snug text-navy">{t(`sp.goal.${g.type}`)}</p>
+          </div>
+        ))}
       </div>
-    </SectionCard>
+      <p className="text-xs text-navy-soft">
+        {t('sp.field.expiresOn')}: <span className="font-semibold text-navy">{fullDate(new Date(o.expiresAt), locale)}</span> · {t('sp.expiresIn', { d: left.days, h: left.hours })}
+      </p>
+      <div className="mt-auto grid grid-cols-2 items-start gap-2">
+        <details className="group open:col-span-2">
+          <summary className="inline-flex min-h-[2.5rem] w-full cursor-pointer list-none items-center justify-center rounded-lg border border-line bg-card px-4 py-2 text-sm font-semibold text-navy transition-colors hover:border-teal hover:text-teal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal [&::-webkit-details-marker]:hidden">
+            {t('sp.btn.detail')}
+          </summary>
+          <div className="mt-2 space-y-2 rounded-lg bg-teal-rail p-3 text-xs text-navy-soft">
+            <p>{t('sp.field.duration')}: <span className="font-semibold text-navy">{t('sp.weeks', { n: o.durationWeeks })}</span></p>
+            <p>{t('sp.field.income')}: <span className="font-semibold text-navy">{moneyText(o.weeklyIncomeCents, locale, t)}</span></p>
+            {o.goals.map((g, i) => (
+              <p key={g.type}>{labels[i]} — {t(`sp.goal.${g.type}`)}, {t('sp.bonus')}: <span className="font-semibold text-navy">{moneyText(g.bonusCents, locale, t)}</span></p>
+            ))}
+            <GoalNotes goals={o.goals} t={t} />
+            <p>{t('sp.detail.severance')}</p>
+            <p>{t('sp.detail.cross')}</p>
+            {full && <p className="rounded-lg bg-warn/10 px-2.5 py-1.5 text-warn">{t('sp.block.slots_full')}</p>}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <DisabledButton reason={reason || t('sp.soon')}>{t('sp.btn.accept')}</DisabledButton>
+              <span>{reason || t('sp.soon')}</span>
+            </div>
+          </div>
+        </details>
+        {o.isDemo ? (
+          <DisabledSecondary reason={t('sp.demo.badge')}>{t('sp.btn.reject')}</DisabledSecondary>
+        ) : (
+          <form action={rejectSponsorOfferAction}>
+            <input type="hidden" name="offerId" value={o.id} />
+            <PrimaryButton type="submit" variant="secondary" className="min-h-[2.5rem] w-full">{t('sp.btn.reject')}</PrimaryButton>
+          </form>
+        )}
+      </div>
+    </article>
   );
 }

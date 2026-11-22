@@ -18,7 +18,7 @@ import { MAX_OFFERS, SPONSOR_LIMITS, type SponsorKind } from '@/lib/sponsors/rul
  * design can be checked. No amount is invented: money fields are "Zatiaľ neurčené" until the owner approves the sponsor economy,
  * and signing / early termination stay disabled (the database has no function for them yet — migration 20261122_01).
  * The market shows ONLY the player's own offers (max 3 main + 3 secondary), picked by the server-side generator (migrations _03/_06); the 80-company
- * catalogue is generator input and is never listed. Filter Všetky / Hlavní / Vedľajší = ?type=. Tabs are plain links (no client JavaScript), so the page also works with JS off and on slow phones.
+ * catalogue is generator input and is never listed. Two sections (main / secondary), no filter (redesign 2026-11-22). Tabs are plain links (no client JavaScript), so the page also works with JS off and on slow phones.
  */
 export default async function SponsorsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { t, locale } = await getServerDictionary();
@@ -26,7 +26,6 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
   const tab = one(sp.tab) === 'market' ? 'market' : 'contracts';
   const demo = one(sp.demo) === '1';
-  const type = one(sp.type) === 'main' ? 'main' : one(sp.type) === 'secondary' ? 'secondary' : 'all';
 
   const now = new Date();
   const league = await getMyLeague();
@@ -36,7 +35,8 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const secondaryLabel = (n: number) => t('sp.demo.secondaryName', { n });
   const contracts = demo ? demoContracts(now, demoNames, secondaryLabel) : real.contracts;
   const allOffers = demo ? demoOffers(now, demoNames, APPROVED_SECONDARY_SPONSORS) : real.offers;
-  const offers = allOffers.filter((o) => type === 'all' || o.kind === type);
+  const offersOf = (kind: SponsorKind) => allOffers.filter((o) => o.kind === kind);
+  const financeOpen = demo ? false : real.economyEnabled;
 
   const activeByKind: Record<SponsorKind, number> = {
     main: contracts.filter((c) => c.kind === 'main').length,
@@ -44,10 +44,9 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   };
   const limits = SPONSOR_LIMITS[league];
 
-  const href = (over: { tab?: string; demo?: boolean; type?: string }) => {
+  const href = (over: { tab?: string; demo?: boolean }) => {
     const q = new URLSearchParams();
     const tb = over.tab ?? tab; if (tb !== 'contracts') q.set('tab', tb);
-    const ty = over.type ?? type; if (ty !== 'all') q.set('type', ty);
     if (over.demo ?? demo) q.set('demo', '1');
     const s = q.toString();
     return s ? `/sponsors?${s}` : '/sponsors';
@@ -63,10 +62,10 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
 
         {demo && <p role="status" className="rounded-card border border-warn/40 bg-warn/10 px-3.5 py-2.5 text-sm text-warn">{t('sp.demo.banner')}</p>}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <SummaryCard icon={<Icon name="crown" className="h-4.5 w-4.5" />} label={t('sp.slots.main')} value={`${activeByKind.main} / ${limits.main}`} />
-          <SummaryCard icon={<Icon name="staff" className="h-4.5 w-4.5" />} label={t('sp.slots.secondary')} value={`${activeByKind.secondary} / ${limits.secondary}`} />
-          <SummaryCard icon={<Icon name="cart" className="h-4.5 w-4.5" />} label={t('sp.slots.offers')} value={`${allOffers.length} / ${MAX_OFFERS.total}`} />
+        <div className="grid grid-cols-3 gap-2">
+          <SummaryCard icon={<Icon name="crown" className="h-4.5 w-4.5" />} label={t('sp.slots.main')} value={`${activeByKind.main} / ${limits.main}`} compact />
+          <SummaryCard icon={<Icon name="staff" className="h-4.5 w-4.5" />} label={t('sp.slots.secondary')} value={`${activeByKind.secondary} / ${limits.secondary}`} compact />
+          <SummaryCard icon={<Icon name="cart" className="h-4.5 w-4.5" />} label={t('sp.slots.offers')} value={`${allOffers.length} / ${MAX_OFFERS.total}`} compact />
         </div>
 
         <nav className="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-line px-1" aria-label={t('nav.sponsors')}>
@@ -83,27 +82,31 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
             </div>
           )
         ) : (
-          <>
-            <nav className="flex flex-wrap gap-1.5" aria-label={t('sp.filter.label')}>
-              {(['all', 'main', 'secondary'] as const).map((f) => (
-                <Link key={f} href={href({ tab: 'market', type: f })} aria-current={type === f ? 'true' : undefined}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${type === f ? 'border-teal bg-teal/10 text-teal-dark' : 'border-line text-navy-muted hover:text-navy'}`}>
-                  {t(`sp.filter.${f}`)}
-                </Link>
-              ))}
-            </nav>
-            <p className="px-1 text-xs text-navy-muted">{t('sp.market.note')}</p>
-            {offers.length === 0 ? (
-              <Card><EmptyState icon="cart" text={t('sp.empty.market')} /></Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {offers.map((o) => (
-                  <OfferCard key={o.id} o={o} now={now} locale={locale} t={t} league={league} activeByKind={activeByKind}
-                    lastSignedCompanyId={demo ? null : real.lastSignedCompanyId} economyEnabled={demo ? false : real.economyEnabled} />
-                ))}
-              </div>
-            )}
-          </>
+          <div className="space-y-5">
+            {!financeOpen && <p role="note" className="rounded-lg border border-line bg-teal-rail px-3.5 py-2.5 text-sm text-navy-soft">{t('sp.finance.note')}</p>}
+            {(['main', 'secondary'] as const).map((kind) => {
+              const list = offersOf(kind);
+              return (
+                <section key={kind} aria-labelledby={`sp-sec-${kind}`} className="space-y-3">
+                  <div className="flex items-baseline justify-between gap-3 border-b border-line pb-1.5">
+                    <h2 id={`sp-sec-${kind}`} className="text-base font-bold uppercase tracking-wide text-navy">{t(`sp.section.${kind}`)}</h2>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-navy-soft">{list.length} / {MAX_OFFERS[kind]}</span>
+                  </div>
+                  {list.length === 0 ? (
+                    <p className="rounded-card border border-dashed border-line px-3.5 py-4 text-sm text-navy-soft">{t('sp.section.none')}</p>
+                  ) : (
+                    <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {list.map((o) => (
+                        <OfferCard key={o.id} o={o} now={now} locale={locale} t={t} league={league} activeByKind={activeByKind}
+                          lastSignedCompanyId={demo ? null : real.lastSignedCompanyId} economyEnabled={demo ? false : real.economyEnabled} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+            <p className="px-1 text-xs text-navy-soft">{t('sp.market.note')}</p>
+          </div>
         )}
       </div>
     </AppShell>

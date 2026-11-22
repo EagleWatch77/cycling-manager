@@ -34,7 +34,8 @@ const offerHtml = (o: SponsorOffer, active = none, league: 'rookie' | 'elite' = 
 const o1 = demoOffers(now)[0];
 const real: SponsorOffer = { ...o1, id: '11111111-1111-1111-1111-111111111111', isDemo: false };
 const h = offerHtml(o1);
-check('offer: type, duration, expiry DATE and countdown, income, two goals', h.includes('Hlavný sponzor') && h.includes('Ponuka platí do') && h.includes('10 týž.') && h.includes('o 2 d 12 h') && h.includes('Garantovaný týždenný príjem') && h.includes('Základný cieľ') && h.includes('Náročnejší cieľ'));
+check('offer: name, length chip, expiry DATE + countdown, both goals visible on the card, NO type badge, NO repeated money text outside Detail', h.includes('10 týždňov') && h.includes('Ponuka platí do') && h.includes('o 2 d 12 h') && h.includes('Základný cieľ') && h.includes('Náročnejší cieľ') && !/<h3[^>]*>[^<]*<\/h3>.*Hlavný sponzor/s.test(h.split('<details')[0]) && !h.split('<details')[0].includes('Zatiaľ neurčené'));
+check('offer: Detail holds income + bonuses "Zatiaľ neurčené" and the locked Prijať', h.split('<details')[1].includes('Garantovaný týždenný príjem') && h.split('<details')[1].includes('Zatiaľ neurčené'));
 check('offer: Prijať is disabled and explains why (finances)', /<button[^>]*disabled[^>]*>Prijať/.test(h) && h.includes('Podpis sa sprístupní po schválení financií'));
 check('offer: demo Odmietnuť is disabled (no real action on demo data)', /<button[^>]*disabled[^>]*>Odmietnuť/.test(h));
 const hr = offerHtml(real);
@@ -48,7 +49,7 @@ check('if money exists it is formatted, never shown as "Zatiaľ neurčené"', !o
 check('even with money Prijať stays locked while the economy switch is off', /<button[^>]*disabled[^>]*>Prijať/.test(offerHtml(paid)));
 check('demo market = 3 main + 3 secondary offers (5 weeks), 1 main + 1 secondary contract', demoOffers(now).filter((o) => o.kind === 'main').length === 3 && demoOffers(now).filter((o) => o.kind === 'secondary').length === 3 && demoOffers(now).filter((o) => o.kind === 'secondary').every((o) => o.durationWeeks === 5) && demoContracts(now).length === 2);
 const hs = offerHtml(demoOffers(now).find((o) => o.kind === 'secondary')!);
-check('secondary offer card: type, 5 weeks, expiry, remaining time, both goals, income and bonuses undetermined, Detail, locked Prijať', hs.includes('Vedľajší') && hs.includes('5 týž.') && hs.includes('Ponuka platí do') && hs.includes('Základný cieľ') && hs.includes('Náročnejší cieľ') && hs.includes('Zatiaľ neurčené') && hs.includes('>Detail<') && /<button[^>]*disabled[^>]*>Prijať/.test(hs));
+check('secondary offer card: 5 weeks chip, both goals, Detail, Odmietnuť, locked Prijať, no type badge on the card', hs.includes('5 týždňov') && hs.includes('Základný cieľ') && hs.includes('Náročnejší cieľ') && hs.includes('>Detail<') && hs.includes('Odmietnuť') && /<button[^>]*disabled[^>]*>Prijať/.test(hs) && !hs.split('<details')[0].includes('Vedľajší sponzor'));
 check('every demo offer has two different goals, easier before harder', demoOffers(now).every((o) => o.goals[0].type !== o.goals[1].type));
 check('demo offers use six different catalogue companies (main from the main list, secondary from the secondary list)', new Set(demoOffers(now).map((o) => o.companyName)).size === 6 && demoOffers(now).every((o) => (o.kind === 'main' ? APPROVED_MAIN_SPONSORS : APPROVED_SECONDARY_SPONSORS).includes(o.companyName)));
 check('expiry date is the real expires_at (offer created + 21 days stays visible)', h.includes(new Date(o1.expiresAt).getFullYear().toString()));

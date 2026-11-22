@@ -20,10 +20,11 @@ check('rules: at most 3 main + 3 secondary offers (6), 21 days', MAX_OFFERS.main
 check('repository calls ensure_my_sponsor_offers on the server before reading', /rpc\('ensure_my_sponsor_offers'\)/.test(repo) && repo.indexOf("ensure_my_sponsor_offers") < repo.indexOf("from('sponsor_offers')"));
 check('repository is server-only', /import 'server-only'/.test(repo));
 check('a missing function (migration not run) is quiet, a generator error never breaks the page', /'42883'/.test(repo) && /console\.error\(`\[sponsors\] generator failed/.test(repo));
-check('market reads both kinds of own open offers; page filters by ?type (all / main / secondary)', !/\.eq\('kind', 'main'\)\.eq\('status', 'open'\)/.test(repo) && /\.eq\('status', 'open'\)/.test(repo) && /type === 'all' \|\| o\.kind === type/.test(page));
+check('market reads both kinds of own open offers; page shows two sections (main / secondary) from the data', !/\.eq\('kind', 'main'\)\.eq\('status', 'open'\)/.test(repo) && /\.eq\('status', 'open'\)/.test(repo) && /offersOf\(kind\)/.test(page) && /sp\.section\.\$\{kind\}/.test(page) && /MAX_OFFERS\[kind\]/.test(page));
+check('no filter and no ?type on the page; one finance notice above the sections', !/sp\.filter|type=|one\(sp\.type\)/.test(page) && /sp\.finance\.note/.test(page));
 check('counter is x / 6 offers (unfiltered count)', /allOffers\.length[^`]*MAX_OFFERS\.total/.test(page));
 check('active-secondary counter uses the league limit', /activeByKind\.secondary\} \/ \$\{limits\.secondary/.test(page));
-check('no catalogue listing on the page, filter present', !/SponsorCatalog|getMainSponsorCatalog/.test(page) && /sp\.filter\./.test(page));
+check('no catalogue listing on the page', !/SponsorCatalog|getMainSponsorCatalog/.test(page));
 check('no client-side generator code (page and cards are server components)', !/'use client'/.test(page) && !/ensure_my_sponsor_offers|sponsor_generate/.test(cards));
 check('card shows the expiry date and the remaining time', /sp\.field\.expiresOn/.test(cards) && /sp\.expiresIn/.test(cards));
 check('no money is rendered except through moneyText ("Zatiaľ neurčené")', /moneyText\(o\.weeklyIncomeCents/.test(cards));
