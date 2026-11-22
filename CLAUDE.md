@@ -14,7 +14,7 @@ Deployed on Vercel from GitHub.
 
 ## Session protocol (save tokens)
 1. Read `docs/CURRENT_TASK.md` first. Read nothing else unless the task needs it.
-2. On demand only: `docs/GAME_DESIGN.md` (mechanics), `docs/DESIGN_SYSTEM.md` (UI), `docs/DECISIONS.md` (decisions).
+2. For project-wide context (state, decisions, open items) read `docs/BIBLIA_PROJEKTU.md`. On demand only: `docs/GAME_DESIGN.md` (mechanics), `docs/DESIGN_SYSTEM.md` (UI), `docs/DECISIONS.md` (decisions).
 3. Use Grep/Glob and targeted reads. Never scan the whole repo; never re-read files already in context.
 4. Before ending: overwrite `docs/CURRENT_TASK.md` (do not append); log new decisions in `docs/DECISIONS.md`.
 

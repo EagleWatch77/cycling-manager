@@ -2,7 +2,7 @@ import type { LeagueId } from './leagues';
 
 export type NavItemId =
   | 'home' | 'rider' | 'races' | 'calendar' | 'rankings'
-  | 'team' | 'scouting' | 'transfers' | 'staff' | 'finance' | 'facilities' | 'settings';
+  | 'team' | 'scouting' | 'transfers' | 'staff' | 'finance' | 'sponsors' | 'facilities' | 'settings';
 
 export interface NavItem {
   id: NavItemId;
@@ -40,6 +40,8 @@ export const SECONDARY_NAV: readonly NavItem[] = [
   { id: 'transfers', href: '/transfers', labelKey: 'nav.transfers', icon: 'cart' },
   { id: 'staff', href: '/staff', labelKey: 'nav.staff', icon: 'staff', availableIn: TEAM_LEAGUES },
   { id: 'finance', href: '/finance', labelKey: 'nav.finance', icon: 'coin', availableIn: TEAM_LEAGUES },
+  // Sponzori: available in every league (Rookie has 1 main + 1 secondary slot); sits directly under Financie.
+  { id: 'sponsors', href: '/sponsors', labelKey: 'nav.sponsors', icon: 'crown' },
   { id: 'facilities', href: '/facilities', labelKey: 'nav.facilities', icon: 'building', availableIn: TEAM_LEAGUES },
 ];
 

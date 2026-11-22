@@ -2,3 +2,8 @@ Zmaž ručne (ak existujú):
 apps/web/src/components/EquipmentCard.tsx
 apps/web/src/components/BikeCard.test.ts
 apps/web/src/lib/races/recentResults.ts
+
+Zmaž ručne z priečinka supabase/migrations/ (nové kópie sú už mimo neho; tieto by sa omylom spustili pri automatickom behu migrácií):
+supabase/migrations/20261114_league_divisions.sql   (zastaraný koncept, archivovaný v supabase/diagnostics/superseded_migrations/)
+supabase/migrations/20261119_03_market_hidden_columns_ROLLBACK.sql   (nebezpečný rollback, kópia je v supabase/diagnostics/market_launch/manual_rollbacks/)
+supabase/migrations/20261119_05_dev_cap_s1_youth_floor_o5_ROLLBACK.sql   (rollback S1+O5; postup je v docs/S1O5_rollback_postup.md)

@@ -1,15 +1,13 @@
-# Current task — Market start package (final ZIP) + working model S1 + O5
-Status: everything prepared and tested in a sandbox Postgres 16; NOTHING run on production, nothing deployed, no riders inserted, no old riders deleted.
-Manual order: see `docs/DEPLOY_trh_start.md` (A → deploy code → B → S1+O5 migration → seed → check Trh → delete 45 old riders, last).
-Included: radar 1–200; permanent market across seasons (players see all available seasons, admin sees all); hidden values closed (migrations A/B + rollback); 100-rider generator + seed (Potential bands 35/45/14/4,5/1,2/0,3 %); working model S1+O5 in TS and SQL (parity tested); scripts for the 45 old riders (check/backup+delete/restore).
-Verified findings: `season_id` = season of the last placement on the market (updated on return), not the creation season; admin reset never deletes returned/reserved/owned riders (`market_reset_safety.test.sh`).
-Open (needs owner): S1+O5 and goals 160/180/190 are WORKING/orientational; ×1,5 Experience/Tactics growth unapproved; decisions snippet `docs/snippets/DECISIONS_C-087_C-094_append.md` (C-095, C-096) not yet merged into DECISIONS.md; starter generator for managers (Rookie OVR 75; `create_my_starter_rider` bounds 112–148 still old) is a later step; automatic retirement not implemented; Trainability/Professionalism/Recovery stars still use the 55–95 scale; real-browser confirmation of saving/changing a training plan.
-Not done on purpose: finances, contracts, auctions, existing riders, OVR F4 formula, swap switch.
+# CURRENT_TASK (2026-11-22)
 
-Update (review fixes, 2026-11-19): old admin market generator switched OFF (C-098); reset shows the exact resettable count and is disabled at 0; 55–95 audit (C-097, comment only, no mechanics); read-only pre-deploy check `00_predeploy_kontrola_LEN_CITANIE.sql`; separate S1+O5 rollback `20261119_05_…ROLLBACK.sql`; deploy doc has the B-rollback warning. Nothing deployed/run.
-Update (safety, 2026-11-19): rollbacks moved out of supabase/migrations to diagnostics/market_launch/manual_rollbacks/ (dangerous B rollback now has a lock; new SAFE_B closure script); check 00 rewritten to phases 0–5 with verdicts + next step; deploy guide rewritten in Slovak. Nothing deployed/run.
-Update (ZIP v4 fixes, 2026-11-19): old league-divisions migration archived out of migrations/; exact S1+O5-only rollback procedure (docs/S1O5_rollback_postup.md); check 00 phase 5 requires a valid backup of exactly 45 riders. Nothing deployed/run.
-Update (backup, 2026-11-19): Supabase FREE has no automatic backups -> manual pg_dump procedure for Windows prepared as a SEPARATE package outside the repo (zaloha-supabase-windows; scripts tested only on PowerShell 7/Linux, not on Windows). Deploy guide step 'Pred krokom 1' now points to it; migration A must wait for a verified backup (02 = ÚPLNÁ A OVERENÁ). No game code or rules changed. Nothing run on production.
-Update (market sort + delete guard, 2026-11-19): default Market order = OVR F4 descending over the WHOLE market, equal OVR mixed by a stable FNV-1a key of the rider id (`lib/market/marketSort.ts`, tested on the real 100 seed riders: `marketSort.test.ts`); free tab and Premium default 'overall' read the filtered list in chunks and sort in code before paging (OVR is not stored, so the DB cannot order by it); other Premium sorts unchanged; new i18n key `market.sortOverall` (7 languages). Script 02 now deletes the 45 old riders ONLY if exactly 100 available `initial-market-1.0` riders exist and satisfy OVR 69-75 / age 17-20 / Experience 1-20 / Potential 1-100 (tested on a scratch Postgres: 0, 99, 1 bad -> nothing deleted; 100 good -> 45 backed up and deleted). No migration, no game rules changed. Nothing run on production.
-Update (market look + detail, 2026-11-19): list redesigned (no Potential column, flags, OVR badge), detail rebuilt in sections A-H (see DECISIONS C-100). Open for the owner: O-027 specialisation rule (10 % not found), O-028 contract offer backend; backlog B-001 salary generator (not built). Code only, no migration; nothing pushed or deployed.
-Update (market Rozvoj final, 2026-11-19): option A implemented (C-101): five rough dashes (Potential bands, others +-10 stable noise from a database-held secret salt), Experience exact, radar consistent, misleading 'revealed after signing' text removed. Migration `20261119_06_market_rider_estimates.sql` PREPARED, NOT RUN (tested on scratch Postgres: supabase/tests/market_rider_estimates.test.sh, 37 checks); code works without it ('Odhad zatiaľ nie je dostupný'). Open: O-030 legacy 55-95 scale of own-rider Rozvoj (display only, separate task). Nothing pushed/deployed/run on production.
+Hotová fáza: stránka **Sponzori** (`/sponsors`), bez peňazí (C-106, O-031). Nič nenasadené, nič nespustené v produkcii.
+
+## Čo je v ZIP-e
+Pravidlá `lib/sponsors/*`, komponenty `components/sponsors/*`, stránka + akcia `app/sponsors/*`, menu pod Financie, preklady (7 jazykov), migrácia `20261122_01_sponsors_foundation.sql` (NESPUSTENÁ), testy, Biblia, DECISIONS (C-106, O-031).
+
+## Čaká na Mirka
+Sumy (príjem, bonusy), generovanie ponúk a názvy fiktívnych firiem, plánovač nedeľňajšej aktualizácie, finančná história. Až potom: podpis, predčasné ukončenie, výplaty.
+
+## Poznámky
+`ODSTRAN.txt` doplnený: 3 staré súbory v `supabase/migrations/` treba zmazať ručne (zastaraný koncept líg a dva ROLLBACK súbory).
+Overiť: migrácia sponzorov pred/po kóde je bezpečná (bez nej stránka ukáže prázdny stav).

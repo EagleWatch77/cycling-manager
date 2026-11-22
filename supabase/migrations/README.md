@@ -105,3 +105,9 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_lau
 `ROLLBACK_B_ODOMKNE_SKRYTE_HODNOTY.sql` (NEBEZPEČNÉ, má poistku), `ROLLBACK_S1O5_rozvoj.sql`. Čísla 03 a 05 sú preto v číslovaní vynechané. Test `predeploy_check.test.sh` stráži, že v tomto priečinku nie je súbor s rollbackom.
 
 **Archivovaná (nahradená) migrácia:** starý koncept `20261114_league_divisions.sql` (funkcia `assign_my_league_division(text)`, kde sezónu zadával klient) bol presunutý do `../diagnostics/superseded_migrations/20261114_league_divisions_SUPERSEDED.sql` a NESMIE sa spúšťať. Pri abecednom spustení všetkých súborov by sa totiž vykonal PO `_02`/`_03` a vrátil by nebezpečnú funkciu. Stráži to `supabase/tests/migrations_active_set.test.sh`.
+
+
+## 2026-11-22 — Sponzori, bezpečný základ (NOT RUN)
+| File | What it does |
+|---|---|
+| `20261122_01_sponsors_foundation.sql` | tables `sponsor_settings`, `sponsor_companies`, `sponsor_offers`, `sponsor_contracts`, `sponsor_payouts`; limits per league, contract durations, goal availability, 3+3 offer cap, "not the same sponsor twice in a row", unique payout key (no double payment), weekly key Sunday 00:00 Europe/Bratislava, severance 30 %; players only READ their own rows, only action `reject_my_sponsor_offer`. **No money, no signing, no payout, no offer generator** (not approved). Switch `sponsor_settings.economy_enabled` = false. Run after 20261114_01..03; whole file, idempotent, additive. Safe BEFORE or AFTER the code (without it the page shows the empty state). Verify: `supabase/tests/sponsors_foundation.test.sh` (as `postgres`). |

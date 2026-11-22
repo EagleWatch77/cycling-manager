@@ -1,5 +1,8 @@
 # GAME_DESIGN — herné mechaniky (Cycling Manager)
 
+> **Pozor (2026-11-19):** Hlavný dokument projektu je `docs/BIBLIA_PROJEKTU.md`. Tento súbor je detail a **časti sú zastarané** (napr. vzorec OVR v kap. 6 — platí model F4, C-083). Pri rozpore platí Biblia a `DECISIONS.md`.
+
+
 Tento dokument zachytáva **iba to, čo je potvrdené** v kóde alebo v ratifikovaných dokumentoch. Nič tu nie je domyslené.
 
 ## Ako sa používa
