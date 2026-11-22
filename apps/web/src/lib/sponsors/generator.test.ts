@@ -43,4 +43,22 @@ check('weekly update is idempotent per update period and uses the Bratislava Sun
 check('unexpired offers are kept (only expired ones are touched, only missing ones added)', /expires_at <= p_now/.test(code) && /v_need := greatest\(0, 3 - v_open\)/.test(code));
 check('"not twice in a row": last signed company excluded', /c\.id <> v_last/.test(code));
 check('scheduler is documented as NOT configured', /SCHEDULER NOTE \(NOT CONFIGURED\)/.test(sql));
+// ---- migration 20261122_04 (generator fixes) and transaction safety of all four sponsor migrations
+const sql4 = rd('supabase/migrations/20261122_04_sponsor_generator_fixes.sql'); const code4 = nc(sql4);
+for (const f of ['01_sponsors_foundation', '02_sponsor_catalog_main_30', '03_sponsor_offer_generator', '04_sponsor_generator_fixes']) {
+  const c = nc(rd(`supabase/migrations/20261122_${f}.sql`));
+  check(`migration ${f}: one transaction (begin; ... commit;)`, /^begin;$/m.test(c) && /^commit;\s*$/m.test(c));
+}
+check('04 refuses without 01-03 and without the calendar table', /Run 20261122_01, _02 and _03 first/.test(sql4) && /public\.tour_schedule .* does not exist/.test(sql4));
+check('04 database guards: offers and contracts, serialised per player', /sponsor_offers_company_guard_trg/.test(code4) && /sponsor_contracts_company_guard_trg/.test(code4) && /pg_advisory_xact_lock/.test(code4));
+check('04 guard covers valid offer, active contract and last signed firm', /sponsor_company_already_offered/.test(code4) && /sponsor_company_has_active_contract/.test(code4) && /sponsor_same_company_twice/.test(code4));
+check('04 guard is by company_id only (main and secondary alike), never by kind', !/c\.kind|o\.kind = new\.kind/.test(code4.slice(code4.indexOf('sponsor_offer_company_guard()'), code4.indexOf('sponsor_contract_company_guard()'))));
+check('04 generator excludes ALL active contracts, not only the last signed', /k\.status = 'active'/.test(code4) && /c\.id <> v_last/.test(code4));
+check('04 real calendar: tour_schedule + season start, not an estimate from the contract length', /from public\.tour_schedule/.test(code4) && /game_season_one_start/.test(code4) && !/3 \* \(p_weeks/.test(code4));
+check('04 no calendar -> nothing generated and no state stored (retry)', /sponsor_reachable_tours\(p_now, 10\) = 0 then return 0/.test(code4));
+check('04 existing duplicates: report + dry-run fixer, never delete, owner only', /sponsor_duplicate_report/.test(code4) && /p_apply boolean default false/.test(code4) && !/\bdelete from\b/i.test(code4) && !/\bdrop (table|column)\b/i.test(code4) && !/\btruncate\b/i.test(code4));
+check('04 unique active-contract index is created only when no duplicate exists', /duplicate ACTIVE contracts[\s\S]*unique index NOT created/.test(code4) && /create unique index if not exists sponsor_contracts_one_active_per_company/.test(code4));
+check('04 does not touch money, contracts data or payouts', !/insert into public\.sponsor_(contracts|payouts)/i.test(code4) && !/weekly_income_cents|goal1_bonus_cents|goal2_bonus_cents/.test(code4.replace(/sponsor_contracts \(player_id/g, '')));
+check('04 keeps 21-day validity and no replacement after rejection', /p_now \+ interval '21 days'/.test(code4) && !/reject_my_sponsor_offer/.test(code4));
+check('04 helpers are not callable by players', /revoke execute on function public\.sponsor_player_lock/.test(code4) && !/grant execute/i.test(code4));
 console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

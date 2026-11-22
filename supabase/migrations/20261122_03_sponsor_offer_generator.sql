@@ -19,6 +19,9 @@
 -- Rollback: drop the trigger sponsor_profile_created_trg and the functions below, restore policy sponsor_companies_select from 20261122_01.
 -- ============================================================================
 
+-- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
+begin;
+
 do $guard$ begin
   if to_regclass('public.sponsor_companies') is null or to_regclass('public.sponsor_offers') is null
      or not exists (select 1 from information_schema.columns where table_schema='public' and table_name='sponsor_companies' and column_name='catalog_no') then
@@ -257,3 +260,5 @@ grant execute on function public.ensure_my_sponsor_offers() to authenticated;
 --     select cron.schedule('sponsor-weekly-update', '5 * * * *', $$select public.sponsor_weekly_update()$$);
 -- Do NOT do this before the owner confirms. Until then no scheduler exists and none is claimed.
 -- ============================================================================
+
+commit;

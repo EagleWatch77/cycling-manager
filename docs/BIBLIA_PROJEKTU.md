@@ -172,7 +172,9 @@ Schválené názvy (v tomto poradí): 1 Veltaro Cycling, 2 Kadrin Wheels, 3 Aero
 
 **Generátor ponúk (C-108, O-032):** migrácia `20261122_03`. Server-side; každý hráč max 3 osobné hlavné ponuky z katalógu 30 firiem (bez opakovania v sade, nie firma posledného podpísaného kontraktu), 2 rôzne ciele (ľahší/ťažší) z 7 reálne vyhodnotiteľných (nie Worlds, postup, výhra sezóny), platnosť presne 21 dní, bez peňazí. Nový hráč dostane ponuky hneď (trigger) alebo pri prvej návšteve `/sponsors`; doplnenie po odmietnutí/expirácii pri najbližšej nedeli 00:00 Bratislava. **Plánovač nie je napojený** (funguje lenivé doplnenie; voliteľný pg_cron je popísaný v migrácii a nie je zapnutý). Hodnoty rebríčka cieľov sú návrh na schválenie (O-032). Testy: `supabase/tests/sponsors_generator.test.sh` (91), `lib/sponsors/generator.test.ts` (26).
 
-**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `20261122_02` → `20261122_03`; kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
+**Oprava generátora (C-109):** migrácia `20261122_04`. Hráč nikdy nedostane ponuku od firmy, s ktorou má platnú ponuku alebo aktívnu zmluvu (hlavnú/vedľajšiu), ani od firmy poslednej podpísanej zmluvy; chráni to databáza (triggre + unikátny index + zámok na hráča), nielen generátor. Po odmietnutí sa náhrada nevytvára hneď. Ciele sa vyberajú podľa skutočného kalendára (`tour_schedule` + začiatok sezóny): ponúkne sa len cieľ, na ktorý je v zmluve garantovane dosť pretekových týždňov; bez kalendára sa nič negeneruje. Staré duplicity: `sponsor_duplicate_report()` / `sponsor_fix_duplicate_offers()` (štandardne suchý beh, nič sa nemaže). Testy: `supabase/tests/sponsors_fixes.test.sh` (61), `sponsors_generator.test.sh` (91; s `WITH_04=1` 93), `generator.test.ts` (42).
+
+**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `_02` → `_03` → `_04` (každá v jednej transakcii; `_03` po `_04` nespúšťať znova); kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
 
 Poistky: hráč zo stránky nemôže nič zapisovať (iba čítať vlastné riadky a odmietnuť vlastnú ponuku); `sponsor_settings.economy_enabled` = false.
 
@@ -199,6 +201,7 @@ admin_users, bike_condition, league_divisions, league_memberships, league_rider_
 | 20261122_01 | Sponzori — základ (tabuľky, poistky, bez peňazí) | **NESPUSTENÁ, pripravená** |
 | 20261122_02 | Katalóg 30 hlavných sponzorov (spúšťať PO `_01`) | **NESPUSTENÁ, pripravená** |
 | 20261122_03 | Generátor ponúk a cieľov (spúšťať PO `_01` a `_02`) | **NESPUSTENÁ, pripravená** |
+| 20261122_04 | Oprava generátora: jedna firma na hráča, DB stráže, kalendár cieľov (PO `_01`–`_03`) | **NESPUSTENÁ, pripravená** |
 | seed 100 jazdcov | nový trh | **NEOVERENÉ** (Mirko nevedel povedať) |
 | zmazanie 45 starých | čistenie | **NESPUSTENÉ** |
 
@@ -231,6 +234,7 @@ Prostredie na vývoj: `web:build` v sandboxe padá na sťahovaní Google Fonts (
 | C-096/097 | význam `season_id`, audit starej škály 55–95 | docs | — |
 | C-107 | Katalóg 30 hlavných sponzorov (zdroj generátora, verejne sa nezobrazuje od C-108) | `lib/sponsors/catalog.ts`, SQL `20261122_02` | áno (20 + 19 + 36); vzhľad overený snímkami (mobil/tablet/desktop) |
 | C-108 | Generátor osobných ponúk hlavných sponzorov a cieľov | SQL `20261122_03`, `lib/sponsors/repository.ts`, `app/sponsors/page.tsx` | áno (91 + 26 + 22); vzhľad overený snímkami (mobil/desktop) |
+| C-109 | Oprava generátora: duplicitná firma, súbežnosť, ciele podľa kalendára | SQL `20261122_04` | áno (61 + 93 + 42) |
 | C-106 | Sponzori (bez peňazí) | `lib/sponsors/*`, `app/sponsors`, SQL `20261122_01` | áno (57 + 19 + 81); vzhľad overený snímkami v headless Chrome (mobil + desktop), nie v živej hre |
 | C-102 | zoradenie trhu podľa OVR | `lib/market/marketSort.ts` | áno |
 | C-103 | vzhľad trhu + detail | `components/market/*`, `transfers/[id]` | komponenty áno; vzhľad v prehliadači nie |

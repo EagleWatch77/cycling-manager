@@ -15,6 +15,9 @@
 --   and not exists (select 1 from public.sponsor_offers o where o.company_id = sponsor_companies.id); the columns can stay.
 -- ============================================================================
 
+-- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
+begin;
+
 do $guard$ begin
   if to_regclass('public.sponsor_companies') is null or to_regclass('public.sponsor_offers') is null then
     raise exception 'Run 20261122_01_sponsors_foundation.sql first (sponsor tables are missing).';
@@ -86,3 +89,5 @@ begin
 end $$;
 
 revoke execute on function public.sponsor_offers_guard() from public, anon, authenticated;
+
+commit;

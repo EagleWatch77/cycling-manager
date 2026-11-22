@@ -22,6 +22,9 @@
 -- ============================================================================
 
 -- 1. pure helper functions (also exposed to players; they only compute) ------------------------------------------------
+-- One transaction: either the whole file is applied or nothing (a failed run leaves no half-state).
+begin;
+
 create or replace function public.sponsor_limit(p_league text, p_kind text)
 returns int language sql immutable as $$
   select case p_kind
@@ -235,3 +238,5 @@ revoke execute on function public.sponsor_limit(text, text), public.sponsor_dura
   public.reject_my_sponsor_offer(uuid), public.expire_sponsor_offers(timestamptz) from public, anon, authenticated;
 grant execute on function public.sponsor_limit(text, text), public.sponsor_duration_allowed(text, text, int), public.sponsor_goal_allowed(text, text),
   public.sponsor_week_key(timestamptz), public.sponsor_severance_cents(bigint, int), public.reject_my_sponsor_offer(uuid) to authenticated;
+
+commit;

@@ -5,7 +5,7 @@
 set -u
 PGBIN=${PGBIN:-/usr/lib/postgresql/16/bin}
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DIR=${PGTEST_DIR:-$(mktemp -d)}; PORT=${PGTEST_PORT:-5564}
+DIR=${PGTEST_DIR:-$(mktemp -d)}; PORT=${PGTEST_PORT:-5564}; [ "${WITH_04:-0}" = 1 ] && GEN_VER=g2
 BASE="$DIR/base_schema.sql"; sed '/^-- >>>>>>>> /,$d' "$ROOT/schema.sql" > "$BASE"
 pass=0; fail=0
 ok()  { pass=$((pass+1)); echo "  PASS  $1"; }
@@ -33,7 +33,9 @@ alter default privileges in schema public grant all on functions to anon, authen
 SQL
 psqlc postgres -c "create database t" >/dev/null; psqlc postgres -c "create database empty" >/dev/null
 for db in t empty; do psqlc $db -f "$DIR/stub.sql" >/dev/null || { echo "stub failed"; exit 1; }; psqlc $db -f "$BASE" >/dev/null 2>&1 || { echo "base failed"; exit 1; }; done
-M1="$ROOT/migrations/20261122_01_sponsors_foundation.sql"; M2="$ROOT/migrations/20261122_02_sponsor_catalog_main_30.sql"; M3="$ROOT/migrations/20261122_03_sponsor_offer_generator.sql"
+# the base schema cut-off used here ends before the calendar table; create it exactly like schema.sql does and seed the CURRENT game calendar (V1 until activate_game_calendar_v2())
+psqlc t -c "create table if not exists public.tour_schedule (tour_id text primary key, week_number int not null check (week_number between 1 and 10)); insert into public.tour_schedule values ('highlands-tour',2),('danube-tour',5),('coastal-tour',5),('northern-crown-tour',7),('silver-horizon-tour',9) on conflict do nothing" >/dev/null
+M1="$ROOT/migrations/20261122_01_sponsors_foundation.sql"; M2="$ROOT/migrations/20261122_02_sponsor_catalog_main_30.sql"; M3="$ROOT/migrations/20261122_03_sponsor_offer_generator.sql"; M4="$ROOT/migrations/20261122_04_sponsor_generator_fixes.sql"
 
 echo "== 0. wrong order refused"
 has "03 without 01/02 stops with a clear message" "$(psqlc empty -f "$M3")" "Run 20261122_01"
@@ -46,8 +48,16 @@ psqlc t -f "$M1" >/dev/null 2>&1 && psqlc t -f "$M2" >/dev/null 2>&1 || { echo "
 SEC=$(q "insert into public.sponsor_companies (name, kind) values ('Future Secondary Co','secondary') returning id" | head -1)
 q "insert into public.sponsor_offers (player_id, company_id, kind, duration_weeks, goal1_type, goal2_type, created_at, expires_at) values ('$OLD1','$SEC','secondary',5,'finishTour','winStage', now() - interval '30 days', now() - interval '9 days')" >/dev/null
 BEFORE_OFFERS=$(q "select count(*) from public.sponsor_offers"); BEFORE_PROF=$(q "select count(*) from public.profiles")
-psqlc t -f "$M3" >/dev/null 2>&1 && ok "03 applies on top of 01+02 with existing players" || { bad "03 applies" "$(psqlc t -f "$M3" | tail -3)"; exit 1; }
-psqlc t -f "$M3" >/dev/null 2>&1 && ok "03 is idempotent (second run)" || bad "second run" "$(psqlc t -f "$M3" | tail -3)"
+if psqlc t -f "$M3" >/dev/null 2>&1; then ok "03 applies on top of 01+02 with existing players"; else bad "03 applies" "$(psqlc t -f "$M3" | tail -3)"; exit 1; fi
+if [ "${WITH_04:-0}" = 1 ]; then
+  if psqlc t -f "$M4" >/dev/null 2>&1; then ok "04 (fixes) applied on top: ALL checks below run against 01+02+03+04"; else bad "04 applies" "$(psqlc t -f "$M4" | tail -3)"; exit 1; fi
+fi
+if [ "${WITH_04:-0}" = 1 ]; then
+  psqlc t -f "$M4" >/dev/null 2>&1 && ok "04 is idempotent (second run)" || bad "04 second run" "$(psqlc t -f "$M4" | tail -3)"
+  psqlc t -f "$M3" >/dev/null 2>&1 && bad "re-running the OLDER 03 after 04 must not silently downgrade the generator" "it ran" || ok "re-running the older 03 after 04 is refused (fail-safe, rolled back)"
+else
+  psqlc t -f "$M3" >/dev/null 2>&1 && ok "03 is idempotent (second run)" || bad "second run" "$(psqlc t -f "$M3" | tail -3)"
+fi
 eq "existing players got NO offers from the migration itself" "$(q "select count(*) from public.sponsor_offers")" "$BEFORE_OFFERS"
 eq "profiles untouched" "$(q "select count(*) from public.profiles")" "$BEFORE_PROF"
 eq "no contract, payout or money exists" "$(q "select (select count(*) from public.sponsor_contracts)+(select count(*) from public.sponsor_payouts)+(select count(*) from public.sponsor_offers where weekly_income_cents is not null or goal1_bonus_cents is not null or goal2_bonus_cents is not null)")" "0"
@@ -68,7 +78,7 @@ eq "valid EXACTLY 21 days from creation" "$(q "select count(*) from public.spons
 eq "money columns are all NULL (Zatiaľ neurčené)" "$(q "select count(*) from public.sponsor_offers where player_id='$NEW' and (weekly_income_cents is not null or goal1_bonus_cents is not null or goal2_bonus_cents is not null)")" "0"
 eq "rookie main contract length is 10 weeks" "$(q "select string_agg(distinct duration_weeks::text, ',') from public.sponsor_offers where player_id='$NEW'")" "10"
 eq "rookie base goals: easy in {participateTour, finishTour}, hard in {top50, top10}" "$(q "select count(*) from public.sponsor_offers where player_id='$NEW' and goal1_type in ('participateTour','finishTour') and goal2_type in ('top50','top10')")" "3"
-eq "offers record generator version + tier (base: no results yet)" "$(q "select string_agg(distinct generator_version||':'||generator_tier, ',') from public.sponsor_offers where player_id='$NEW'")" "g1:base"
+eq "offers record generator version + tier (base: no results yet)" "$(q "select string_agg(distinct generator_version||':'||generator_tier, ',') from public.sponsor_offers where player_id='$NEW'")" "${GEN_VER:-g1}:base"
 eq "state row written for this period" "$(q "select last_fill_week_key = public.sponsor_week_key(now()) from public.sponsor_player_state where player_id='$NEW'")" "t"
 eq "the old (pre-migration) players still have nothing until they open /sponsors" "$(q "select count(*) from public.sponsor_offers where player_id='$OLD2'")" "0"
 
@@ -165,10 +175,10 @@ eq "elite: hard goal is winStage / anyJersey / winTour (ranks 5-7), easy is top5
 
 echo "== 13. real results (>= 2 Tours) change the goals; fewer results do not"
 mkr() { q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) values ('$1','T','R','Slovakia','SK',20,'{}','{}','{}','allrounder',80,80,70,70) returning id" | head -1; }
-HI=$(q "insert into auth.users default values returning id" | head -1); LO=$(q "insert into auth.users default values returning id" | head -1); ONE=$(q "insert into public.profiles (id) select gen_random_uuid() where false" >/dev/null; q "insert into auth.users default values returning id" | head -1)
+HI=$(q "insert into auth.users default values returning id" | head -1); LO=$(q "insert into auth.users default values returning id" | head -1); ONE=$(q "insert into auth.users default values returning id" | head -1)
 RH=$(mkr "$HI"); RL=$(mkr "$LO"); R1=$(mkr "$ONE")
-# fillers so each Tour has a field of 20 recorded results
-q "insert into public.riders (player_id, first_name, surname, country_name, country_iso2, age, attributes, condition, condition_previous, inferred_archetype, potential, trainability, professionalism, recovery) select u.id,'F','F','Slovakia','SK',20,'{}','{}','{}','allrounder',80,80,70,70 from (select id from auth.users order by id limit 18) u on conflict do nothing" >/dev/null 2>&1
+# 17 filler riders, each owned by a fresh user, so each Tour has a field of 20 recorded results and no test subject is touched
+for fu in $(seq 1 17); do FU=$(q "insert into auth.users default values returning id" | head -1); mkr "$FU" >/dev/null; done
 FILL=($(q "select id from public.riders where id not in ('$RH','$RL','$R1') limit 18"))
 for tour in t1 t2; do
   q "insert into public.race_results (season_id, tour_id, rider_id, position, points) values ('S1','$tour','$RH',1,50),('S1','$tour','$RL',19,1),('S1','$tour','$R1',10,10)" >/dev/null
