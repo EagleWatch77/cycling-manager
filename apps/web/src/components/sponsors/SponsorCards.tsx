@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { Locale, T } from '@/i18n/config';
 import { fullDate } from '@/lib/format';
 import { SectionCard } from '@/components/ui/SectionCard';
+import { SponsorName } from './SponsorLogo';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { rejectSponsorOfferAction } from '@/app/sponsors/actions';
@@ -99,7 +100,7 @@ function GoalNotes({ goals, t }: { goals: SponsorContract['goals']; t: T }) {
 export function ContractCard({ c, now, locale, t }: { c: SponsorContract; now: Date; locale: Locale; t: T }) {
   const left = weeksLeft(c.endsAt, now, c.durationWeeks);
   return (
-    <SectionCard icon="crown" tone="tint" title={<span className="truncate">{c.companyName}</span>} action={<Badges isDemo={c.isDemo} kind={c.kind} t={t} />}>
+    <SectionCard icon="crown" tone="tint" title={<span className="block min-w-0"><SponsorName name={c.companyName} kind={c.kind} /></span>} action={<Badges isDemo={c.isDemo} kind={c.kind} t={t} />}>
       <div className="space-y-3 p-3.5">
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 sm:grid-cols-4">
           <Field label={t('sp.field.signed')}>{fullDate(new Date(c.signedAt), locale)}</Field>
@@ -112,6 +113,7 @@ export function ContractCard({ c, now, locale, t }: { c: SponsorContract; now: D
         <Goals goals={c.goals} locale={locale} t={t} />
         <div className="flex flex-wrap items-start gap-2">
           <div className="min-w-[8rem] flex-1"><Detail t={t}>
+            <p className="flex items-center gap-2 text-sm font-bold text-navy"><SponsorName name={c.companyName} kind={c.kind} variant="mark" /><span className="min-w-0 break-words">{c.companyName}</span></p>
             <p>{t('sp.field.duration')}: <span className="font-semibold text-navy">{t('sp.weeks', { n: c.durationWeeks })}</span></p>
             <GoalNotes goals={c.goals} t={t} />
             <p>{t('sp.detail.severance')}{' '}
@@ -158,7 +160,7 @@ export function OfferCard({ o, now, locale, t, league, activeByKind, lastSignedC
   return (
     <article className="flex flex-col gap-3 rounded-card border border-line bg-card p-3.5 shadow-card">
       <header className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 break-words text-base font-bold leading-snug text-navy">{o.companyName}</h3>
+        <h3 className="min-w-0 break-words text-base font-bold leading-snug text-navy"><SponsorName name={o.companyName} kind={o.kind} /></h3>
         <span className="flex shrink-0 flex-wrap justify-end gap-1">
           {o.isDemo && <StatusBadge label={t('sp.demo.badge')} tone="warn" />}
           <span className="whitespace-nowrap rounded-full bg-teal-rail px-2.5 py-0.5 text-xs font-semibold text-teal-dark">{t('sp.weeksLong', { n: o.durationWeeks })}</span>
@@ -181,6 +183,7 @@ export function OfferCard({ o, now, locale, t, league, activeByKind, lastSignedC
             {t('sp.btn.detail')}
           </summary>
           <div className="mt-2 space-y-2 rounded-lg bg-teal-rail p-3 text-xs text-navy-soft">
+            <p className="flex items-center gap-2 text-sm font-bold text-navy"><SponsorName name={o.companyName} kind={o.kind} variant="mark" /><span className="min-w-0 break-words">{o.companyName}</span></p>
             <p>{t('sp.field.duration')}: <span className="font-semibold text-navy">{t('sp.weeks', { n: o.durationWeeks })}</span></p>
             <p>{t('sp.field.income')}: <span className="font-semibold text-navy">{moneyText(o.weeklyIncomeCents, locale, t)}</span></p>
             {o.goals.map((g, i) => (
