@@ -853,13 +853,9 @@
   "sp.tab.market": "Sponsorenmarkt",
   "sp.slots.main": "Hauptsponsoren",
   "sp.slots.secondary": "Nebensponsoren",
-  "sp.slots.offers": "Angebote am Markt",
-  "sp.type.main": "Haupt",
+  "sp.slots.offers": "Angebote von Hauptsponsoren",
+  "sp.type.main": "Hauptsponsor",
   "sp.type.secondary": "Neben",
-  "sp.filter.label": "Sponsorentyp-Filter",
-  "sp.filter.all": "Alle",
-  "sp.filter.main": "Haupt",
-  "sp.filter.secondary": "Neben",
   "sp.demo.banner": "Beispieldaten zur Designprüfung. Es sind keine echten Verträge oder Angebote und es wird nichts ausgezahlt.",
   "sp.demo.show": "Designvorschau anzeigen",
   "sp.demo.hide": "Vorschau ausblenden",
@@ -907,9 +903,7 @@
   "sp.goal.participateWorlds": "Nimm an der Weltmeisterschaft teil",
   "sp.goal.top3Worlds": "Erreiche die Top 3 bei der Weltmeisterschaft",
   "sp.goal.winWorlds": "Gewinne die Weltmeisterschaft",
-  "sp.catalog.title": "Katalog der Hauptsponsoren",
-  "sp.catalog.count": "{n} Sponsoren",
-  "sp.catalog.note": "Das sind nicht deine Angebote. Es ist die Liste aller Hauptsponsoren im Spiel. Deine persönlichen Angebote stehen oben (höchstens 3 Hauptsponsoren).",
-  "sp.catalog.empty": "Der Sponsorenkatalog ist noch nicht in der Datenbank.",
-  "sp.demo.secondaryName": "Nebensponsor (Beispiel {n})"
+  "sp.demo.secondaryName": "Nebensponsor (Beispiel {n})",
+  "sp.field.expiresOn": "Angebot gültig bis",
+  "sp.market.note": "Diese Angebote hat das Spiel automatisch für dich ausgewählt. Die Ziele werden automatisch festgelegt und können nicht geändert werden. Ein abgelehntes oder abgelaufenes Angebot wird beim nächsten Sonntags-Update ersetzt."
 }

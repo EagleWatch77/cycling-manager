@@ -116,4 +116,6 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_lau
 |---|---|
 | `20261122_02_sponsor_catalog_main_30.sql` | **Run AFTER `20261122_01`** (refuses otherwise). `sponsor_companies.kind` + `catalog_no`; inserts the 30 approved main sponsors (no duplicates on re-run, self-check = exactly 30); offer must live exactly 21 days (CHECK); a main offer needs a main company. No money, no offers, no contracts. Verify: `supabase/tests/sponsors_catalog.test.sh` (as `postgres`). |
 
-Order for Sponzori: backup -> `20261122_01` -> `20261122_02` (code may be deployed before or after; without the migrations the page shows empty states).
+| `20261122_03_sponsor_offer_generator.sql` | **Run AFTER `_01` and `_02`** (refuses otherwise). Server-side generator of the 3 personal main offers + 2 goals each (tables `sponsor_goal_catalog`, `sponsor_league_goal_windows`, `sponsor_generator_settings`, `sponsor_player_state`; functions `ensure_my_sponsor_offers`, `sponsor_weekly_update`; trigger on `profiles`). Restricts `sponsor_companies` so players see only their own sponsors. No money, no signing, no scheduler. Idempotent, deletes nothing. **NOT RUN in production.** |
+
+Order for Sponzori: backup -> `20261122_01` -> `20261122_02` -> `20261122_03` (code may be deployed before or after; without the migrations the page shows empty states).

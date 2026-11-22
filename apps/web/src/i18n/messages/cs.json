@@ -853,13 +853,9 @@
   "sp.tab.market": "Trh sponzorů",
   "sp.slots.main": "Hlavní sponzoři",
   "sp.slots.secondary": "Vedlejší sponzoři",
-  "sp.slots.offers": "Nabídky na trhu",
-  "sp.type.main": "Hlavní",
+  "sp.slots.offers": "Nabídky hlavních sponzorů",
+  "sp.type.main": "Hlavní sponzor",
   "sp.type.secondary": "Vedlejší",
-  "sp.filter.label": "Filtr typu sponzora",
-  "sp.filter.all": "Vše",
-  "sp.filter.main": "Hlavní",
-  "sp.filter.secondary": "Vedlejší",
   "sp.demo.banner": "Ukázková data pro kontrolu vzhledu. Nejsou to skutečné smlouvy ani nabídky a nic se nevyplácí.",
   "sp.demo.show": "Zobrazit ukázku vzhledu",
   "sp.demo.hide": "Skrýt ukázku",
@@ -907,9 +903,7 @@
   "sp.goal.participateWorlds": "Zúčastni se mistrovství světa",
   "sp.goal.top3Worlds": "Získej TOP 3 na mistrovství světa",
   "sp.goal.winWorlds": "Vyhraj mistrovství světa",
-  "sp.catalog.title": "Katalog hlavních sponzorů",
-  "sp.catalog.count": "{n} sponzorů",
-  "sp.catalog.note": "Toto nejsou tvé nabídky. Je to seznam všech hlavních sponzorů ve hře. Tvé osobní nabídky jsou výše (nejvýše 3 hlavní).",
-  "sp.catalog.empty": "Katalog sponzorů zatím není v databázi.",
-  "sp.demo.secondaryName": "Vedlejší sponzor (ukázka {n})"
+  "sp.demo.secondaryName": "Vedlejší sponzor (ukázka {n})",
+  "sp.field.expiresOn": "Nabídka platí do",
+  "sp.market.note": "Tyto nabídky ti hra vybrala automaticky. Cíle se určují automaticky a nelze je měnit. Odmítnutá nebo vypršelá nabídka se nahradí při nejbližší nedělní aktualizaci."
 }

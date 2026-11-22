@@ -853,13 +853,9 @@
   "sp.tab.market": "Mercado de patrocinadores",
   "sp.slots.main": "Patrocinadores principales",
   "sp.slots.secondary": "Patrocinadores secundarios",
-  "sp.slots.offers": "Ofertas en el mercado",
-  "sp.type.main": "Principal",
+  "sp.slots.offers": "Ofertas de patrocinadores principales",
+  "sp.type.main": "Patrocinador principal",
   "sp.type.secondary": "Secundario",
-  "sp.filter.label": "Filtro de tipo de patrocinador",
-  "sp.filter.all": "Todos",
-  "sp.filter.main": "Principales",
-  "sp.filter.secondary": "Secundarios",
   "sp.demo.banner": "Datos de muestra para revisar el diseño. No son contratos ni ofertas reales y no se paga nada.",
   "sp.demo.show": "Mostrar vista previa del diseño",
   "sp.demo.hide": "Ocultar vista previa",
@@ -907,9 +903,7 @@
   "sp.goal.participateWorlds": "Participa en el Campeonato del Mundo",
   "sp.goal.top3Worlds": "Termina en el top 3 del Campeonato del Mundo",
   "sp.goal.winWorlds": "Gana el Campeonato del Mundo",
-  "sp.catalog.title": "Catálogo de patrocinadores principales",
-  "sp.catalog.count": "{n} patrocinadores",
-  "sp.catalog.note": "Estas no son tus ofertas. Es la lista de todos los patrocinadores principales del juego. Tus ofertas personales están arriba (máximo 3 principales).",
-  "sp.catalog.empty": "El catálogo de patrocinadores aún no está en la base de datos.",
-  "sp.demo.secondaryName": "Patrocinador secundario (ejemplo {n})"
+  "sp.demo.secondaryName": "Patrocinador secundario (ejemplo {n})",
+  "sp.field.expiresOn": "Oferta válida hasta",
+  "sp.market.note": "El juego ha elegido estas ofertas para ti automáticamente. Los objetivos se fijan automáticamente y no se pueden cambiar. Una oferta rechazada o caducada se sustituye en la próxima actualización del domingo."
 }

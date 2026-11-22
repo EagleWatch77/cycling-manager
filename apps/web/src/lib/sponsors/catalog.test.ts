@@ -29,17 +29,15 @@ check('migration has no money and no contract insert', !/insert into public\.spo
 check('migration does not delete or drop existing data', !/\bdrop (table|column)\b/i.test(sql.replace(/--.*$/gm, '')) && !/\bdelete from\b/i.test(sql.replace(/--.*$/gm, '')) && !/\btruncate\b/i.test(sql));
 // the page reads the catalogue from the database, not from the constant
 const page = fs.readFileSync(path.join(root, 'apps/web/src/app/sponsors/page.tsx'), 'utf8');
-const comp = fs.readFileSync(path.join(root, 'apps/web/src/components/sponsors/SponsorCatalog.tsx'), 'utf8');
 const repo = fs.readFileSync(path.join(root, 'apps/web/src/lib/sponsors/repository.ts'), 'utf8');
-check('catalogue component renders what it is given (no constant inside)', !/APPROVED_MAIN_SPONSORS/.test(comp));
-check('the page gets the list from getMainSponsorCatalog() (database)', /getMainSponsorCatalog\(\)/.test(page) && /entries=\{catalog\.entries\}/.test(page));
-check('repository queries sponsor_companies, kind main, ordered by catalog_no', /from\('sponsor_companies'\)/.test(repo) && /eq\('kind', 'main'\)/.test(repo) && /order\('catalog_no'/.test(repo));
-check('the constant is used on the page only as the DEMO fallback', (page.match(/APPROVED_MAIN_SPONSORS/g) ?? []).length === 2 && /demoNames/.test(page));
+check('the page no longer lists the catalogue (generator input only)', !/getMainSponsorCatalog|SponsorCatalog|catalog\.entries/.test(page) && !fs.existsSync(path.join(root, 'apps/web/src/components/sponsors/SponsorCatalog.tsx')));
+check('repository has no catalogue reader any more', !/getMainSponsorCatalog|from\('sponsor_companies'\)\.select\('id, name, catalog_no'\)/.test(repo));
+check('the constant is used on the page only as the DEMO name source', (page.match(/APPROVED_MAIN_SPONSORS/g) ?? []).length === 2 && /demoNames/.test(page));
 // demo names come from the catalogue
 const now = new Date('2026-11-22T10:00:00Z'); const sec = (n: number) => `Sec ${n}`;
-const names = [...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER, sec)].filter((x) => x.kind === 'main').map((x) => x.companyName);
+const names = [...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER)].filter((x) => x.kind === 'main').map((x) => x.companyName);
 check('main demo items use catalogue names only', names.length === 4 && names.every((n) => OWNER.includes(n)), names.join(','));
-check('no "Demo sponsor A/B" left', ![...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER, sec)].some((x) => /^Demo sponsor/.test(x.companyName)));
-check('secondary demo items are NOT invented companies (neutral label)', [...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER, sec)].filter((x) => x.kind === 'secondary').every((x) => /^Sec \d$/.test(x.companyName)));
-check('demo names inside the demo are distinct per card', new Set([...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER, sec)].map((x) => x.companyName)).size === 8);
+check('no "Demo sponsor A/B" left', ![...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER)].some((x) => /^Demo sponsor/.test(x.companyName)));
+check('secondary demo items are NOT invented companies (neutral label)', [...demoContracts(now, OWNER, sec)].filter((x) => x.kind === 'secondary').every((x) => /^Sec \d$/.test(x.companyName)));
+check('demo names inside the demo are distinct per card', new Set([...demoContracts(now, OWNER, sec), ...demoOffers(now, OWNER)].map((x) => x.companyName)).size === 5);
 console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

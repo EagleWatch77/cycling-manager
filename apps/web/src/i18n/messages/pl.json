@@ -853,13 +853,9 @@
   "sp.tab.market": "Rynek sponsorów",
   "sp.slots.main": "Sponsorzy główni",
   "sp.slots.secondary": "Sponsorzy poboczni",
-  "sp.slots.offers": "Oferty na rynku",
-  "sp.type.main": "Główny",
+  "sp.slots.offers": "Oferty sponsorów głównych",
+  "sp.type.main": "Sponsor główny",
   "sp.type.secondary": "Poboczny",
-  "sp.filter.label": "Filtr typu sponsora",
-  "sp.filter.all": "Wszystkie",
-  "sp.filter.main": "Główni",
-  "sp.filter.secondary": "Poboczni",
   "sp.demo.banner": "Dane przykładowe do sprawdzenia wyglądu. To nie są prawdziwe umowy ani oferty i nic nie jest wypłacane.",
   "sp.demo.show": "Pokaż podgląd wyglądu",
   "sp.demo.hide": "Ukryj podgląd",
@@ -907,9 +903,7 @@
   "sp.goal.participateWorlds": "Weź udział w Mistrzostwach Świata",
   "sp.goal.top3Worlds": "Zajmij miejsce w TOP 3 na Mistrzostwach Świata",
   "sp.goal.winWorlds": "Wygraj Mistrzostwa Świata",
-  "sp.catalog.title": "Katalog sponsorów głównych",
-  "sp.catalog.count": "{n} sponsorów",
-  "sp.catalog.note": "To nie są twoje oferty. To lista wszystkich sponsorów głównych w grze. Twoje osobiste oferty są wyżej (maksymalnie 3 główne).",
-  "sp.catalog.empty": "Katalogu sponsorów nie ma jeszcze w bazie danych.",
-  "sp.demo.secondaryName": "Sponsor poboczny (przykład {n})"
+  "sp.demo.secondaryName": "Sponsor poboczny (przykład {n})",
+  "sp.field.expiresOn": "Oferta ważna do",
+  "sp.market.note": "Gra wybrała te oferty dla ciebie automatycznie. Cele są ustalane automatycznie i nie można ich zmienić. Odrzucona lub wygasła oferta zostanie zastąpiona podczas najbliższej niedzielnej aktualizacji."
 }

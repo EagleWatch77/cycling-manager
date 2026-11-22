@@ -22,17 +22,15 @@ export function demoContracts(now: Date, main: readonly string[], secondaryLabel
   ];
 }
 
-export function demoOffers(now: Date, main: readonly string[], secondaryLabel: (n: number) => string): SponsorOffer[] {
+/** The market shows only the player's 3 personal MAIN offers, so the demo shows exactly 3 (clearly separated from real data by the DEMO badge and banner). */
+export function demoOffers(now: Date, main: readonly string[]): SponsorOffer[] {
   const o = (n: number, kind: SponsorOffer['kind'], weeks: number, g: GoalPair, expiresInHours: number): SponsorOffer => ({
-    id: `demo-o${n}`, isDemo: true, companyId: `demo-co-${n + 2}`, companyName: kind === 'main' ? main[n + 1] : secondaryLabel(n - 2), kind,
+    id: `demo-o${n}`, isDemo: true, companyId: `demo-co-${n + 2}`, companyName: main[n + 1], kind,
     durationWeeks: weeks, weeklyIncomeCents: null, goals: g, expiresAt: new Date(now.getTime() + expiresInHours * 3_600_000).toISOString(),
   });
   return [
-    o(1, 'main', 10, goals('finishTour', 'top10'), 60),
-    o(2, 'main', 10, goals('participateTour', 'winTour'), 28),
+    o(1, 'main', 10, goals('participateTour', 'top50'), 60),
+    o(2, 'main', 10, goals('finishTour', 'top10'), 28),
     o(3, 'main', 10, goals('top50', 'winStage'), 70),
-    o(4, 'secondary', 5, goals('participateTour', 'winStage'), 49),
-    o(5, 'secondary', 5, goals('finishTour', 'anyJersey'), 12),
-    o(6, 'secondary', 5, goals('top50', 'promotion'), 71),
   ];
 }

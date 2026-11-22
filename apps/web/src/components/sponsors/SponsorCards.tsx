@@ -145,7 +145,8 @@ export function OfferCard({ o, now, locale, t, league, activeByKind, lastSignedC
       <div className="space-y-3 p-3.5">
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">
           <Field label={t('sp.field.duration')}>{t('sp.weeks', { n: o.durationWeeks })}</Field>
-          <Field label={t('sp.field.expires')}>{t('sp.expiresIn', { d: left.days, h: left.hours })}</Field>
+          <Field label={t('sp.field.expiresOn')}>{fullDate(new Date(o.expiresAt), locale)}</Field>
+          <div className="col-span-2"><Field label={t('sp.field.expires')}>{t('sp.expiresIn', { d: left.days, h: left.hours })}</Field></div>
           <div className="col-span-2"><Field label={t('sp.field.income')}>
             <span className={o.weeklyIncomeCents === null ? 'text-navy-muted' : ''}>{moneyText(o.weeklyIncomeCents, locale, t)}</span>
           </Field></div>

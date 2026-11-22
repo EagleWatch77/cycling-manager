@@ -147,7 +147,7 @@ Mirkova otázka: používa hra pravidlo **10 %** alebo staré **+2 body**?
 
 ## 5a. Sponzori (schválené pravidlá 2026-11-22; C-106, O-031)
 
-**Kde:** stránka `/sponsors` (menu pod Financie; záložky Aktívne zmluvy / Trh sponzorov; filter Všetky / Hlavní / Vedľajší; `?demo=1` = ukážka dizajnu označená DEMO). Kód: `apps/web/src/lib/sponsors/` (rules, repository, demo), `components/sponsors/`, `app/sponsors/`; DB: `supabase/migrations/20261122_01_sponsors_foundation.sql`; testy: `lib/sponsors/rules.test.ts`, `components/sponsors/SponsorCards.test.tsx`, `supabase/tests/sponsors_foundation.test.sh`.
+**Kde:** stránka `/sponsors` (menu pod Financie; záložky Aktívne zmluvy / Trh sponzorov (trh = iba 3 osobné hlavné ponuky hráča, žiadny verejný katalóg ani filter); `?demo=1` = ukážka dizajnu označená DEMO). Kód: `apps/web/src/lib/sponsors/` (rules, repository, demo), `components/sponsors/`, `app/sponsors/`; DB: `supabase/migrations/20261122_01_sponsors_foundation.sql`; testy: `lib/sponsors/rules.test.ts`, `components/sponsors/SponsorCards.test.tsx`, `supabase/tests/sponsors_foundation.test.sh`.
 
 | Pravidlo | Stav |
 |---|---|
@@ -170,7 +170,9 @@ Mirkova otázka: používa hra pravidlo **10 %** alebo staré **+2 body**?
 
 Schválené názvy (v tomto poradí): 1 Veltaro Cycling, 2 Kadrin Wheels, 3 Aerovex, 4 Torvello Bikes, 5 Rydexa, 6 Solvanta Energy, 7 Noryx Power, 8 Voltaris Group, 9 Eltrava Energy, 10 Energonix, 11 Veltrion Motors, 12 Arvexa Automotive, 13 Nordaris Mobility, 14 Motravia, 15 Axeron Motors, 16 Datrix Systems, 17 Quantelis, 18 Nexoria Tech, 19 Syntrava, 20 Corevanta, 21 Monvera Capital, 22 Asteriq Finance, 23 Valtrix Bank, 24 Norvella Insurance, 25 Fintravo, 26 Altivex Logistics, 27 Montaris Group, 28 Avendra Global, 29 Trinex Industries, 30 Orvanta Holdings (C-107; zatiaľ sa nemenia).
 
-**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `20261122_02`; kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
+**Generátor ponúk (C-108, O-032):** migrácia `20261122_03`. Server-side; každý hráč max 3 osobné hlavné ponuky z katalógu 30 firiem (bez opakovania v sade, nie firma posledného podpísaného kontraktu), 2 rôzne ciele (ľahší/ťažší) z 7 reálne vyhodnotiteľných (nie Worlds, postup, výhra sezóny), platnosť presne 21 dní, bez peňazí. Nový hráč dostane ponuky hneď (trigger) alebo pri prvej návšteve `/sponsors`; doplnenie po odmietnutí/expirácii pri najbližšej nedeli 00:00 Bratislava. **Plánovač nie je napojený** (funguje lenivé doplnenie; voliteľný pg_cron je popísaný v migrácii a nie je zapnutý). Hodnoty rebríčka cieľov sú návrh na schválenie (O-032). Testy: `supabase/tests/sponsors_generator.test.sh` (91), `lib/sponsors/generator.test.ts` (26).
+
+**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `20261122_02` → `20261122_03`; kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
 
 Poistky: hráč zo stránky nemôže nič zapisovať (iba čítať vlastné riadky a odmietnuť vlastnú ponuku); `sponsor_settings.economy_enabled` = false.
 
@@ -196,6 +198,7 @@ admin_users, bike_condition, league_divisions, league_memberships, league_rider_
 | 20261119_06 | `market_rider_estimates` | **NESPUSTENÁ, pripravená** |
 | 20261122_01 | Sponzori — základ (tabuľky, poistky, bez peňazí) | **NESPUSTENÁ, pripravená** |
 | 20261122_02 | Katalóg 30 hlavných sponzorov (spúšťať PO `_01`) | **NESPUSTENÁ, pripravená** |
+| 20261122_03 | Generátor ponúk a cieľov (spúšťať PO `_01` a `_02`) | **NESPUSTENÁ, pripravená** |
 | seed 100 jazdcov | nový trh | **NEOVERENÉ** (Mirko nevedel povedať) |
 | zmazanie 45 starých | čistenie | **NESPUSTENÉ** |
 
@@ -226,7 +229,8 @@ Prostredie na vývoj: `web:build` v sandboxe padá na sťahovaní Google Fonts (
 | C-090 | kontrakty — koncept 2–10 týždňov | — | **neimplementované** |
 | C-098 | starý generátor vypnutý | admin UI | áno (`market_launch`) |
 | C-096/097 | význam `season_id`, audit starej škály 55–95 | docs | — |
-| C-107 | Katalóg 30 hlavných sponzorov | `lib/sponsors/catalog.ts`, `SponsorCatalog`, SQL `20261122_02` | áno (20 + 19 + 36); vzhľad overený snímkami (mobil/tablet/desktop) |
+| C-107 | Katalóg 30 hlavných sponzorov (zdroj generátora, verejne sa nezobrazuje od C-108) | `lib/sponsors/catalog.ts`, SQL `20261122_02` | áno (20 + 19 + 36); vzhľad overený snímkami (mobil/tablet/desktop) |
+| C-108 | Generátor osobných ponúk hlavných sponzorov a cieľov | SQL `20261122_03`, `lib/sponsors/repository.ts`, `app/sponsors/page.tsx` | áno (91 + 26 + 22); vzhľad overený snímkami (mobil/desktop) |
 | C-106 | Sponzori (bez peňazí) | `lib/sponsors/*`, `app/sponsors`, SQL `20261122_01` | áno (57 + 19 + 81); vzhľad overený snímkami v headless Chrome (mobil + desktop), nie v živej hre |
 | C-102 | zoradenie trhu podľa OVR | `lib/market/marketSort.ts` | áno |
 | C-103 | vzhľad trhu + detail | `components/market/*`, `transfers/[id]` | komponenty áno; vzhľad v prehliadači nie |

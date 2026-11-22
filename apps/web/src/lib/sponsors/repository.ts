@@ -1,6 +1,5 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import type { CatalogEntry } from './catalog';
 import type { GoalPair, GoalType, SponsorContract, SponsorKind, SponsorOffer } from './rules';
 
 export interface SponsorData {
@@ -36,10 +35,15 @@ export async function getMySponsorData(now: Date = new Date()): Promise<SponsorD
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return EMPTY;
 
+  // Server-side generator: fills THIS player's market up to 3 main offers (first visit / new weekly update period; otherwise a no-op).
+  // Missing function (migration 20261122_03 not run) is quiet; the offers simply stay empty. Never throws.
+  const gen = await supabase.rpc('ensure_my_sponsor_offers');
+  if (gen.error && !['42883', 'PGRST202', '42P01', 'PGRST205'].includes(gen.error.code ?? '')) console.error(`[sponsors] generator failed: code=${gen.error.code} message=${gen.error.message}`);
+
   const cols = 'id, company_id, kind, duration_weeks, weekly_income_cents, goal1_type, goal1_bonus_cents, goal2_type, goal2_bonus_cents';
   const [offers, contracts, settings] = await Promise.all([
     supabase.from('sponsor_offers').select(`${cols}, expires_at, sponsor_companies(name)`)
-      .eq('status', 'open').gt('expires_at', now.toISOString()).order('expires_at', { ascending: true }),
+      .eq('kind', 'main').eq('status', 'open').gt('expires_at', now.toISOString()).order('expires_at', { ascending: true }),
     supabase.from('sponsor_contracts').select(`${cols}, signed_at, ends_at, sponsor_companies(name)`)
       .eq('status', 'active').order('signed_at', { ascending: false }),
     supabase.from('sponsor_settings').select('economy_enabled').maybeSingle(),
@@ -73,20 +77,4 @@ export async function rejectMySponsorOffer(offerId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('reject_my_sponsor_offer', { p_offer_id: offerId });
   if (error) { console.error(`[sponsors] reject failed: code=${error.code} message=${error.message}`); return false; }
   return data === true;
-}
-
-/**
- * The approved catalogue of MAIN sponsors, read from the database (sponsor_companies, kind 'main'), in the approved order.
- * `loaded` is false when the tables/columns do not exist yet (migrations 20261122_01/_02 not run): the page then says so instead of inventing rows.
- */
-export async function getMainSponsorCatalog(): Promise<{ entries: CatalogEntry[]; loaded: boolean }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.from('sponsor_companies').select('id, name, catalog_no')
-    .eq('kind', 'main').eq('active', true).not('catalog_no', 'is', null).order('catalog_no', { ascending: true });
-  if (error) {
-    // 42P01 / PGRST205 = table missing, 42703 = column missing (migration not applied yet): quiet; anything else is logged.
-    if (!['42P01', 'PGRST205', '42703'].includes(error.code ?? '')) console.error(`[sponsors] catalogue read failed: code=${error.code} message=${error.message}`);
-    return { entries: [], loaded: false };
-  }
-  return { entries: (data ?? []).map((r) => ({ id: r.id as string, name: r.name as string, no: r.catalog_no as number })), loaded: true };
 }

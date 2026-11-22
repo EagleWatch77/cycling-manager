@@ -2,6 +2,8 @@ Zmaž ručne (ak existujú):
 apps/web/src/components/EquipmentCard.tsx
 apps/web/src/components/BikeCard.test.ts
 apps/web/src/lib/races/recentResults.ts
+apps/web/src/components/sponsors/SponsorCatalog.tsx   (verejný katalóg 30 firiem sa už nezobrazuje)
+apps/web/src/components/sponsors/SponsorCatalog.test.tsx
 
 Zmaž ručne z priečinka supabase/migrations/ (nové kópie sú už mimo neho; tieto by sa omylom spustili pri automatickom behu migrácií):
 supabase/migrations/20261114_league_divisions.sql   (zastaraný koncept, archivovaný v supabase/diagnostics/superseded_migrations/)

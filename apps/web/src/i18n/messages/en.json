@@ -853,13 +853,9 @@
   "sp.tab.market": "Sponsor market",
   "sp.slots.main": "Main sponsors",
   "sp.slots.secondary": "Secondary sponsors",
-  "sp.slots.offers": "Offers on the market",
-  "sp.type.main": "Main",
+  "sp.slots.offers": "Main sponsor offers",
+  "sp.type.main": "Main sponsor",
   "sp.type.secondary": "Secondary",
-  "sp.filter.label": "Sponsor type filter",
-  "sp.filter.all": "All",
-  "sp.filter.main": "Main",
-  "sp.filter.secondary": "Secondary",
   "sp.demo.banner": "Sample data for checking the design. These are not real contracts or offers and nothing is paid out.",
   "sp.demo.show": "Show design preview",
   "sp.demo.hide": "Hide preview",
@@ -907,9 +903,7 @@
   "sp.goal.participateWorlds": "Take part in the World Championships",
   "sp.goal.top3Worlds": "Finish in the top 3 at the World Championships",
   "sp.goal.winWorlds": "Win the World Championships",
-  "sp.catalog.title": "Main sponsor catalogue",
-  "sp.catalog.count": "{n} sponsors",
-  "sp.catalog.note": "These are not your offers. It is the list of all main sponsors in the game. Your personal offers are above (at most 3 main).",
-  "sp.catalog.empty": "The sponsor catalogue is not in the database yet.",
-  "sp.demo.secondaryName": "Secondary sponsor (sample {n})"
+  "sp.demo.secondaryName": "Secondary sponsor (sample {n})",
+  "sp.field.expiresOn": "Offer valid until",
+  "sp.market.note": "The game picked these offers for you automatically. Goals are set automatically and cannot be changed. A rejected or expired offer is replaced at the next Sunday update."
 }
