@@ -8,7 +8,9 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import { ContractCard, OfferCard } from '@/components/sponsors/SponsorCards';
 import { getMyLeague } from '@/lib/facilities/repository';
-import { getMySponsorData } from '@/lib/sponsors/repository';
+import { getMySponsorData, getMainSponsorCatalog } from '@/lib/sponsors/repository';
+import { SponsorCatalog } from '@/components/sponsors/SponsorCatalog';
+import { APPROVED_MAIN_SPONSORS } from '@/lib/sponsors/catalog';
 import { demoContracts, demoOffers } from '@/lib/sponsors/demo';
 import { MAX_OFFERS, SPONSOR_LIMITS, type SponsorKind } from '@/lib/sponsors/rules';
 
@@ -29,8 +31,12 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
   const now = new Date();
   const league = await getMyLeague();
   const real = await getMySponsorData(now);
-  const contracts = demo ? demoContracts(now) : real.contracts;
-  const offers = demo ? demoOffers(now) : real.offers;
+  const catalog = await getMainSponsorCatalog();
+  // DEMO names come from the database catalogue (fallback: the approved constant before migration 20261122_02 has run)
+  const demoNames = catalog.entries.length >= 6 ? catalog.entries.map((e) => e.name) : APPROVED_MAIN_SPONSORS;
+  const secondaryLabel = (n: number) => t('sp.demo.secondaryName', { n });
+  const contracts = demo ? demoContracts(now, demoNames, secondaryLabel) : real.contracts;
+  const offers = demo ? demoOffers(now, demoNames, secondaryLabel) : real.offers;
 
   const activeByKind: Record<SponsorKind, number> = {
     main: contracts.filter((c) => c.kind === 'main').length,
@@ -96,6 +102,7 @@ export default async function SponsorsPage({ searchParams }: { searchParams: Pro
                 ))}
               </div>
             )}
+            {type !== 'secondary' && <SponsorCatalog entries={catalog.entries} loaded={catalog.loaded} t={t} />}
           </>
         )}
       </div>

@@ -8,7 +8,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { getDictionary } from '@/i18n/config';
 import { ContractCard, OfferCard } from './SponsorCards';
-import { demoContracts, demoOffers } from '@/lib/sponsors/demo';
+import { demoContracts as dc, demoOffers as dofr } from '@/lib/sponsors/demo';
+import { APPROVED_MAIN_SPONSORS } from '@/lib/sponsors/catalog';
 import type { SponsorOffer } from '@/lib/sponsors/rules';
 
 let pass = 0, fail = 0;
@@ -16,9 +17,12 @@ const check = (n: string, c: boolean, d = '') => { if (c) { pass++; console.log(
 const t = getDictionary('sk');
 const now = new Date('2026-11-22T10:00:00Z');
 const none = { main: 0, secondary: 0 };
+const sec = (n: number) => t('sp.demo.secondaryName', { n });
+const demoContracts = (d: Date) => dc(d, APPROVED_MAIN_SPONSORS, sec);
+const demoOffers = (d: Date) => dofr(d, APPROVED_MAIN_SPONSORS, sec);
 
 const contract = renderToStaticMarkup(createElement(ContractCard, { c: demoContracts(now)[0], now, locale: 'sk', t }));
-check('contract: company name, type badge and DEMO badge', contract.includes('Demo sponsor A') && contract.includes('>Hlavný<') && contract.includes('>DEMO<'));
+check('contract: company name, type badge and DEMO badge', contract.includes('Veltaro Cycling') && contract.includes('>Hlavný<') && contract.includes('>DEMO<'));
 check('contract: signed date, end date, remaining weeks shown', contract.includes('Podpísané') && contract.includes('Ukončenie') && contract.includes('6 týž.'), contract.slice(0, 200));
 check('contract: income and both bonuses say "Zatiaľ neurčené" (no invented number)', (contract.match(/Zatiaľ neurčené/g) ?? []).length >= 4 && !/€|EUR/.test(contract));
 check('contract: both goals with their labels', contract.includes('Základný cieľ') && contract.includes('Náročnejší cieľ') && contract.includes('Dokonči Tour') && contract.includes('Vyhraj etapu'));

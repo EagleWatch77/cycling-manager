@@ -1,6 +1,6 @@
 # BIBLIA PROJEKTU — Cycling Manager
 
-**Posledná aktualizácia:** 2026-11-22 (Sponzori). Toto je JEDEN hlavný dokument projektu. Ak začínaš novú konverzáciu s Claudom, nahraj/ukáž mu najprv tento súbor.
+**Posledná aktualizácia:** 2026-11-22 (Sponzori + katalóg 30 sponzorov). Toto je JEDEN hlavný dokument projektu. Ak začínaš novú konverzáciu s Claudom, nahraj/ukáž mu najprv tento súbor.
 **Autor stavu:** zostavené čítaním kódu, migrácií, testov a dokumentácie v repozitári (nič sa nespúšťalo na produkcii). Čo som nevedel potvrdiť, je označené **NEOVERENÉ**.
 
 ## Ako čítať túto Bibliu
@@ -39,7 +39,7 @@ Dôležité rozlíšenie, ktoré drží celá Biblia: **SCHVÁLENÝ NÁVRH** (č
 | Bicykel (opotrebovanie, obrázky) | ČIASTOČNE | len zobrazenie; pravidlá C-055 neimplementované |
 | Zázemie (Facilities) | ČIASTOČNE | konfigurácia v `lib/facilities/config.ts`; ceny/čísla sú `BALANCE_PLACEHOLDER` |
 | Financie | ČIASTOČNE | len kostra UI, **žiadna tabuľka transakcií**, všade „—" |
-| Sponzori (`/sponsors`) | ČIASTOČNE | stránka, pravidlá, DB poistky a odmietnutie ponuky sú HOTOVÉ (kód); **bez peňazí**: podpis, predčasné ukončenie, výplaty, generovanie ponúk PLÁNOVANÉ (čakajú na sumy); migrácia `20261122_01` NESPUSTENÁ — pozri kap. 5a |
+| Sponzori (`/sponsors`) | ČIASTOČNE | stránka, pravidlá, DB poistky a odmietnutie ponuky sú HOTOVÉ (kód); **bez peňazí**: podpis, predčasné ukončenie, výplaty, generovanie ponúk PLÁNOVANÉ (čakajú na sumy); migrácie `20261122_01` a `_02` NESPUSTENÉ — pozri kap. 5a |
 | Personál (/staff), Tím (/team), Scouting (/scouting) | ČIASTOČNE | stránky existujú, v kóde prevažne prázdne stavy/kostra (podľa veľkosti a komentárov; detailná logika NEOVERENÁ) |
 | Admin (/admin/market, /admin/riders, test-peloton) | HOTOVÉ (kód) | admin práva čítané zo servera (C-009) |
 | Premium | ČIASTOČNE | `premium_entitlements`; Premium radenie/filtre trhu v kóde |
@@ -163,8 +163,14 @@ Mirkova otázka: používa hra pravidlo **10 %** alebo staré **+2 body**?
 | Týždenný update nedeľa 00:00 Europe/Bratislava | ČIASTOČNE: kľúč týždňa hotový a testovaný (`sponsor_week_key`), **plánovač/beh update PLÁNOVANÝ** |
 | Predčasné ukončenie, odstupné 30 % zostávajúceho príjmu | ČIASTOČNE: výpočet hotový (1000×4 → 1200, testované), tlačidlo **zamknuté**, funkcia v DB neexistuje |
 | Podpis zmluvy | PLÁNOVANÉ: tlačidlo Prijať zamknuté; DB nemá funkciu na podpis; zmluva bez kladných súm sa do DB nedá uložiť |
+| Katalóg 30 hlavných sponzorov (`kind` main, `catalog_no` 1–30), schválené názvy, jedna firma môže sponzorovať neobmedzene hráčov | HOTOVÉ v kóde a migrácii `_02` (NESPUSTENÁ); stránka ho číta z databázy (Trh sponzorov → „Katalóg hlavných sponzorov"); katalóg vedľajších sponzorov PLÁNOVANÝ (stĺpec `kind` ho umožňuje) |
+| Platnosť ponuky presne 21 dní | HOTOVÉ (DB CHECK, test) |
 | Všetky sumy (príjem, bonusy) a vzorce ponúk | **NESCHVÁLENÉ**, v hre sa zobrazuje „Zatiaľ neurčené", nič nie je vymyslené |
 | Úvodné ponuky pre nového hráča (3+3 bez vyjednávania) | PLÁNOVANÉ (potrebuje názvy firiem a vzorce) |
+
+Schválené názvy (v tomto poradí): 1 Veltaro Cycling, 2 Kadrin Wheels, 3 Aerovex, 4 Torvello Bikes, 5 Rydexa, 6 Solvanta Energy, 7 Noryx Power, 8 Voltaris Group, 9 Eltrava Energy, 10 Energonix, 11 Veltrion Motors, 12 Arvexa Automotive, 13 Nordaris Mobility, 14 Motravia, 15 Axeron Motors, 16 Datrix Systems, 17 Quantelis, 18 Nexoria Tech, 19 Syntrava, 20 Corevanta, 21 Monvera Capital, 22 Asteriq Finance, 23 Valtrix Bank, 24 Norvella Insurance, 25 Fintravo, 26 Altivex Logistics, 27 Montaris Group, 28 Avendra Global, 29 Trinex Industries, 30 Orvanta Holdings (C-107; zatiaľ sa nemenia).
+
+**Poradie nasadenia Sponzorov:** záloha → `20261122_01` → `20261122_02`; kód môže ísť pred aj po migráciách (bez nich ukáže prázdne stavy).
 
 Poistky: hráč zo stránky nemôže nič zapisovať (iba čítať vlastné riadky a odmietnuť vlastnú ponuku); `sponsor_settings.economy_enabled` = false.
 
@@ -189,6 +195,7 @@ admin_users, bike_condition, league_divisions, league_memberships, league_rider_
 | 20261119_04 | S1+O5 strop a mladícka podlaha | **prešla** (podľa Mirka) |
 | 20261119_06 | `market_rider_estimates` | **NESPUSTENÁ, pripravená** |
 | 20261122_01 | Sponzori — základ (tabuľky, poistky, bez peňazí) | **NESPUSTENÁ, pripravená** |
+| 20261122_02 | Katalóg 30 hlavných sponzorov (spúšťať PO `_01`) | **NESPUSTENÁ, pripravená** |
 | seed 100 jazdcov | nový trh | **NEOVERENÉ** (Mirko nevedel povedať) |
 | zmazanie 45 starých | čistenie | **NESPUSTENÉ** |
 
@@ -219,6 +226,7 @@ Prostredie na vývoj: `web:build` v sandboxe padá na sťahovaní Google Fonts (
 | C-090 | kontrakty — koncept 2–10 týždňov | — | **neimplementované** |
 | C-098 | starý generátor vypnutý | admin UI | áno (`market_launch`) |
 | C-096/097 | význam `season_id`, audit starej škály 55–95 | docs | — |
+| C-107 | Katalóg 30 hlavných sponzorov | `lib/sponsors/catalog.ts`, `SponsorCatalog`, SQL `20261122_02` | áno (20 + 19 + 36); vzhľad overený snímkami (mobil/tablet/desktop) |
 | C-106 | Sponzori (bez peňazí) | `lib/sponsors/*`, `app/sponsors`, SQL `20261122_01` | áno (57 + 19 + 81); vzhľad overený snímkami v headless Chrome (mobil + desktop), nie v živej hre |
 | C-102 | zoradenie trhu podľa OVR | `lib/market/marketSort.ts` | áno |
 | C-103 | vzhľad trhu + detail | `components/market/*`, `transfers/[id]` | komponenty áno; vzhľad v prehliadači nie |

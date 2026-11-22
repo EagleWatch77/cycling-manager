@@ -111,3 +111,9 @@ Verify locally: `PGBIN=/usr/lib/postgresql/16/bin bash supabase/tests/market_lau
 | File | What it does |
 |---|---|
 | `20261122_01_sponsors_foundation.sql` | tables `sponsor_settings`, `sponsor_companies`, `sponsor_offers`, `sponsor_contracts`, `sponsor_payouts`; limits per league, contract durations, goal availability, 3+3 offer cap, "not the same sponsor twice in a row", unique payout key (no double payment), weekly key Sunday 00:00 Europe/Bratislava, severance 30 %; players only READ their own rows, only action `reject_my_sponsor_offer`. **No money, no signing, no payout, no offer generator** (not approved). Switch `sponsor_settings.economy_enabled` = false. Run after 20261114_01..03; whole file, idempotent, additive. Safe BEFORE or AFTER the code (without it the page shows the empty state). Verify: `supabase/tests/sponsors_foundation.test.sh` (as `postgres`). |
+
+| File | What it does |
+|---|---|
+| `20261122_02_sponsor_catalog_main_30.sql` | **Run AFTER `20261122_01`** (refuses otherwise). `sponsor_companies.kind` + `catalog_no`; inserts the 30 approved main sponsors (no duplicates on re-run, self-check = exactly 30); offer must live exactly 21 days (CHECK); a main offer needs a main company. No money, no offers, no contracts. Verify: `supabase/tests/sponsors_catalog.test.sh` (as `postgres`). |
+
+Order for Sponzori: backup -> `20261122_01` -> `20261122_02` (code may be deployed before or after; without the migrations the page shows empty states).

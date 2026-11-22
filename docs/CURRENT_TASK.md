@@ -1,13 +1,15 @@
 # CURRENT_TASK (2026-11-22)
 
-Hotová fáza: stránka **Sponzori** (`/sponsors`), bez peňazí (C-106, O-031). Nič nenasadené, nič nespustené v produkcii.
+Hotové: katalóg 30 hlavných sponzorov (C-107) na stránke `/sponsors`, migrácia `20261122_02` (NESPUSTENÁ). Nič nespustené v produkcii.
 
-## Čo je v ZIP-e
-Pravidlá `lib/sponsors/*`, komponenty `components/sponsors/*`, stránka + akcia `app/sponsors/*`, menu pod Financie, preklady (7 jazykov), migrácia `20261122_01_sponsors_foundation.sql` (NESPUSTENÁ), testy, Biblia, DECISIONS (C-106, O-031).
+## Poradie nasadenia
+1. záloha (`02_over_zalohu` = ÚPLNÁ A OVERENÁ)
+2. `20261122_01_sponsors_foundation.sql`
+3. `20261122_02_sponsor_catalog_main_30.sql`
+4. kód cez GitHub Desktop (môže ísť aj pred migráciami)
 
 ## Čaká na Mirka
-Sumy (príjem, bonusy), generovanie ponúk a názvy fiktívnych firiem, plánovač nedeľňajšej aktualizácie, finančná história. Až potom: podpis, predčasné ukončenie, výplaty.
+Sumy, generovanie ponúk, katalóg vedľajších sponzorov, plánovač nedeľňajšieho updatu, finančná história. Podpis/výplaty/ukončenie ostávajú zamknuté.
 
 ## Poznámky
-`ODSTRAN.txt` doplnený: 3 staré súbory v `supabase/migrations/` treba zmazať ručne (zastaraný koncept líg a dva ROLLBACK súbory).
-Overiť: migrácia sponzorov pred/po kóde je bezpečná (bez nej stránka ukáže prázdny stav).
+Obnovený `BikeCard.test.tsx` (omylom zmazaný na GitHube, 20 testov). Stav produkčných migrácií sponzorov je NEOVERENÝ.

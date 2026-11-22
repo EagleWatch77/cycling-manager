@@ -906,5 +906,10 @@
   "sp.goal.promotion": "Awansuj do wyższej ligi",
   "sp.goal.participateWorlds": "Weź udział w Mistrzostwach Świata",
   "sp.goal.top3Worlds": "Zajmij miejsce w TOP 3 na Mistrzostwach Świata",
-  "sp.goal.winWorlds": "Wygraj Mistrzostwa Świata"
+  "sp.goal.winWorlds": "Wygraj Mistrzostwa Świata",
+  "sp.catalog.title": "Katalog sponsorów głównych",
+  "sp.catalog.count": "{n} sponsorów",
+  "sp.catalog.note": "To nie są twoje oferty. To lista wszystkich sponsorów głównych w grze. Twoje osobiste oferty są wyżej (maksymalnie 3 główne).",
+  "sp.catalog.empty": "Katalogu sponsorów nie ma jeszcze w bazie danych.",
+  "sp.demo.secondaryName": "Sponsor poboczny (przykład {n})"
 }

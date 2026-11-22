@@ -20,8 +20,9 @@ export const SPONSOR_LIMITS: Record<LeagueId, { main: number; secondary: number 
 
 /** Market: at most 6 open offers per player, at most 3 of each kind. */
 export const MAX_OFFERS = { main: 3, secondary: 3, total: 6 } as const;
-/** Every offer is valid for 3 game weeks. */
+/** Every offer is valid for 3 game weeks = EXACTLY 21 days from creation (owner 2026-11-22; DB CHECK sponsor_offers_valid_21_days). */
 export const OFFER_VALID_WEEKS = 3;
+export const OFFER_VALID_DAYS = 21;
 /** Early termination fee: 30 % of the REMAINING guaranteed income. */
 export const SEVERANCE_PERCENT = 30;
 

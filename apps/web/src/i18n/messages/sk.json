@@ -906,5 +906,10 @@
   "sp.goal.promotion": "Postúp do vyššej ligy",
   "sp.goal.participateWorlds": "Zúčastni sa Majstrovstiev sveta",
   "sp.goal.top3Worlds": "Získaj TOP 3 na Majstrovstvách sveta",
-  "sp.goal.winWorlds": "Vyhraj Majstrovstvá sveta"
+  "sp.goal.winWorlds": "Vyhraj Majstrovstvá sveta",
+  "sp.catalog.title": "Katalóg hlavných sponzorov",
+  "sp.catalog.count": "{n} sponzorov",
+  "sp.catalog.note": "Toto nie sú tvoje ponuky. Je to zoznam všetkých hlavných sponzorov v hre. Tvoje osobné ponuky sú vyššie (najviac 3 hlavné).",
+  "sp.catalog.empty": "Katalóg sponzorov zatiaľ nie je v databáze.",
+  "sp.demo.secondaryName": "Vedľajší sponzor (ukážka {n})"
 }

@@ -1,5 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import type { CatalogEntry } from './catalog';
 import type { GoalPair, GoalType, SponsorContract, SponsorKind, SponsorOffer } from './rules';
 
 export interface SponsorData {
@@ -72,4 +73,20 @@ export async function rejectMySponsorOffer(offerId: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('reject_my_sponsor_offer', { p_offer_id: offerId });
   if (error) { console.error(`[sponsors] reject failed: code=${error.code} message=${error.message}`); return false; }
   return data === true;
+}
+
+/**
+ * The approved catalogue of MAIN sponsors, read from the database (sponsor_companies, kind 'main'), in the approved order.
+ * `loaded` is false when the tables/columns do not exist yet (migrations 20261122_01/_02 not run): the page then says so instead of inventing rows.
+ */
+export async function getMainSponsorCatalog(): Promise<{ entries: CatalogEntry[]; loaded: boolean }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('sponsor_companies').select('id, name, catalog_no')
+    .eq('kind', 'main').eq('active', true).not('catalog_no', 'is', null).order('catalog_no', { ascending: true });
+  if (error) {
+    // 42P01 / PGRST205 = table missing, 42703 = column missing (migration not applied yet): quiet; anything else is logged.
+    if (!['42P01', 'PGRST205', '42703'].includes(error.code ?? '')) console.error(`[sponsors] catalogue read failed: code=${error.code} message=${error.message}`);
+    return { entries: [], loaded: false };
+  }
+  return { entries: (data ?? []).map((r) => ({ id: r.id as string, name: r.name as string, no: r.catalog_no as number })), loaded: true };
 }

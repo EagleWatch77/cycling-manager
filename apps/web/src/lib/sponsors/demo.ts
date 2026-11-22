@@ -9,18 +9,22 @@ const DAY = 86_400_000;
 const at = (now: Date, days: number) => new Date(now.getTime() + days * DAY).toISOString();
 const goals = (a: GoalPair[0]['type'], b: GoalPair[1]['type']): GoalPair => [{ type: a, bonusCents: null }, { type: b, bonusCents: null }];
 
-export function demoContracts(now: Date): SponsorContract[] {
+/**
+ * Names come from the approved MAIN catalogue (passed in from the database; the constant is only a fallback). Secondary sponsors have no
+ * approved catalogue yet, so their DEMO cards use a neutral label (`secondaryLabel(n)`), never an invented company.
+ */
+export function demoContracts(now: Date, main: readonly string[], secondaryLabel: (n: number) => string): SponsorContract[] {
   return [
-    { id: 'demo-c1', isDemo: true, companyId: 'demo-co-1', companyName: 'Demo sponsor A', kind: 'main', signedAt: at(now, -28), endsAt: at(now, 42),
+    { id: 'demo-c1', isDemo: true, companyId: 'demo-co-1', companyName: main[0], kind: 'main', signedAt: at(now, -28), endsAt: at(now, 42),
       durationWeeks: 10, weeklyIncomeCents: null, goals: goals('finishTour', 'winStage') },
-    { id: 'demo-c2', isDemo: true, companyId: 'demo-co-2', companyName: 'Demo sponsor B', kind: 'secondary', signedAt: at(now, -7), endsAt: at(now, 28),
+    { id: 'demo-c2', isDemo: true, companyId: 'demo-co-2', companyName: secondaryLabel(1), kind: 'secondary', signedAt: at(now, -7), endsAt: at(now, 28),
       durationWeeks: 5, weeklyIncomeCents: null, goals: goals('participateTour', 'top50') },
   ];
 }
 
-export function demoOffers(now: Date): SponsorOffer[] {
+export function demoOffers(now: Date, main: readonly string[], secondaryLabel: (n: number) => string): SponsorOffer[] {
   const o = (n: number, kind: SponsorOffer['kind'], weeks: number, g: GoalPair, expiresInHours: number): SponsorOffer => ({
-    id: `demo-o${n}`, isDemo: true, companyId: `demo-co-${n + 2}`, companyName: `Demo sponsor ${String.fromCharCode(66 + n)}`, kind,
+    id: `demo-o${n}`, isDemo: true, companyId: `demo-co-${n + 2}`, companyName: kind === 'main' ? main[n + 1] : secondaryLabel(n - 2), kind,
     durationWeeks: weeks, weeklyIncomeCents: null, goals: g, expiresAt: new Date(now.getTime() + expiresInHours * 3_600_000).toISOString(),
   });
   return [

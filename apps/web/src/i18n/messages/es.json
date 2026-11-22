@@ -906,5 +906,10 @@
   "sp.goal.promotion": "Asciende a una liga superior",
   "sp.goal.participateWorlds": "Participa en el Campeonato del Mundo",
   "sp.goal.top3Worlds": "Termina en el top 3 del Campeonato del Mundo",
-  "sp.goal.winWorlds": "Gana el Campeonato del Mundo"
+  "sp.goal.winWorlds": "Gana el Campeonato del Mundo",
+  "sp.catalog.title": "Catálogo de patrocinadores principales",
+  "sp.catalog.count": "{n} patrocinadores",
+  "sp.catalog.note": "Estas no son tus ofertas. Es la lista de todos los patrocinadores principales del juego. Tus ofertas personales están arriba (máximo 3 principales).",
+  "sp.catalog.empty": "El catálogo de patrocinadores aún no está en la base de datos.",
+  "sp.demo.secondaryName": "Patrocinador secundario (ejemplo {n})"
 }
